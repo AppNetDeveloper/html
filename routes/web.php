@@ -18,6 +18,7 @@ use App\Http\Controllers\SensorController;
 use App\Http\Controllers\BarcodeController;
 use App\Http\Controllers\PrinterController;
 use App\Http\Controllers\ModbusController;
+use Arcanedev\LogViewer\Facades\LogViewer;
 
 
 /*
@@ -32,6 +33,8 @@ use App\Http\Controllers\ModbusController;
 */
 
 Auth::routes();
+//LogViewer::routes();
+
 Route::get('/debug', [DebugController::class, 'index']);
 
 // Ruta para mostrar el formulario de edición
