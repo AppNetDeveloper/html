@@ -54,6 +54,17 @@ return [
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
         ],
 
+        'sftp' => [
+            'driver' => 'sftp',
+            'host' => env('SFTP_HOST'),
+            'username' => env('SFTP_USERNAME'),
+            'password' => env('SFTP_PASSWORD'), // O puedes usar 'privateKey' para autenticación con clave privada
+            'port' => env('SFTP_PORT', 22), // El puerto por defecto de SFTP es 22
+            'root' => env('SFTP_ROOT', '/path/to/backups'), // Carpeta remota donde almacenarás los backups
+            'timeout' => 30,
+        ],
+
+
     ],
 
     /* 

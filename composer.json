@@ -22,6 +22,7 @@
         "laravel/tinker": "^2.5",
         "laravel/ui": "^3.3",
         "laravelcollective/html": "^6.2",
+        "league/flysystem-sftp": "^1.1",
         "php-mqtt/client": "^2.1",
         "picqer/php-barcode-generator": "^2.4",
         "pragmarx/google2fa-laravel": "^1.4",
