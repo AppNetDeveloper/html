@@ -51,6 +51,9 @@ Route::get('customers/getCustomers', [CustomerController::class, 'getCustomers']
 
 // Ruta para la página principal de clientes
 Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
+Route::resource('customers', CustomerController::class)->except(['edit', 'update', 'destroy']);
+
+
 
 // Ruta para la página principal de sensores
 Route::get('sensors/{id}', [SensorController::class, 'index'])->name('sensors.index');
@@ -62,6 +65,7 @@ Route::delete('productionlines/{id}', [ProductionLineController::class, 'destroy
 Route::get('customers/{customer_id}/productionlinesjson', [ProductionLineController::class, 'getProductionLines'])->name('productionlinesjson.index');
 Route::put('productionlines/{id}', [ProductionLineController::class, 'update'])->name('productionlines.update');
 Route::get('customers/{customer_id}/productionlinescreate', [ProductionLineController::class, 'create'])->name('productionlines.create');
+
 
 Route::post('productionlines', [ProductionLineController::class, 'store'])->name('productionlines.store');
 

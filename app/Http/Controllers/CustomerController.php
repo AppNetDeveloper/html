@@ -77,4 +77,28 @@ class CustomerController extends Controller
         return redirect()->route('customers.index')->with('success', 'Customer deleted successfully.');
     }
 
+    public function create()
+    {
+        return view('customers.create');
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'token_zerotier' => 'required|string|max:255',
+        ]);
+
+        // Generar un token único
+        $token = bin2hex(random_bytes(16));
+
+        Customer::create([
+            'name' => $request->name,
+            'token_zerotier' => $request->token_zerotier,
+            'token' => $token, // Asignar token único
+        ]);
+
+        return redirect()->route('customers.index')->with('success', 'Cliente creado con éxito.');
+    }
+
 }
