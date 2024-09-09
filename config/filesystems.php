@@ -60,7 +60,7 @@ return [
             'username' => env('SFTP_USERNAME'),
             'password' => env('SFTP_PASSWORD'), // O puedes usar 'privateKey' para autenticación con clave privada
             'port' => env('SFTP_PORT', 22), // El puerto por defecto de SFTP es 22
-            'root' => env('SFTP_ROOT', '/path/to/backups'), // Carpeta remota donde almacenarás los backups
+            'root' => env('SFTP_ROOT', '/home'), // Carpeta remota donde almacenarás los backups
             'timeout' => 30,
         ],
 
