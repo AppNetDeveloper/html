@@ -56,7 +56,30 @@ Route::resource('customers', CustomerController::class)->except(['edit', 'update
 
 
 // Ruta para la página principal de sensores
-Route::get('sensors/{id}', [SensorController::class, 'index'])->name('sensors.index');
+Route::get('sensors/{id}', [SensorController::class, 'listSensors'])->name('sensors.index');
+// Rutas para smartsensors
+
+// Mostrar el listado de sensores para una línea de producción
+Route::get('smartsensors/{production_line_id}', [SensorController::class, 'index'])->name('smartsensors.index');
+
+// Mostrar el formulario para crear un nuevo sensor en una línea de producción
+Route::get('smartsensors/{production_line_id}/create', [SensorController::class, 'create'])->name('smartsensors.create');
+
+// Almacenar un nuevo sensor
+Route::post('smartsensors/{production_line_id}', [SensorController::class, 'store'])->name('smartsensors.store');
+
+// Mostrar el formulario para editar un sensor existente
+Route::get('smartsensors/{sensor}/edit', [SensorController::class, 'edit'])->name('smartsensors.edit');
+
+// Actualizar un sensor existente
+Route::put('smartsensors/{sensor}', [SensorController::class, 'update'])->name('smartsensors.update');
+
+// Eliminar un sensor existente
+Route::delete('smartsensors/{sensor}', [SensorController::class, 'destroy'])->name('smartsensors.destroy');
+
+
+
+
 
 // Rutas para las líneas de producción
 Route::get('customers/{customer_id}/productionlines', [ProductionLineController::class, 'index'])->name('productionlines.index');

@@ -308,7 +308,12 @@ class ReadSensors extends Command
         if (!$barcode || !$barcode->order_notice) {
             $this->info("No se encontró el registro del barcode o el campo order_notice está vacío.");
             Log::warning("No se encontró el registro del barcode o el campo order_notice está vacío.");
-            return;
+            // Extraer valores específicos del JSON
+            $orderId = "0";
+            $valuePerPackage = "0";
+            $productName = "0";
+            $unitsPerBox = "0";
+            $totalPerBox = "0";
         }else{
             // Decodificar el JSON almacenado en order_notice
             $orderNotice = json_decode($barcode->order_notice, true);

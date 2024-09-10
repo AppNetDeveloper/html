@@ -27,15 +27,30 @@
             <!-- Card para Modbuses -->
             <div class="col-md-4">
                 <div class="card">
-                    <img src="/necesarios/Modbus.webp" class="card-img-top" alt="Modbuses">
+                    <img src="/necesarios/basculas.webp" class="card-img-top" alt="Modbuses">
                     <div class="card-body">
-                        <h5 class="card-title">Modbuses</h5>
-                        <p class="card-text">Administrar listado de Sensorica.</p>
+                        <h5 class="card-title">Basculas</h5>
+                        <p class="card-text">Administrar listado de Basculas.</p>
                         <a href="{{ route('modbuses.index', ['production_line_id' => request()->route('id')]) }}" class="btn btn-primary">Ver más</a>
                     </div>
                 </div>
             </div>
             <!-- Fin del card -->
+
+           <!-- Card para Smart Sensors -->
+<div class="col-md-4">
+    <div class="card">
+        <img src="/necesarios/sensors.webp" class="card-img-top" alt="Smart Sensors">
+        <div class="card-body">
+            <h5 class="card-title">Sensorica</h5>
+            <p class="card-text">Administrar listado de Sensorica.</p>
+            <a href="{{ route('smartsensors.index', ['production_line_id' => request()->route('id')]) }}" class="btn btn-primary">Ver más</a>
+        </div>
+    </div>
+</div>
+<!-- Fin del card -->
+
+
         </div>
     </div>
 @endsection

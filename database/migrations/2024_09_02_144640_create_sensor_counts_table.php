@@ -18,7 +18,7 @@ class CreateSensorCountsTable extends Migration
             $table->string('name');
             $table->string('value');
             $table->foreignId('production_line_id')->constrained('production_lines')->onDelete('cascade');
-            $table->foreignId('sensor_type')->constrained('sensors')->onDelete('cascade')->after('id');
+            $table->foreignId('sensor_id')->constrained('sensors')->onDelete('cascade')->after('id');
             $table->string('model_product');  // Identificación del producto que se fabrica
             $table->string('orderId')->nullable();
             $table->integer('count_total')->default(0);
