@@ -37,6 +37,13 @@
       height: auto;
     }
     
+    .time-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end; /* Alinear todo a la derecha */
+      margin-left: auto; /* Empujar el contenedor hacia la derecha */
+    } 
+
     .time {
       font-size: 4vh;
       margin-right: 20px;
@@ -44,8 +51,8 @@
 
     #scaleName {
       font-size: 2.5vh;
-      color: #00d1b2;
-      text-align: center;
+      color: #ffcc00; /* Cambiamos el color para que sea amarillo */
+      text-align: right;
     }
     
     main {
@@ -64,7 +71,7 @@
       margin-bottom: 20px;
       border-radius: 10px;
       width: 98%;
-      max-width: 1500px;
+      max-width: 2400px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
       display: flex;
       flex-direction: column;
@@ -92,7 +99,6 @@
       background-color: #3b3c55;
       box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
     }
-    
     .weight-display {
       font-size: 10vw;
       font-weight: bold;
@@ -102,11 +108,30 @@
     }
     
     #weightDisplay {
-      font-size: 10vw;
+      font-size: 8vw;
       font-weight: bold;
       color: #ffcc00;
       line-height: 1;
       word-wrap: break-word;
+    }
+    .dimension-display {
+      font-size: 10vw; /* Tamaño del texto para peso y dimensiones */
+      font-weight: bold;
+      color: #ffffff;
+      line-height: 1;
+      word-wrap: break-word;
+    }
+    #dimensionDisplay {
+      font-size: 8vw;
+      font-weight: bold;
+      color: #ffffff;
+      line-height: 1;
+      word-wrap: break-word;
+    }
+
+    .unit {
+      font-size: 60%; /* Las unidades serán un 60% del tamaño del texto principal */
+      vertical-align: super; /* Ajusta la posición de las unidades */
     }
     
     #lastWeightDisplay {
@@ -157,12 +182,8 @@
         flex-direction: column;
       }
     
-      #weightDisplay {
+      .weight-display, .dimension-display {
         font-size: 20vw;
-      }
-    
-      .box-title {
-        font-size: 2.5vh;
       }
     
       .info-box img {
@@ -176,107 +197,110 @@
   </style>
 </head>
 <body>
-    <header class="d-flex justify-content-between align-items-center">
-        <img src="logo.png" alt="Logo" class="logo">
-        <div id="scaleName">Nombre de la Báscula</div>
-        <div class="time" id="timeDisplay">02:33:21</div>
-    </header>
+  <header class="d-flex justify-content-between align-items-center">
+      <img src="logo.png" alt="Logo" class="logo">
+      <div class="time-container">
+          <div class="time" id="timeDisplay">02:33:21</div>
+          <div id="scaleName" class="center-name">BÁSCULA FLEJADORA</div>
+      </div>
+  </header>
 
-    <main>
-        <div class="box">
-            <div class="box-content">
-                <div class="info-box">
-                    <img src="bascula.png" alt="Weight">
-                    <p class="weight-display" id="weightDisplay">0.0</p>
-                </div>
-                <div class="info-box">
-                    <img src="medida.png" alt="Dimensions">
-                    <p id="dimensionDisplay">0 mm</p>
-                </div>
-                <div class="info-box">
-                    <img src="recuento.png" alt="Pallets">
-                    <p id="boxNumberDisplay">1120 palets</p>
-                </div>
+  <main>
+    <div class="box">
+        <div class="box-content">
+            <div class="info-box">
+                <img src="bascula.png" alt="Weight">
+                <p class="weight-display" id="weightDisplay">0.0 <b class="unit">Kg</b></p>
+            </div>
+            <div class="info-box">
+                <img src="medida.png" alt="Dimensions">
+                <p class="dimension-display" id="dimensionDisplay">0 <b class="unit">mm</b></p>
+            </div>
+            <div class="info-box">
+                <img src="recuento.png" alt="Pallets">
+                <p id="boxNumberDisplay">1120 palets</p>
             </div>
         </div>
+    </div>
 
-        <div class="box">
-            <div class="box-content">
-                <div class="info-box">
-                    <img src="bascula.png" alt="Weight">
-                    <p class="weight-display" id="lastWeightDisplay">44.0</p>
-                </div>
-                <div class="info-box">
-                    <img src="medida.png" alt="Dimensions">
-                    <p id="lastDimensionDisplay">0 mm</p>
-                </div>
-                <div class="info-box">
-                    <img src="recuento.png" alt="Pallets">
-                    <p id="lastBoxNumberDisplay">1119 palets</p>
-                </div>
+    <div class="box">
+        <div class="box-content">
+            <div class="info-box">
+                <img src="bascula.png" alt="Weight">
+                <p class="weight-display" id="lastWeightDisplay">44.0 <b class="unit">Kg</b></p>
             </div>
-            <div class="barcode" id="barcode">
-                <center><p>Barcoder Anonimus BOX</p></center>
-                <svg id="lastBarcode"></svg>
+            <div class="info-box">
+                <img src="medida.png" alt="Dimensions">
+                <p class="dimension-display" id="lastDimensionDisplay">0 <b class="unit">mm</b></p>
+            </div>
+            <div class="info-box">
+                <img src="recuento.png" alt="Pallets">
+                <p id="lastBoxNumberDisplay">1119 palets</p>
             </div>
         </div>
-    </main>
+        <div class="barcode" id="barcode">
+            <center><p>Barcoder Anonimus BOX</p></center>
+            <svg id="lastBarcode"></svg>
+        </div>
+    </div>
+  </main>
 
-    <script>
-        // Función para obtener el token de la URL
-        function getTokenFromUrl() {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('token');
-        }
+  <script>
+    // Función para obtener el token de la URL
+    function getTokenFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('token');
+    }
 
-        const token = getTokenFromUrl();
-        const apiUrl = `/api/control-weight/${token}`;
+    const token = getTokenFromUrl();
+    const apiUrl = `/api/control-weight/${token}`;
 
-        async function updateData() {
-            try {
-                const response = await fetch(apiUrl);
+    async function updateData() {
+        try {
+            const response = await fetch(apiUrl);
 
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-
-                const data = await response.json();
-                console.log("Datos recibidos:", data); // Verifica los datos recibidos
-
-                const grossWeight = parseFloat(data.gross_weight) || 0;
-                const lastControlWeight = parseFloat(data.last_control_weight) || 0;
-
-                document.getElementById('scaleName').textContent = data.name || "Nombre de la Báscula";
-                document.getElementById('weightDisplay').innerHTML = grossWeight.toFixed(1) + '<b style="font-size:1vw;"> Kg</b>';
-                document.getElementById('dimensionDisplay').textContent = data.dimension + " mm";
-                document.getElementById('boxNumberDisplay').textContent = data.box_number + " palets";
-
-                document.getElementById('lastWeightDisplay').innerHTML = lastControlWeight.toFixed(1) + '<b style="font-size:1vw;"> Kg</b>';
-                document.getElementById('lastDimensionDisplay').textContent = data.last_dimension + " mm";
-                document.getElementById('lastBoxNumberDisplay').textContent = data.last_box_number + " palets";
-
-                JsBarcode("#lastBarcode", data.last_barcoder.toString(), {
-                    format: "CODE128",
-                    displayValue: true,
-                    fontSize: 20,
-                    height: 80
-                });
-
-            } catch (error) {
-                console.error("Error al obtener o procesar datos de la API:", error);
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
             }
+
+            const data = await response.json();
+            console.log("Datos recibidos:", data); // Verifica los datos recibidos
+
+            const grossWeight = parseFloat(data.gross_weight) || 0;
+            const lastControlWeight = parseFloat(data.last_control_weight) || 0;
+
+            document.getElementById('scaleName').innerHTML = data.name + '&nbsp;'|| "Nombre de la Báscula";
+            document.getElementById('weightDisplay').innerHTML = grossWeight.toFixed(1) + '<b class="unit">Kg</b>';
+            document.getElementById('dimensionDisplay').innerHTML = data.dimension + '<b class="unit">mm</b>';
+            document.getElementById('boxNumberDisplay').textContent = data.box_number + " palets";
+
+            document.getElementById('lastWeightDisplay').innerHTML = lastControlWeight.toFixed(1) + '<b class="unit">Kg</b>';
+            document.getElementById('lastDimensionDisplay').innerHTML = data.last_dimension + '<b class="unit">mm</b>';
+            document.getElementById('lastBoxNumberDisplay').textContent = data.last_box_number + " palets";
+
+            JsBarcode("#lastBarcode", data.last_barcoder.toString(), {
+                format: "CODE128",
+                displayValue: true,
+                fontSize: 20,
+                height: 80
+            });
+
+        } catch (error) {
+            console.error("Error al obtener o procesar datos de la API:", error);
         }
+    }
 
-        function updateTime() {
-            const timeElement = document.getElementById('timeDisplay');
-            const now = new Date();
-            timeElement.textContent = now.toLocaleTimeString();
-        }
+    function updateTime() {
+        const timeElement = document.getElementById('timeDisplay');
+        const now = new Date();
+        const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+        timeElement.textContent = now.toLocaleTimeString('es-ES', options);
+    }
 
-        setInterval(updateData, 300);
-        setInterval(updateTime, 1000);
+    setInterval(updateData, 300);
+    setInterval(updateTime, 1000);
 
-        updateData();
-    </script>
+    updateData();
+  </script>
 </body>
 </html>
