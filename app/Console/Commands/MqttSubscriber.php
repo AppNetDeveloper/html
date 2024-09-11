@@ -6,6 +6,8 @@ use Illuminate\Console\Command;
 use App\Models\Barcode;
 use PhpMqtt\Client\MqttClient;
 use PhpMqtt\Client\ConnectionSettings;
+use App\Models\Sensor;
+use App\Models\Modbuse;
 
 class MqttSubscriber extends Command
 {
@@ -89,6 +91,25 @@ class MqttSubscriber extends Command
             $barcode->order_notice = $message;
             $barcode->save();
             $this->info("Updated order notice for barcode {$barcode->id}");
+            //resetear los valores a 0 en sensors
+
+            // Resetear los valores a 0 en la tabla sensors
+            $sensors = Sensor::where('barcoder_id', $barcode->id)->get();
+            foreach ($sensors as $sensor) {
+                $sensor->count_order_0 = 0;
+                $sensor->count_order_1 = 0;
+                $sensor->save();
+                $this->info("Reset count_order_0 and count_order_1 for sensor with id {$sensor->id}");
+            }
+
+            // Resetear el campo rec_box a 0 en la tabla modbuses
+            $modbuses = Modbus::where('barcoder_id', $barcode->id)->get();
+            foreach ($modbuses as $modbus) {
+                $modbus->rec_box = 0;
+                $modbus->save();
+                $this->info("Reset rec_box for modbus with id {$modbus->id}");
+            }
+
         } else {
             $this->error("Barcode not found for topic: {$topic}");
         }

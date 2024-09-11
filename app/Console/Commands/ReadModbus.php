@@ -341,7 +341,7 @@ class ReadModbus extends Command
 
     // Inicializar la variable para el número de cajas
     $newBoxNumber = intval($config->rec_box);
-
+    $newBoxNumberShift = intval($config->rec_box_shift);
 
         // Lógica de control de peso y repeticiones
         if ($value >= $minKg) { // Si el valor actual es mayor o igual al mínimo
@@ -381,7 +381,7 @@ class ReadModbus extends Command
 
             // Incrementar el recuento de cajas en rec_box
             $newBoxNumber++;
-
+            $newBoxNumberShift++;
             // Generar un número de barcoder único
             $uniqueBarcoder = uniqid('bar_', true);
 
@@ -392,6 +392,7 @@ class ReadModbus extends Command
                 'last_control_weight' => $maxKg,
                 'last_dimension' => $dimensionFinal,
                 'last_box_number' => $newBoxNumber,
+                'last_box_shift' => $newBoxNumberShift,
                 'last_barcoder' => $uniqueBarcoder,
                 'last_final_barcoder' => null,
             ]);
@@ -402,6 +403,7 @@ class ReadModbus extends Command
                 'last_control_weight' => $controlWeight->last_control_weight,
                 'last_dimension' => $controlWeight->last_dimension,
                 'last_box_number' => $controlWeight->last_box_number,
+                'last_box_shift' => $controlWeight->last_box_shift,
                 'last_barcoder' => $controlWeight->last_barcoder,
                 'last_final_barcoder' => $controlWeight->last_final_barcoder,
             ]);
@@ -412,6 +414,7 @@ class ReadModbus extends Command
                 'modbus_id' => $config->id,
                 'last_control_weight' => $maxKg,
                 'last_dimension' => $dimensionFinal, //no tenemos medidor por momento
+                'last_box_shift' => $controlWeight->last_box_shift,
                 'last_box_number' => $newBoxNumber,
                 'last_barcoder' => $uniqueBarcoder,
             ]);
@@ -456,6 +459,7 @@ class ReadModbus extends Command
 
         $config->update([
             'rec_box' => $newBoxNumber,
+            'rec_box_shift' => $newBoxNumberShift,
             'max_kg' => $maxKg,
             'last_kg' => $lastKg,
             'last_rep' => $lastRep,

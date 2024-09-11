@@ -26,7 +26,8 @@ class Modbus extends Model
         'tara',
         'tara_calibrate',
         'calibration_type',
-        'rec_box', // Esta es la columna que vamos a actualizar
+        'rec_box', // conteo de cajas por order_notice
+        'rec_box_shift',// conteo de cajas por turno
         'model_name',
         'name',
         'last_value', // último valor de la modbus

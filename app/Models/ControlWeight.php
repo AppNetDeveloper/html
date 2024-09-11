@@ -11,6 +11,7 @@ class ControlWeight extends Model
         'last_control_weight',
         'last_dimension',
         'last_box_number',
+        'last_box_shift',
         'last_barcoder',
         'last_final_barcoder',
     ];

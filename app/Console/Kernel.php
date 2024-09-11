@@ -20,7 +20,8 @@ class Kernel extends ConsoleKernel
         Commands\PublishToMqttServer1::class,
         Commands\PublishToMqttServer2::class,
         Commands\ReadSensors::class,
-        Commands\TcpClient::class
+        Commands\TcpClient::class,
+        Commands\MqttShiftSubscriber::class,
     ];
 
     /**

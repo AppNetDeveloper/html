@@ -18,7 +18,8 @@ class CreateControlWeightTable extends Migration
             $table->unsignedBigInteger('modbus_id');
             $table->float('last_control_weight')->nullable();
             $table->float('last_dimension')->nullable();
-            $table->integer('last_box_number')->nullable();
+            $table->integer('last_box_number')->nullable(); //conteo por order_notice
+            $table->integer('last_box_shift')->nullable(); //conteo por shift
             $table->string('last_barcoder')->nullable();
             $table->string('last_final_barcoder')->nullable();
             $table->timestamps();
