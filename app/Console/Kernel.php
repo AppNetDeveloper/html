@@ -22,6 +22,7 @@ class Kernel extends ConsoleKernel
         Commands\ReadSensors::class,
         Commands\TcpClient::class,
         Commands\MqttShiftSubscriber::class,
+        Commands\CalculateOptimalProductionTime::class,
     ];
 
     /**

@@ -1,43 +1,42 @@
 @php
-$users = \Auth::user();
+// Verifica si el usuario está autenticado
+if (!Auth::check()) {
+    // Si el usuario no está autenticado, redirige a la página de login
+    echo redirect()->route('login')->send();
+    exit; // Detiene la ejecución del script después de redirigir
+}
+
+// Si está autenticado, continúa ejecutando el resto del código
+$users = Auth::user();
 $currantLang = $users->currentLanguage();
 $logo = asset(Storage::url('uploads/logo/'));
 $settings = Utility::settings();
-
 @endphp
 
-<!-- [ navigation menu ] start -->
+
 <nav class="dash-sidebar light-sidebar transprent-bg">
     <div class="navbar-wrapper">
         <div class="m-header">
             <a href="{{ route('home') }}" class="b-brand">
-                <!-- ========   change your logo hear   ============ -->
-                {{-- @if (setting('app_logo'))
-                    <img src="{{ Storage::url(setting('app_logo')) ? Storage::url('uploads/appLogo/app-logo.png') : '' }}"
-                        alt="logo" class="custom-logo">
-                @else
-                    <a href="{{ route('home') }}">{{ setting('app_name') }}</a>
-                @endif --}}
+                <!-- ======== Cambiar el logo aquí ============ -->
                 @if (isset($settings['dark_mode']))
                     @if ($settings['dark_mode'] == 'on')
                         <img class="c-sidebar-brand-full pt-3 mt-2 mb-1"
-                            src="{{ $logo . (isset($company_logo) && !empty($company_logo) ? $company_logo : 'light_logo.png') }}"
-                            height="46" class="navbar-brand-img">
+                             src="{{ $logo . (!empty($company_logo) ? $company_logo : 'light_logo.png') }}"
+                             height="46" class="navbar-brand-img">
                     @else
                         <img class="c-sidebar-brand-full pt-3 mt-2 mb-1"
-                            src="{{ $logo . (isset($company_logo) && !empty($company_logo) ? $company_logo : 'dark_logo.png') }}"
-                            height="46" class="navbar-brand-img">
+                             src="{{ $logo . (!empty($company_logo) ? $company_logo : 'dark_logo.png') }}"
+                             height="46" class="navbar-brand-img">
                     @endif
                 @else
                     <img class="c-sidebar-brand-full pt-3 mt-2 mb-1"
-                        src="{{ $logo . (isset($company_logo) && !empty($company_logo) ? $company_logo : 'dark_logo.png') }}"
-                        height="46" class="navbar-brand-img">
+                         src="{{ $logo . (!empty($company_logo) ? $company_logo : 'dark_logo.png') }}"
+                         height="46" class="navbar-brand-img">
                 @endif
-                {{-- <img class="c-sidebar-brand-minimized"
-                    src="{{ $logo . (isset($company_logo) && !empty($company_logo) ? $company_logo : 'small_logo.png') }}"
-                    height="46" class="navbar-brand-img"> --}}
             </a>
         </div>
+
         <div class="navbar-content active dash-trigger ps ps--active-y">
             <ul class="dash-navbar" style="display: block;">
                 <li class="dash-item dash-hasmenu {{ request()->is('/') ? 'active' : '' }}">
@@ -46,6 +45,8 @@ $settings = Utility::settings();
                         <span class="dash-mtext custom-weight">{{ __('Dashboard') }}</span>
                     </a>
                 </li>
+                
+                <!-- Gestión de usuarios, roles y permisos según permisos del usuario -->
                 @can('manage-user')
                     <li class="dash-item dash-hasmenu {{ request()->is('users*') ? 'active' : '' }}">
                         <a class="dash-link" href="{{ route('users.index') }}">
@@ -54,6 +55,7 @@ $settings = Utility::settings();
                         </a>
                     </li>
                 @endcan
+                
                 @can('manage-role')
                     <li class="dash-item dash-hasmenu {{ request()->is('roles*') ? 'active' : '' }}">
                         <a class="dash-link" href="{{ route('roles.index') }}">
@@ -62,6 +64,7 @@ $settings = Utility::settings();
                         </a>
                     </li>
                 @endcan
+                
                 @can('manage-permission')
                     <li class="dash-item dash-hasmenu {{ request()->is('permission*') ? 'active' : '' }}">
                         <a class="dash-link" href="{{ route('permission.index') }}">
@@ -70,6 +73,7 @@ $settings = Utility::settings();
                         </a>
                     </li>
                 @endcan
+                
                 @can('manage-module')
                     <li class="dash-item dash-hasmenu {{ request()->is('modules*') ? 'active' : '' }}">
                         <a class="dash-link" href="{{ route('modules.index') }}">
@@ -78,6 +82,7 @@ $settings = Utility::settings();
                         </a>
                     </li>
                 @endcan
+                
                 @role('admin')
                     <li class="dash-item dash-hasmenu {{ request()->is('settings*') ? 'active' : '' }}">
                         <a class="dash-link" href="{{ route('settings.index') }}">
@@ -86,6 +91,7 @@ $settings = Utility::settings();
                         </a>
                     </li>
                 @endrole
+                
                 @can('manage-langauge')
                     <li class="dash-item dash-hasmenu {{ request()->is('index') ? 'active' : '' }}">
                         <a class="dash-link" href="{{ route('index') }}">
@@ -94,6 +100,7 @@ $settings = Utility::settings();
                         </a>
                     </li>
                 @endcan
+
                 @role('admin')
                     <li class="dash-item dash-hasmenu {{ request()->is('home*') ? 'active' : '' }}">
                         <a class="dash-link" href="{{ route('io_generator_builder') }}">
@@ -102,6 +109,7 @@ $settings = Utility::settings();
                         </a>
                     </li>
                 @endrole
+
                 @role('admin')
                     <li class="dash-item dash-hasmenu {{ request()->is('home*') ? 'active' : '' }}">
                         <a class="dash-link" href="{{ route('customers.index') }}">
@@ -110,10 +118,9 @@ $settings = Utility::settings();
                         </a>
                     </li>
                 @endrole
+                
                 @include('layouts.menu')
             </ul>
-
         </div>
     </div>
 </nav>
-<!-- [ navigation menu ] end -->

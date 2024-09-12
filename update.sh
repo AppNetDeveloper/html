@@ -1,5 +1,7 @@
 sudo cd /var/www/html
 sudo supervisorctl stop all
+
+
 git add .
 git commit -m "Guardando cambios locales antes de rebase"
 git pull --rebase origin main

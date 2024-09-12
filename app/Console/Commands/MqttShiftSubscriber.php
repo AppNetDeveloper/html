@@ -116,11 +116,14 @@ class MqttShiftSubscriber extends Command
                         // Resetear rec_box_shift en modbuses y count_shift_1, count_shift_0 en sensors
                         foreach ($modbuses as $modbus) {
                             $modbus->rec_box_shift = 0;
+                            $modbus->rec_box = 0;
                             $modbus->save();
                         }
                         foreach ($sensors as $sensor) {
                             $sensor->count_shift_1 = 0;
                             $sensor->count_shift_0 = 0;
+                            $sensor->count_order_0 = 0;
+                            $sensor->count_order_1 = 0;
                             $sensor->save();
                         }
                         $this->info("Turno Programado started. Reset rec_box_shift in modbuses and count_shift in sensors.");
