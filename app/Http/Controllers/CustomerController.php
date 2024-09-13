@@ -36,7 +36,8 @@ class CustomerController extends Controller
                         <input type='hidden' name='_method' value='DELETE'>
                         <button type='submit' class='btn btn-sm btn-danger' onclick='return confirm(\"¿Estás seguro?\")'>Eliminar</button>
                     </form>
-                     <a href='{$liveViewUrl}' class='btn btn-sm btn-primary'>Live View</a>";
+                     <a href='{$liveViewUrl}' class='btn btn-sm btn-primary'>Live weight</a>
+                     <a href='/live-sensor/' class='btn btn-sm btn-primary'>Live sensors</a>";
             })
             ->rawColumns(['action']) // Asegúrate de marcar la columna 'action' como raw (HTML)
             ->make(true); // Importante usar 'make(true)' para devolver la respuesta JSON adecuada

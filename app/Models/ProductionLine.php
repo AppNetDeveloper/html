@@ -38,4 +38,9 @@ class ProductionLine extends Model
     {
         return $this->hasMany(Barcode::class);
     }
+    // Relación inversa con Sensor
+    public function sensors()
+    {
+        return $this->hasMany(Sensor::class, 'production_line_id');
+    }
 }

@@ -867,6 +867,138 @@
                 }
             }
         },
+        "/api/sensors/{token}": {
+            "get": {
+                "tags": [
+                    "Sensores"
+                ],
+                "summary": "Obtener datos del sensor por token",
+                "operationId": "f5faa6b35d2bdbf9c74ca13977f9b46b",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "path",
+                        "description": "Token del sensor",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Datos del sensor obtenidos correctamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "example": "Sensor 1"
+                                        },
+                                        "sensor_type": {
+                                            "type": "integer",
+                                            "example": 0
+                                        },
+                                        "mqtt_topic_sensor": {
+                                            "type": "string",
+                                            "example": "sensor/topic/1"
+                                        },
+                                        "count_total": {
+                                            "type": "integer",
+                                            "example": 100
+                                        },
+                                        "token": {
+                                            "type": "string",
+                                            "example": "abc123"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Sensor no encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Sensor not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/sensors": {
+            "get": {
+                "tags": [
+                    "Sensores"
+                ],
+                "summary": "Obtener todos los sensores organizados por línea de producción",
+                "operationId": "87a4f9259e66573c0b9ab249788f09ab",
+                "responses": {
+                    "200": {
+                        "description": "Datos de todos los sensores obtenidos correctamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "production_line_id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "sensors": {
+                                                "type": "array",
+                                                "items": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "example": "Sensor 1"
+                                                        },
+                                                        "sensor_type": {
+                                                            "type": "integer",
+                                                            "example": 0
+                                                        },
+                                                        "mqtt_topic_sensor": {
+                                                            "type": "string",
+                                                            "example": "sensor/topic/1"
+                                                        },
+                                                        "value": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/queue-print": {
             "get": {
                 "tags": [
@@ -1209,6 +1341,10 @@
         {
             "name": "Modbus",
             "description": "Modbus"
+        },
+        {
+            "name": "Sensores",
+            "description": "Sensores"
         },
         {
             "name": "Queue",

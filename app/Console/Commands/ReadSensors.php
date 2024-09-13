@@ -131,7 +131,8 @@ class ReadSensors extends Command
             }
         } else {
             $jsonPath = $config->json_api;
-            $value = $this->getValueFromJson($data, $jsonPath, $config->invers_sensors);
+
+            $value = $this->getValueFromJson($data, $jsonPath);
             if ($value === null) {
                 Log::warning("Advertencia: No se encontró la clave '$jsonPath' en la respuesta JSON, buscando el valor directamente.");
                 $value = $data['value'] ?? null;
@@ -140,26 +141,28 @@ class ReadSensors extends Command
                     return;
                 }
             }
+            
         }
-
+        //invertir sensor si esta seleccionado
+        $inversSensor = $config->invers_sensors;
+        if ($inversSensor === true || $inversSensor === 1 || $inversSensor === "1") {
+            $value = 1 - $value; // Invierte entre 0 y 1
+        }
+        
         Log::info("Mensaje: {$config->name} (ID: {$config->id}) // Tópico: {$config->mqtt_topic_sensor} // Valor: {$value}");
         // Procesar modelo de sensor
         $this->processModel($config, $value);
     }
 
 
-    private function getValueFromJson($data, $jsonPath, $invert)
+    private function getValueFromJson($data, $jsonPath)
     {
+        
         $keys = explode(', ', $jsonPath);
         foreach ($keys as $key) {
             $key = trim($key);
             if (isset($data[$key])) {
                 $value = isset($data[$key]['value']) ? $data[$key]['value'] : null;
-                
-                // Verificar si se debe invertir el valor
-                if ($invert && ($value === 0 || $value === 1)) {
-                    return $this->invertValue($value);
-                }
 
                 return $value;
             }
@@ -167,11 +170,6 @@ class ReadSensors extends Command
         return null;
     }
 
-    private function invertValue($value)
-    {
-        // Verificar si el valor es 0 o 1, y luego invertirlo
-        return ($value === 0) ? 1 : (($value === 1) ? 0 : $value);
-    }
 
     private function processModel($config, $value)
     {
@@ -441,15 +439,14 @@ class ReadSensors extends Command
         $status = 3; // Default a "sin datos"
 
         // Verificar que $lastTime sea un número válido
-        if ($value === 1) {
+        if ($value === 1 || $value === "1") {
          
-                $status = 0; // Buen estado
+                $status = 2; // buen estado
 
             } else {
-                $status = 2; // Parada
+                $status = 0; // Parada
  
         }
-
         // Json enviar a MQTT conteo por orderId
         $processedMessage = json_encode([
             'value' => $config->count_order_0,

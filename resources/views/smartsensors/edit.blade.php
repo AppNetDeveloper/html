@@ -6,7 +6,7 @@
     <form action="{{ route('smartsensors.update', $sensor->id) }}" method="POST">
         @csrf
         @method('PUT')
-
+        
         <div class="form-group">
             <label for="name">Nombre del Sensor</label>
             <input type="text" name="name" class="form-control" value="{{ $sensor->name }}" required>
@@ -58,12 +58,18 @@
 
         <div class="form-group">
             <label for="function_model_0">Función Modelo 0</label>
-            <input type="text" name="function_model_0" class="form-control" value="{{ $sensor->function_model_0 }}" required>
+            <select name="function_model_0" class="form-control" required>
+                <option value="sendMqttValue0" {{ $sensor->function_model_0 == 'sendMqttValue0' ? 'selected' : '' }}>sendMqttValue0</option>
+                <option value="none" {{ $sensor->function_model_0 == 'none' ? 'selected' : '' }}>none</option>
+            </select>
         </div>
 
         <div class="form-group">
             <label for="function_model_1">Función Modelo 1</label>
-            <input type="text" name="function_model_1" class="form-control" value="{{ $sensor->function_model_1 }}" required>
+            <select name="function_model_1" class="form-control" required>
+                <option value="sendMqttValue1" {{ $sensor->function_model_1 == 'sendMqttValue1' ? 'selected' : '' }}>sendMqttValue1</option>
+                <option value="none" {{ $sensor->function_model_1 == 'none' ? 'selected' : '' }}>none</option>
+            </select>
         </div>
 
         <div class="form-group">
@@ -99,6 +105,19 @@
         <div class="form-group">
             <label for="count_order_1">Contador Pedido 1</label>
             <input type="number" name="count_order_1" class="form-control" value="{{ $sensor->count_order_1 }}" min="0">
+        </div>
+
+        <div class="form-group">
+            <label for="invers_sensors">Sensor Inverso</label>
+            <select name="invers_sensors" class="form-control">
+                <option value="0" {{ $sensor->invers_sensors == 0 ? 'selected' : '' }}>No</option>
+                <option value="1" {{ $sensor->invers_sensors == 1 ? 'selected' : '' }}>Sí</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="downtime_count">Tiempo de Inactividad</label>
+            <input type="number" name="downtime_count" class="form-control" value="{{ $sensor->downtime_count }}" min="0">
         </div>
 
         <button type="submit" class="btn btn-success">Actualizar Sensor</button>

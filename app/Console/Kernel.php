@@ -16,6 +16,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         // ... otros comandos ...
         Commands\MqttSubscriber::class,
+        Commands\MqttSubscriberLocal::class,
         Commands\ReadModbus::class,
         Commands\PublishToMqttServer1::class,
         Commands\PublishToMqttServer2::class,

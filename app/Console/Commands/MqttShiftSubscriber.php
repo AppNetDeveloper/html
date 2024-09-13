@@ -179,6 +179,7 @@ class MqttShiftSubscriber extends Command
                     $sensor->count_shift_0 = 0;
                     $sensor->count_order_0 = 0;
                     $sensor->count_order_1 = 0;
+                    $sensor->downtime_count = 0;
                     $sensor->save();
                     $this->info("Sensor ID {$sensor->id} reset.");
                 }

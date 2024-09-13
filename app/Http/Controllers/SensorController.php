@@ -36,12 +36,26 @@ class SensorController extends Controller
         // Almacenar un nuevo sensor
         public function store(Request $request, $production_line_id)
         {
-            // Validar los datos del formulario (agrega las reglas de validación que necesites)
             $request->validate([
                 'name' => 'required|string|max:255',
+                'barcoder_id' => 'required|integer',
                 'sensor_type' => 'required|integer',
                 'mqtt_topic_sensor' => 'required|string|max:255',
-                // Agrega aquí las validaciones para otros campos si es necesario
+                'mqtt_topic_1' => 'required|string|max:255',
+                'optimal_production_time' => 'nullable|numeric|min:0',
+                'reduced_speed_time_multiplier' => 'nullable|numeric|min:0',
+                'json_api' => 'nullable|string',
+                'function_model_0' => 'required|string|max:255',
+                'function_model_1' => 'required|string|max:255',
+                'count_total' => 'nullable|numeric|min:0',
+                'count_total_0' => 'nullable|numeric|min:0',
+                'count_total_1' => 'nullable|numeric|min:0',
+                'count_shift_0' => 'nullable|numeric|min:0',
+                'count_shift_1' => 'nullable|numeric|min:0',
+                'count_order_0' => 'nullable|numeric|min:0',
+                'count_order_1' => 'nullable|numeric|min:0',
+                'invers_sensors' => 'nullable|boolean',
+                'downtime_count' => 'nullable|numeric|min:0',
             ]);
     
             // Crear el sensor y asociarlo a la línea de producción
@@ -73,9 +87,24 @@ class SensorController extends Controller
             // Validar los datos del formulario
             $request->validate([
                 'name' => 'required|string|max:255',
+                'barcoder_id' => 'required|integer',
                 'sensor_type' => 'required|integer',
                 'mqtt_topic_sensor' => 'required|string|max:255',
-                // Agrega aquí las validaciones para otros campos si es necesario
+                'mqtt_topic_1' => 'required|string|max:255',
+                'optimal_production_time' => 'nullable|numeric|min:0',
+                'reduced_speed_time_multiplier' => 'nullable|numeric|min:0',
+                'json_api' => 'nullable|string',
+                'function_model_0' => 'required|string|max:255',
+                'function_model_1' => 'required|string|max:255',
+                'count_total' => 'nullable|numeric|min:0',
+                'count_total_0' => 'nullable|numeric|min:0',
+                'count_total_1' => 'nullable|numeric|min:0',
+                'count_shift_0' => 'nullable|numeric|min:0',
+                'count_shift_1' => 'nullable|numeric|min:0',
+                'count_order_0' => 'nullable|numeric|min:0',
+                'count_order_1' => 'nullable|numeric|min:0',
+                'invers_sensors' => 'nullable|boolean',
+                'downtime_count' => 'nullable|numeric|min:0',
             ]);
     
             $sensor = Sensor::findOrFail($sensor_id);
@@ -95,4 +124,5 @@ class SensorController extends Controller
             return redirect()->route('smartsensors.index', $production_line_id)
                              ->with('success', 'Sensor eliminado exitosamente.');
         }
+        
     }

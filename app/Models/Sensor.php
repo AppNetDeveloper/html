@@ -25,6 +25,7 @@ class Sensor extends Model
      */
     protected $fillable = [
         'name',
+        'token',
         'production_line_id', //el id de la linia de produccion asi se asocia el sensor
         'barcoder_id', // asociamos el sensor con el barcoder
         'sensor_type',      // 0 es sensor de conteo , 1 es sensor de consumibles, 2 de materia prima, 3 de averia en proceso
@@ -43,6 +44,8 @@ class Sensor extends Model
         'mqtt_topic_1',         // topic para el valor 1
         'function_model_0',     // funcion para el valor 0
         'function_model_1',     // funcion para el valor 1
+        'invers_sensors',       // si el sensor es inverso o no
+        'downtime_count',       // tiempo de descanso
     ];
 
     /**
@@ -84,6 +87,10 @@ class Sensor extends Model
     {
         return $this->belongsTo(Barcode::class, 'barcoder_id');
     }
+    public function sensorCounts()
+    {
+        return $this->hasMany(SensorCount::class, 'sensor_id');
+    }
     /**
      * Métodos del ciclo de vida del modelo para reiniciar Supervisor
      * cuando se actualizan ciertos campos.
@@ -103,7 +110,10 @@ class Sensor extends Model
         });
 
         static::created(function ($sensor) {
-            self::restartSupervisor();
+            
+             // Generar un token único antes de crear el registro
+             $sensor->token = Str::uuid(); // O Str::random(32) para un token aleatorio de 32 caracteres
+             self::restartSupervisor();
         });
 
         static::deleted(function ($sensor) {

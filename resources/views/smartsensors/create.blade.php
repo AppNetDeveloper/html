@@ -5,11 +5,12 @@
     <h1>Crear Nuevo Sensor</h1>
     <form action="{{ route('smartsensors.store', ['production_line_id' => $production_line_id]) }}" method="POST">
         @csrf
+        
         <div class="form-group">
             <label for="name">Nombre del Sensor</label>
             <input type="text" name="name" class="form-control" required>
         </div>
-        
+
         <div class="form-group">
             <label for="barcoder_id">Barcoder</label>
             <select name="barcoder_id" class="form-control" required>
@@ -56,12 +57,18 @@
 
         <div class="form-group">
             <label for="function_model_0">Función Modelo 0</label>
-            <input type="text" name="function_model_0" class="form-control" required>
+            <select name="function_model_0" class="form-control" required>
+                <option value="sendMqttValue0">sendMqttValue0</option>
+                <option value="none">none</option>
+            </select>
         </div>
 
         <div class="form-group">
             <label for="function_model_1">Función Modelo 1</label>
-            <input type="text" name="function_model_1" class="form-control" required>
+            <select name="function_model_1" class="form-control" required>
+                <option value="sendMqttValue1">sendMqttValue1</option>
+                <option value="none">none</option>
+            </select>
         </div>
 
         <div class="form-group">
@@ -97,6 +104,19 @@
         <div class="form-group">
             <label for="count_order_1">Contador Pedido 1</label>
             <input type="number" name="count_order_1" class="form-control" value="0" min="0">
+        </div>
+
+        <div class="form-group">
+            <label for="invers_sensors">Sensor Inverso</label>
+            <select name="invers_sensors" class="form-control">
+                <option value="0">No</option>
+                <option value="1">Sí</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="downtime_count">Tiempo de Inactividad</label>
+            <input type="number" name="downtime_count" class="form-control" value="0" min="0">
         </div>
 
         <button type="submit" class="btn btn-success">Crear Sensor</button>

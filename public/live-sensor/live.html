@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BOIZOLO Autoconto - Sensor en Vivo</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    body {
+      background-color: #1e1e2f;
+      color: #ffffff;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    header {
+      padding: 20px;
+      text-align: center;
+      background-color: #28293e;
+      color: white;
+      font-size: 2rem;
+    }
+
+    .sensor-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 80vh;
+    }
+
+    .sensor-box {
+      width: 250px;
+      height: 250px;
+      background-color: #2e2f47;
+      margin: 10px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      font-size: 1.5rem;
+      color: white;
+      transition: background-color 0.5s ease;
+    }
+
+    .sensor-box.active {
+      background-color: #ffcc00;
+      color: #000;
+    }
+
+    .sensor-name {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+    }
+
+    .sensor-value {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  BOIZOLO Autoconto - Sensor en Vivo
+</header>
+
+<main class="container">
+  <div class="sensor-container">
+    <!-- Contenedor del sensor -->
+    <div class="sensor-box" id="sensorBox">
+      <div>
+        <div class="sensor-name" id="sensorName">Cargando...</div>
+        <div class="sensor-value" id="sensorValue">--</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Función para obtener el token de la URL
+  function getTokenFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('token');
+  }
+
+  const token = getTokenFromUrl();
+  const apiUrl = `/api/sensors/${token}`;
+
+  // Variable para almacenar el valor anterior del sensor
+  let previousValue = null;
+
+  // Función para actualizar los datos del sensor desde la API
+  async function updateSensorData() {
+    try {
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Datos recibidos:", data);
+
+      // Mostrar el nombre del sensor
+      document.getElementById('sensorName').textContent = data.name || "Sensor Desconocido";
+
+      // Convertir el valor a número
+      const sensorValue = parseInt(data.value, 10);
+      document.getElementById('sensorValue').textContent = sensorValue;
+
+      // Lógica para encender o apagar el sensor basado en el sensor_type y value
+      const sensorType = data.sensor_type;
+      console.log(`sensorType: ${sensorType}, sensorValue: ${sensorValue}`);
+
+      const sensorBox = document.getElementById('sensorBox');
+
+      // Si el valor del sensor ha cambiado, actualizamos el estado
+      if (previousValue !== sensorValue) {
+        if ((sensorType === 0 && sensorValue === 1) || 
+            (sensorType !== 0 && sensorValue === 0)) {
+          sensorBox.classList.add('active');  // Encender el sensor
+          console.log(`Sensor activado`);
+        } else {
+          sensorBox.classList.remove('active');  // Apagar el sensor
+          console.log(`Sensor desactivado`);
+        }
+      }
+
+      // Actualizar el valor previo para la siguiente comparación
+      previousValue = sensorValue;
+
+    } catch (error) {
+      console.error("Error al obtener o procesar datos de la API:", error);
+      document.getElementById('sensorName').textContent = "Error al cargar datos";
+      document.getElementById('sensorValue').textContent = "--";
+    }
+  }
+
+  // Actualizar datos cada 3 segundos
+  setInterval(updateSensorData, 1000);
+
+  // Llamar la primera vez para cargar los datos
+  updateSensorData();
+</script>
+
+</body>
+</html>

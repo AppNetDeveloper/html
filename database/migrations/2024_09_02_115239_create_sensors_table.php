@@ -15,6 +15,7 @@ class CreateSensorsTable extends Migration
     {
         Schema::create('sensors', function (Blueprint $table) {
             $table->id();
+            $table->string('token')->unique();
             $table->string('name');
             $table->foreignId('production_line_id')->constrained('production_lines')->onDelete('cascade');
             $table->foreignId('barcoder_id')->constrained('barcodes')->onDelete('cascade'); // Apunta a 'barcodes'
