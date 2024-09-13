@@ -131,7 +131,7 @@ class ReadSensors extends Command
             }
         } else {
             $jsonPath = $config->json_api;
-            $value = $this->getValueFromJson($data, $jsonPath);
+            $value = $this->getValueFromJson($data, $jsonPath, $config->invers_sensors);
             if ($value === null) {
                 Log::warning("Advertencia: No se encontró la clave '$jsonPath' en la respuesta JSON, buscando el valor directamente.");
                 $value = $data['value'] ?? null;
@@ -147,16 +147,30 @@ class ReadSensors extends Command
         $this->processModel($config, $value);
     }
 
-    private function getValueFromJson($data, $jsonPath)
+
+    private function getValueFromJson($data, $jsonPath, $invert)
     {
         $keys = explode(', ', $jsonPath);
         foreach ($keys as $key) {
             $key = trim($key);
             if (isset($data[$key])) {
-                return isset($data[$key]['value']) ? $data[$key]['value'] : null;
+                $value = isset($data[$key]['value']) ? $data[$key]['value'] : null;
+                
+                // Verificar si se debe invertir el valor
+                if ($invert && ($value === 0 || $value === 1)) {
+                    return $this->invertValue($value);
+                }
+
+                return $value;
             }
         }
         return null;
+    }
+
+    private function invertValue($value)
+    {
+        // Verificar si el valor es 0 o 1, y luego invertirlo
+        return ($value === 0) ? 1 : (($value === 1) ? 0 : $value);
     }
 
     private function processModel($config, $value)
@@ -285,7 +299,7 @@ class ReadSensors extends Command
             case 'none':
                 $this->none($config, $value);
                 break;
-            case 'sendMqtt':
+            case 'sendMqttValue0':
                 $this->sendMqttValue0($config, $value);
                 break;
             default:
@@ -423,28 +437,41 @@ class ReadSensors extends Command
     private function sendMqttValue0($config, $value)
     {
 
+        // Determinar el estado
+        $status = 3; // Default a "sin datos"
+
+        // Verificar que $lastTime sea un número válido
+        if ($value === 1) {
+         
+                $status = 0; // Buen estado
+
+            } else {
+                $status = 2; // Parada
+ 
+        }
+
         // Json enviar a MQTT conteo por orderId
         $processedMessage = json_encode([
             'value' => $config->count_order_0,
-            'status' => "0",
+            'status' => (string)$status,
         ]);
-        // Json enviar a MQTT conteo por orderId
+
         $processedMessageTotal = json_encode([
             'value' => $config->count_total_0,
-            'status' => "0",
+            'status' => (string)$status,
         ]);
 
-        // Json enviar a MQTT conteo por orderId
         $processedMessageTotalShift = json_encode([
             'value' => $config->count_shift_0,
-            'status' => "0",
+            'status' => (string)$status,
         ]);
         // Publicar el mensaje a través de MQTT
-        $this->publishMqttMessage($config->mqtt_topic_0, $processedMessage);
-        $this->publishMqttMessage($config->mqtt_topic_0. '/infinite_counter', $processedMessage);
+        
+        $this->publishMqttMessage($config->mqtt_topic_1 . '/infinite_counter', $processedMessageTotal);
+        $this->publishMqttMessage($config->mqtt_topic_1, $processedMessage);
 
-        $this->info("Mensaje MQTT procesado y enviado al tópico {$config->mqtt_topic_0}");
-        Log::info("Mensaje MQTT procesado y enviado al tópico {$config->mqtt_topic_0}: {$processedMessage}");
+        $this->info("Mensaje MQTT procesado y enviado al tópico {$config->mqtt_topic_1}");
+        Log::info("Mensaje MQTT procesado y enviado al tópico {$config->mqtt_topic_1}: {$processedMessage}");
     }
 
     private function sendMqttValue1($config, $value)

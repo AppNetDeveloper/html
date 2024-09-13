@@ -16,12 +16,12 @@ class CreateControlWeightTable extends Migration
         Schema::create('control_weights', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('modbus_id');
-            $table->float('last_control_weight')->nullable();
-            $table->float('last_dimension')->nullable();
+            $table->float('last_control_weight')->nullable(); //peso del palet
+            $table->float('last_dimension')->nullable(); //altura del palet
             $table->integer('last_box_number')->nullable(); //conteo por order_notice
             $table->integer('last_box_shift')->nullable(); //conteo por shift
-            $table->string('last_barcoder')->nullable();
-            $table->string('last_final_barcoder')->nullable();
+            $table->string('last_barcoder')->nullable(); // barcoder bulto anonimo para control
+            $table->string('last_final_barcoder')->nullable(); // barcoder expedicion
             $table->timestamps();
 
             // Clave foránea

@@ -17,7 +17,7 @@ class CreatePrintersTable extends Migration
             $table->id();
             $table->foreignId('customer_id')->constrained()->onDelete('cascade');
             $table->string('name_printer');
-            $table->string('api_printer')->nullable(); //tiene que ser nullable
+            $table->string('api_printer')->nullable(); //la api de llamar a la impresora
             $table->boolean('type')->default(0); // default 0 = printer normal, 1 = printer remote api por python
             $table->timestamps();
         });

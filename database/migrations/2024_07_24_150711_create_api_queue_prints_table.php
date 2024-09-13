@@ -11,10 +11,10 @@ return new class extends Migration
         Schema::create('api_queue_prints', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('modbus_id'); // Clave foránea a modbuses
-            $table->string('value');
+            $table->string('value'); //si es 0 se ignora si es 1 se llama a la api externa de cliente
             $table->boolean('used')->default(false); // Para marcar si el valor ya se usó
-            $table->string('url_back');
-            $table->string('token_back');
+            $table->string('url_back'); // url de api para devolucion
+            $table->string('token_back'); // token para devolucion
             $table->timestamps();
 
             $table->foreign('modbus_id')->references('id')->on('modbuses')->onDelete('cascade');
