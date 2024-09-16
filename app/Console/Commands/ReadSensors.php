@@ -450,17 +450,17 @@ class ReadSensors extends Command
         // Json enviar a MQTT conteo por orderId
         $processedMessage = json_encode([
             'value' => $config->count_order_0,
-            'status' => (string)$status,
+            'status' => $status,
         ]);
 
         $processedMessageTotal = json_encode([
             'value' => $config->count_total_0,
-            'status' => (string)$status,
+            'status' => $status,
         ]);
 
         $processedMessageTotalShift = json_encode([
             'value' => $config->count_shift_0,
-            'status' => (string)$status,
+            'status' => $status,
         ]);
         // Publicar el mensaje a través de MQTT
         
@@ -500,17 +500,17 @@ class ReadSensors extends Command
         // Json enviar a MQTT conteo por orderId
         $processedMessage = json_encode([
             'value' => $config->count_order_1,
-            'status' => (string)$status,
+            'status' => $status,
         ]);
 
         $processedMessageTotal = json_encode([
             'value' => $config->count_total_1,
-            'status' => (string)$status,
+            'status' => $status,
         ]);
 
         $processedMessageTotalShift = json_encode([
             'value' => $config->count_shift_1,
-            'status' => (string)$status,
+            'status' => $status,
         ]);
         // Publicar el mensaje a través de MQTT
         
