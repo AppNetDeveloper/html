@@ -25,6 +25,7 @@ class Kernel extends ConsoleKernel
         Commands\MqttShiftSubscriber::class,
         Commands\CalculateOptimalProductionTime::class,
         Commands\CalculateProductionDowntime::class,
+        Commands\CalculateProductionMonitorOee::class,
     ];
 
     /**

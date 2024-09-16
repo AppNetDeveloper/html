@@ -399,6 +399,7 @@ class ReadSensors extends Command
             'count_order_1' => $config->count_order_1, // Ya incrementado arriba
             'time_11' => $time_11,
             'time_01' => $time_01,
+            'unic_code_order'=>$config->unic_code_order,
             ]);
 
             $successMessage = "Registro insertado en sensor_counts correctamente.";

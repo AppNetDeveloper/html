@@ -38,6 +38,7 @@ class SensorCount extends Model
         'time_01',
         'time_11',
         'time_10',
+        'unic_code_order',      // codigo de orden unico, uso interno nada mas
     ];
 
     /**

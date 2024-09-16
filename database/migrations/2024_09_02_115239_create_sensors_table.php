@@ -36,6 +36,7 @@ class CreateSensorsTable extends Migration
             $table->string('function_model_0'); // Nuevo campo function_model_0
             $table->string('function_model_1'); // Nuevo campo function_model_1
             $table->boolean('invers_sensors')->default(false); // Nuevo campo invers_sensors, tipo booleano
+            $table->string('unic_code_order')->nullable();  // Nuevo campo unic_code_order
             $table->timestamps();
         });
     }

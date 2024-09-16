@@ -46,6 +46,7 @@ class Sensor extends Model
         'function_model_1',     // funcion para el valor 1
         'invers_sensors',       // si el sensor es inverso o no
         'downtime_count',       // tiempo de descanso
+        'unic_code_order',      // codigo de orden unico, uso interno nada mas
     ];
 
     /**
@@ -99,13 +100,23 @@ class Sensor extends Model
     {
         parent::boot();
 
+        // Evento 'updating' para detectar cambios
         static::updating(function ($sensor) {
+            // Verificar si cambian los campos relacionados con MQTT
             if ($sensor->isDirty([
                 'mqtt_topic_sensor', 
                 'mqtt_topic_0', 
                 'mqtt_topic_1',
             ])) {
                 self::restartSupervisor();
+            }
+
+            // Verificar si count_shift_0 o count_shift_1 se han puesto a 0
+            if ($sensor->isDirty(['count_shift_0', 'count_shift_1'])) {
+                // Si alguno se ha puesto a 0, generar el código único
+                if ($sensor->count_shift_0 == 0 || $sensor->count_shift_1 == 0) {
+                    $sensor->unic_code_order = $sensor->generateUniqueCode();
+                }
             }
         });
 
@@ -120,6 +131,21 @@ class Sensor extends Model
             self::restartSupervisor();
         });
     }
+    public function generateUniqueCode()
+    {
+        // Obtener el id de la línea de producción
+        $lineId = $this->production_line_id;
+    
+        // Obtener el id del sensor
+        $sensorId = $this->id;
+    
+        // Obtener la fecha y hora actual en formato numérico
+        $timestamp = Carbon::now()->format('YmdHis'); // Formato: YYYYMMDDHHMMSS
+    
+        // Concatenar el id de la línea, el id del sensor y el timestamp
+        return $lineId . '_' . $sensorId . '_' . $timestamp;
+    }
+    
 
     /**
      * Método para reiniciar el Supervisor.

@@ -32,6 +32,7 @@ class CreateSensorCountsTable extends Migration
             $table->bigInteger('time_01')->nullable();  // Diferencia en segundos o milisegundos entre inactivo a activo
             $table->bigInteger('time_11')->nullable();  // Diferencia en segundos o milisegundos entre activo a activo
             $table->bigInteger('time_10')->nullable();  // Diferencia en segundos o milisegundos entre activo a inactivo
+            $table->string('unic_code_order')->nullable();  // Nuevo campo unic_code_order que se resetea por shift
             $table->timestamps();
         });
     }
