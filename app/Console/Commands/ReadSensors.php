@@ -9,7 +9,7 @@ use PhpMqtt\Client\MqttClient;
 use PhpMqtt\Client\ConnectionSettings;
 use PhpMqtt\Client\Exceptions\DataTransferException;
 use Illuminate\Support\Facades\Cache;
-use App\Helpers\MqttPersistentHelper;
+//use App\Helpers\MqttPersistentHelper;
 use App\Models\MqttSendServer1;
 use App\Models\MqttSendServer2;
 use App\Models\Barcode;
@@ -26,21 +26,31 @@ class ReadSensors extends Command
     public function __construct()
     {
         parent::__construct();
-        MqttPersistentHelper::init();
+       // MqttPersistentHelper::init();
     }
 
     public function handle()
     {
-        $mqtt = $this->initializeMqttClient(env('MQTT_SENSORICA_SERVER'), intval(env('MQTT_SENSORICA_PORT')));
-        $this->subscribeToAllTopics($mqtt);
+        try {
+            // Inicializar el cliente MQTT
+            $mqtt = $this->initializeMqttClient(env('MQTT_SENSORICA_SERVER'), intval(env('MQTT_SENSORICA_PORT')));
+            
+            // Suscribirse a los tópicos
+            $this->subscribeToAllTopics($mqtt);
 
-        // Bucle principal para verificar y suscribirse a nuevos tópicos
-        while (true) {
-            $this->checkAndSubscribeNewTopics($mqtt);
-            $mqtt->loop(true); // Mantener la conexión activa y procesar mensajes
+            // Bucle principal para verificar y suscribirse a nuevos tópicos
+            while (true) {
+                $this->checkAndSubscribeNewTopics($mqtt);
+                $mqtt->loop(true); // Mantener la conexión activa y procesar mensajes
 
-            // Permitir que Laravel maneje eventos internos mientras esperamos nuevos mensajes
-            usleep(100000); // Esperar 0.1 segundos
+                // Permitir que Laravel maneje eventos internos mientras esperamos nuevos mensajes
+                usleep(100000); // Esperar 0.1 segundos
+            }
+
+        } catch (\Exception $e) {
+            // Capturar cualquier excepción y registrarla en los logs
+            Log::error("Error en el comando sensors:read: " . $e->getMessage());
+            $this->error("Error en el comando sensors:read: " . $e->getMessage());
         }
     }
 
@@ -469,7 +479,7 @@ class ReadSensors extends Command
         $this->publishMqttMessage($config->mqtt_topic_1, $processedMessage);
 
         $this->info("Mensaje MQTT procesado y enviado al tópico {$config->mqtt_topic_1}");
-        Log::info("Mensaje MQTT procesado y enviado al tópico {$config->mqtt_topic_1}: {$processedMessage}");
+        //Log::info("Mensaje MQTT procesado y enviado al tópico {$config->mqtt_topic_1}: {$processedMessage}");
     }
 
     private function sendMqttValue1($config, $value)
@@ -519,7 +529,7 @@ class ReadSensors extends Command
         $this->publishMqttMessage($config->mqtt_topic_1, $processedMessage);
 
         $this->info("Mensaje MQTT procesado y enviado al tópico {$config->mqtt_topic_1}");
-        Log::info("Mensaje MQTT procesado y enviado al tópico {$config->mqtt_topic_1}: {$processedMessage}");
+        //Log::info("Mensaje MQTT procesado y enviado al tópico {$config->mqtt_topic_1}: {$processedMessage}");
     }
 
 

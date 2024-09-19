@@ -63,13 +63,21 @@ class CalculateOptimalProductionTime extends Command
                         // Buscar el sensor_count correspondiente
                         $sensorCount = SensorCount::where('model_product', $modelProduct)
                             ->where('sensor_id', $sensor->id)
-                            ->where('value','1')
+                            ->where('value', '1')
                             ->where('created_at', '>=', Carbon::now()->subDays(30)) // Últimos 30 días
+                            ->whereNotNull('time_11') // Asegurarse de que time_11 no sea NULL
+                            ->where('time_11', '>', 0) // Asegurarse de que time_11 sea mayor a 0
                             ->orderBy('time_11', 'asc') // Obtener el más pequeño
                             ->first();
 
+
                         // Establecer un valor por defecto de 30 si time_11 es nulo, 0 o no se encuentra ningún registro
                         $optimalProductionTime = ($sensorCount && $sensorCount->time_11 > 0) ? $sensorCount->time_11 : 30;
+
+                        // Si optimalProductionTime es 1, incrementar en 1
+                        if ($optimalProductionTime == 1) {
+                            $optimalProductionTime += 1;
+                        }
 
                         // Actualizar el tiempo de producción óptimo en la tabla sensors
                         $sensor->optimal_production_time = $optimalProductionTime;
@@ -84,9 +92,9 @@ class CalculateOptimalProductionTime extends Command
                 }
             }
 
-            // Esperar 5 minutos antes de volver a ejecutar la lógica
-            $this->info("Waiting for 5 minutes before the next run...");
-            sleep(300); // Pausar 300 segundos (5 minutos)
+            // Esperar 1 minutos antes de volver a ejecutar la lógica
+            $this->info("Waiting for 1 minutes before the next run...");
+            sleep(60); // Pausar 60 segundos (1 minutos)
         }
 
         return 0;

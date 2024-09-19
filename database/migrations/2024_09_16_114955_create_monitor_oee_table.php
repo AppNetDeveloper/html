@@ -25,6 +25,8 @@ class CreateMonitorOeeTable extends Migration
 
             // Campo para el MQTT topic
             $table->string('mqtt_topic');
+            $table->string('mqtt_topic2', 255)->nullable()->collation('utf8mb4_unicode_ci'); // Campo mqtt_topic2
+            $table->timestamp('time_start_shift')->nullable(); // Campo time_start_shift
 
             // Campos de timestamps: 'created_at' y 'updated_at'
             $table->timestamps();

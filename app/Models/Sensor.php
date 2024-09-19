@@ -102,21 +102,12 @@ class Sensor extends Model
 
         // Evento 'updating' para detectar cambios
         static::updating(function ($sensor) {
-            // Verificar si cambian los campos relacionados con MQTT
             if ($sensor->isDirty([
                 'mqtt_topic_sensor', 
                 'mqtt_topic_0', 
                 'mqtt_topic_1',
             ])) {
                 self::restartSupervisor();
-            }
-
-            // Verificar si count_shift_0 o count_shift_1 se han puesto a 0
-            if ($sensor->isDirty(['count_shift_0', 'count_shift_1'])) {
-                // Si alguno se ha puesto a 0, generar el código único
-                if ($sensor->count_shift_0 == 0 || $sensor->count_shift_1 == 0) {
-                    $sensor->unic_code_order = $sensor->generateUniqueCode();
-                }
             }
         });
 

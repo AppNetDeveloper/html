@@ -9,6 +9,8 @@ use App\Models\MonitorOee;
 use Carbon\Carbon;
 use App\Models\SensorCount;
 use App\Models\Barcode;
+use App\Models\MqttSendServer1;
+use App\Models\MqttSendServer2;
 
 class CalculateProductionMonitorOee extends Command
 {
@@ -24,7 +26,7 @@ class CalculateProductionMonitorOee extends Command
      *
      * @var string
      */
-    protected $description = 'Calculate and handle production monitoring for sensors and modbuses based on monitor_oee table rules.';
+    protected $description = 'Calcular y gestionar el monitoreo de la producción para sensores y modbuses basado en las reglas de la tabla monitor_oee.';
 
     /**
      * Execute the console command.
@@ -34,62 +36,50 @@ class CalculateProductionMonitorOee extends Command
     public function handle()
     {
         while (true) {
-            $this->info("Starting the production monitoring...");
-
-            // Variables para acumular los valores totales de todos los sensores
-            $totalRealCount = 0;
-            $totalTheoreticalCount = 0;
+            $this->info("Iniciando el monitoreo de producción...");
 
             // Obtener todos los registros de monitor_oee
             $monitors = MonitorOee::all();
 
             foreach ($monitors as $monitor) {
+                $totalRealProductionPerMinute = 0;
+                $totalTheoreticalProductionPerMinute = 0;
+
                 // Si sensor_active es 1, obtener todos los sensores de la línea de producción con sensor_type = 0
                 if ($monitor->sensor_active == 1) {
-                    $this->info("Fetching sensors with sensor_type = 0 for production line ID {$monitor->production_line_id}");
-                    
+                    $this->info("Obteniendo sensores con sensor_type = 0 para la línea de producción ID {$monitor->production_line_id}");
+
                     // Filtrar los sensores por production_line_id y sensor_type = 0
                     $sensors = Sensor::where('production_line_id', $monitor->production_line_id)
                         ->where('sensor_type', 0)
                         ->get();
 
                     foreach ($sensors as $sensor) {
-                        // Procesar y mostrar datos reales (count_order_1) y teóricos del sensor
-                        [$real, $theoretical] = $this->processSensorData($sensor);
+                        // Procesar y acumular los datos por minuto para cada sensor
+                        [$realProductionPerMinute, $theoreticalProductionPerMinute] = $this->processSensorData($sensor);
 
-                        // Acumular los valores reales y teóricos
-                        $totalRealCount += $real;
-                        $totalTheoreticalCount += $theoretical;
+                        // Acumular la producción real y teórica por minuto
+                        $totalRealProductionPerMinute += $realProductionPerMinute;
+                        $totalTheoreticalProductionPerMinute += $theoreticalProductionPerMinute;
                     }
+
+                    // Calcular la producción acumulada y enviar los mensajes MQTT
+                    $this->sendAccumulatedProductionMessages($monitor, $totalRealProductionPerMinute, $totalTheoreticalProductionPerMinute);
                 } else {
-                    $this->info("Sensor calculations skipped for production line ID {$monitor->production_line_id} (sensor_active is 0).");
+                    $this->info("Cálculos de sensores omitidos para la línea de producción ID {$monitor->production_line_id} (sensor_active es 0).");
                 }
 
                 // Si modbus_active es 1, obtener todos los modbuses de la línea de producción
                 if ($monitor->modbus_active == 1) {
-                    $this->info("Fetching modbuses for production line ID {$monitor->production_line_id}");
-                    $modbuses = Modbus::where('production_line_id', $monitor->production_line_id)->get();
-
-                    foreach ($modbuses as $modbus) {
-                        $this->processModbusData($modbus);
-                    }
+                    $this->info("Obteniendo modbuses para la línea de producción ID {$monitor->production_line_id}");
+                    // Procesar modbuses (si es necesario)
                 } else {
-                    $this->info("Modbus calculations skipped for production line ID {$monitor->production_line_id} (modbus_active is 0).");
+                    $this->info("Cálculos de modbus omitidos para la línea de producción ID {$monitor->production_line_id} (modbus_active es 0).");
                 }
             }
 
-            // Calcular el porcentaje acumulado
-            if ($totalTheoreticalCount > 0) {
-                $overallPercentage = ($totalRealCount / $totalTheoreticalCount) * 100;
-            } else {
-                $overallPercentage = 0; // Evitar división por 0
-            }
-
-            // Mostrar el total real, teórico y porcentaje sumado de todos los sensores procesados
-            $this->info("Total Real count_order_1: {$totalRealCount}, Total Theoretical: {$totalTheoreticalCount}, Percentage: {$overallPercentage}%");
-
             // Esperar 1 segundo antes de volver a ejecutar la lógica
-            $this->info("Waiting for 1 second before the next run...");
+            $this->info("Esperando 1 segundo antes de la siguiente ejecución...");
             sleep(1); // Pausar 1 segundo
         }
 
@@ -97,23 +87,23 @@ class CalculateProductionMonitorOee extends Command
     }
 
     /**
-     * Procesar los datos del sensor y devolver el real y teórico
+     * Procesar los datos del sensor y devolver la producción real y teórica por minuto
      */
     private function processSensorData($sensor)
     {
-        $this->info("Processing sensor: {$sensor->name}");
+        $this->info("Procesando sensor: {$sensor->name}");
 
         // Obtener barcoder_id y buscar el registro en barcodes
         $barcoder = Barcode::find($sensor->barcoder_id);
 
         if ($barcoder) {
-            $this->info("Fetching order_notice from barcoder_id: {$barcoder->id}");
+            $this->info("Obteniendo order_notice del barcoder_id: {$barcoder->id}");
 
             // Obtener order_notice (JSON) y extraer el orderId
             $orderNotice = json_decode($barcoder->order_notice, true);
             if (isset($orderNotice['orderId'])) {
                 $orderId = $orderNotice['orderId'];
-                $this->info("Extracted orderId: {$orderId}");
+                $this->info("OrderId extraído: {$orderId}");
 
                 // Extraer unic_code_order, optimal_production_time, y count_order_1 del sensor
                 $unicCodeOrder = $sensor->unic_code_order;
@@ -127,7 +117,7 @@ class CalculateProductionMonitorOee extends Command
                     ->first();
 
                 if ($firstSensorCount) {
-                    $this->info("Found matching record in sensor_counts.");
+                    $this->info("Se encontró un registro coincidente en sensor_counts.");
 
                     // Obtener el tiempo de creación del primer registro
                     $createdAt = Carbon::parse($firstSensorCount->created_at);
@@ -135,45 +125,256 @@ class CalculateProductionMonitorOee extends Command
 
                     // Calcular la diferencia de tiempo en segundos
                     $timeWorkOrderFromShift = $now->diffInSeconds($createdAt);
-                    $this->info("Time difference (timeWorkOrderFromShift): {$timeWorkOrderFromShift} seconds");
+                    $this->info("Diferencia de tiempo (timeWorkOrderFromShift): {$timeWorkOrderFromShift} segundos");
+
+                    // Convertir el tiempo de trabajo en minutos
+                    $timeWorkOrderInMinutes = $timeWorkOrderFromShift / 60;
 
                     // Calcular cuántas cajas se deberían haber producido teóricamente al 100%
                     $theoreticalBoxes = floor($timeWorkOrderFromShift / $optimalProductionTime);
 
-                    // Calcular porcentaje de eficiencia entre real y teórico
-                    if ($theoreticalBoxes > 0) {
-                        $percentage = ($countOrder1 / $theoreticalBoxes) * 100;
-                    } else {
-                        $percentage = 0; // Evitar división por 0
+                    // Validación: Evitar valores extremadamente bajos en producción teórica
+                    if ($theoreticalBoxes <= 0) {
+                        $theoreticalBoxes = 1; // Para evitar división por 0 o valores incorrectos
                     }
 
-                    // Mostrar real, teórico y porcentaje por cada sensor
-                    $this->info("Sensor '{$sensor->name}' - Real (count_order_1): {$countOrder1}, Theoretical: {$theoreticalBoxes}, Percentage: {$percentage}%");
+                    // Calcular producción por minuto (real vs teórico)
+                    $realProductionPerMinute = $timeWorkOrderInMinutes > 0 ? $countOrder1 / $timeWorkOrderInMinutes : 0;
+                    $theoreticalProductionPerMinute = $timeWorkOrderInMinutes > 0 ? $theoreticalBoxes / $timeWorkOrderInMinutes : 0;
 
-                    // Devolver valores reales y teóricos para la suma global
-                    return [$countOrder1, $theoreticalBoxes];
+                    // Mostrar información por sensor
+                    $this->info("Sensor '{$sensor->name}' - Producción por minuto (real): {$realProductionPerMinute}, Producción por minuto (teórica): {$theoreticalProductionPerMinute}");
+
+                    // Devolver la producción real y teórica por minuto para acumulación
+                    return [$realProductionPerMinute, $theoreticalProductionPerMinute];
                 } else {
-                    $this->info("No matching record found in sensor_counts for orderId: {$orderId} and unic_code_order: {$unicCodeOrder}");
+                    $this->info("No se encontró ningún registro coincidente en sensor_counts para orderId: {$orderId} y unic_code_order: {$unicCodeOrder}");
                 }
             } else {
-                $this->info("No orderId found in order_notice JSON.");
+                $this->info("No se encontró un orderId en el JSON order_notice.");
             }
         } else {
-            $this->info("No barcoder found for barcoder_id: {$sensor->barcoder_id}");
+            $this->info("No se encontró un barcoder para barcoder_id: {$sensor->barcoder_id}");
         }
 
-        // Si no se encuentran datos, devolvemos 0
+        // Si no se encuentran datos, devolver 0
         return [0, 0];
+    }
+/**
+ * Enviar los mensajes MQTT acumulados para cada línea de producción, incluyendo time_start_shift
+ */
+    private function sendAccumulatedProductionMessages($monitor, $totalRealProductionPerMinute, $totalTheoreticalProductionPerMinute)
+    {
+        $totalRealCajas = 0; // Para almacenar el número total de cajas fabricadas
+        $totalTimeUsed = 0;  // Tiempo total usado para la producción
+        $totalOptimalProductionTime = 0; // Para almacenar la suma de todos los tiempos óptimos
+
+        // Obtener los sensores para la línea de producción
+        $sensors = Sensor::where('production_line_id', $monitor->production_line_id)
+            ->where('sensor_type', 0)
+            ->get();
+
+        foreach ($sensors as $sensor) {
+            // Calcular el número de cajas fabricadas por sensor y el tiempo total usado
+            $firstSensorCount = SensorCount::where('sensor_id', $sensor->id)
+                ->where('count_order_1', '>', 0)
+                ->where('unic_code_order', $sensor->unic_code_order)
+                ->orderBy('created_at', 'asc')
+                ->first();
+
+            if ($firstSensorCount) {
+                // Obtener el datetime de la primera caja fabricada
+                $firstBoxTime = Carbon::parse($firstSensorCount->created_at);
+                $now = Carbon::now();
+                
+                // Calcular el tiempo usado para este sensor
+                $timeUsedForSensor = $now->diffInSeconds($firstBoxTime);
+                $totalTimeUsed += $timeUsedForSensor;
+
+                // Sumar el número de cajas fabricadas
+                $totalRealCajas += $sensor->count_order_1;
+
+                // Sumar el tiempo óptimo de producción
+                $totalOptimalProductionTime += $sensor->optimal_production_time ?? 30; // Tiempo óptimo por defecto
+            }
+        }
+
+        // Calcular el número de cajas teóricas producidas
+        if ($monitor->time_start_shift) {
+            $timeStartShift = Carbon::createFromTimestamp(strtotime($monitor->time_start_shift));
+            $shiftTimeDifferenceMinutes = Carbon::now()->diffInMinutes($timeStartShift); // Diferencia en minutos, sin decimales
+            $totalCajasTeoricas = $totalTheoreticalProductionPerMinute * $shiftTimeDifferenceMinutes;
+        }else{
+            $totalCajasTeoricas = 0;
+        }
+        
+
+        //----------------
+        // Calcular el status basado en la producción real vs teórica
+        $status = 0;
+        if ($totalRealProductionPerMinute >= $totalTheoreticalProductionPerMinute) {
+            $status = 2; // Real es igual o mayor al teórico
+        } elseif ($totalRealProductionPerMinute >= 0.8 * $totalTheoreticalProductionPerMinute) {
+            $status = 1; // Real es 80% o más del teórico
+        }
+
+        // Calcular los valores de segundos por caja
+        $realSecondsPerBox = $totalRealProductionPerMinute > 0 ? number_format(60 / $totalRealProductionPerMinute, 2) : 0;
+        $theoreticalSecondsPerBox = $totalTheoreticalProductionPerMinute > 0 ? number_format(60 / $totalTheoreticalProductionPerMinute, 2) : 0;
+
+        // Inicializar el estado
+        $status2 = 0;
+
+        // Comparar los valores reales con los teóricos
+        if ($realSecondsPerBox >= $theoreticalSecondsPerBox) {
+            $status2 = 2; // Real es igual o mayor al teórico
+        } elseif ($realSecondsPerBox >= 0.8 * $theoreticalSecondsPerBox) {
+            $status2 = 1; // Real es 80% o más del teórico
+        }
+
+        // Calcular el status basado en la met03 cajas reales vs cajas teoreticos
+        $status3 = 0;
+        if ($totalRealCajas >= $totalCajasTeoricas) {
+            $status3 = 2; // Real es igual o mayor al teórico
+        } elseif ($totalRealCajas >= 0.8 * $totalCajasTeoricas) {
+            $status3 = 1; // Real es 80% o más del teórico
+        }
+
+        // Preparar el JSON para el mensaje 'real' (cajas por minuto)
+        $realMessage = json_encode([
+            'value' => number_format($totalRealProductionPerMinute, 2),
+            'status' => $status
+        ]);
+
+        // Preparar el JSON para el mensaje segundos por cada caja real
+        $realMessageMet02 = json_encode([
+            'value' => $totalRealProductionPerMinute > 0 ? number_format(60 / $totalRealProductionPerMinute, 2) : 0,  // Segundos por caja real
+            'status' => $status
+        ]); 
+
+        // Preparar el JSON para el mensaje 'teorica' (cajas por minuto)
+        $theoreticalMessage = json_encode([
+            'value' => number_format($totalTheoreticalProductionPerMinute, 2)
+        ]);
+
+        // Preparar el JSON para segundos por cada caja teórica
+        $theoreticalMessageMet02 = json_encode([
+            'value' => $totalTheoreticalProductionPerMinute > 0 ? number_format(60 / $totalTheoreticalProductionPerMinute, 2) : 0  // Segundos por caja teórica
+        ]);
+
+        // Preparar el JSON para el mensaje real (número de cajas fabricadas)
+        $realMessageMet03 = json_encode([
+            'value' => number_format($totalRealCajas, 0),
+            'status' => $status3
+        ]);
+
+        // Preparar el JSON para el mensaje teórico (número de cajas que se deberían haber fabricado)
+        $theoreticalMessageMet03 = json_encode([
+            'value' => number_format($totalCajasTeoricas, 0)
+        ]);
+
+        // Publicar mensajes para número de cajas fabricadas por minuto (real y teórica)
+        $mqttTopicReal = $monitor->mqtt_topic . '-met01/real';
+        $mqttTopicTeorica = $monitor->mqtt_topic . '-met01/teorica';
+
+        // Publicar mensajes para segundos por cada caja (real y teórica)
+        $mqttTopicRealMet02 = $monitor->mqtt_topic . '-met02/real';
+        $mqttTopicTeoricaMet02 = $monitor->mqtt_topic . '-met02/teorica';
+
+        // Publicar mensajes para cajas totales (real y teórica)
+        $mqttTopicRealMet03 = $monitor->mqtt_topic . '-met03/real';
+        $mqttTopicTeoricaMet03 = $monitor->mqtt_topic . '-met03/teorica';
+
+        // Publicar mensajes MQTT
+        $this->publishMqttMessage($mqttTopicReal, $realMessage);
+        $this->publishMqttMessage($mqttTopicTeorica, $theoreticalMessage);
+        $this->publishMqttMessage($mqttTopicRealMet02, $realMessageMet02);
+        $this->publishMqttMessage($mqttTopicTeoricaMet02, $theoreticalMessageMet02);
+        $this->publishMqttMessage($mqttTopicRealMet03, $realMessageMet03);
+        $this->publishMqttMessage($mqttTopicTeoricaMet03, $theoreticalMessageMet03);
+
+        // ----------------------
+        // Nueva lógica para mqtt_topic2 + time_start_shift (timestamp) en minutos sin decimales
+        // ----------------------
+
+        // Calcular la diferencia en minutos desde time_start_shift hasta ahora
+        if ($monitor->time_start_shift) {
+            $timeStartShift = Carbon::createFromTimestamp(strtotime($monitor->time_start_shift));
+            $shiftTimeDifferenceMinutes = Carbon::now()->diffInMinutes($timeStartShift); // Diferencia en minutos, sin decimales
+
+            // Preparar los mensajes para mqtt_topic2
+            $realShiftMessage = json_encode([
+                'value' => $shiftTimeDifferenceMinutes,
+                'status' => 2 // El status es por defecto 2
+            ]);
+
+            // Publicar los mensajes MQTT en mqtt_topic2 para los valores 'real'
+            $mqttTopic2Real = $monitor->mqtt_topic2 . '-met01/real';
+            $mqttTopic2Real2 = $monitor->mqtt_topic2 . '-met02/real';
+
+            $this->publishMqttMessage($mqttTopic2Real, $realShiftMessage);
+            $this->publishMqttMessage($mqttTopic2Real2, $realShiftMessage);
+
+            // Log para verificar la publicación de mensajes
+            $this->info("Real (time_start_shift en minutos): {$realShiftMessage} en {$mqttTopic2Real}");
+            $this->info("Real2 (time_start_shift en minutos): {$realShiftMessage} en {$mqttTopic2Real2}");
+
+            // --------- Calcular el valor teórico para sensores con sensor_type 1 y 2 ---------
+            // Obtener todos los sensores asociados a la línea de producción
+            $sensors = Sensor::where('production_line_id', $monitor->production_line_id)->get();
+
+            // Sumar el downtime_count de los sensores con sensor_type = 1 (en segundos) y convertir a minutos
+            $totalDowntimeType1Seconds = $sensors->where('sensor_type', 1)->sum('downtime_count');
+            $totalDowntimeType1Minutes = floor($totalDowntimeType1Seconds / 60); // Convertir a minutos y redondear hacia abajo
+
+            // Sumar el downtime_count de los sensores con sensor_type = 2 (en segundos) y convertir a minutos
+            $totalDowntimeType2Seconds = $sensors->where('sensor_type', 2)->sum('downtime_count');
+            $totalDowntimeType2Minutes = floor($totalDowntimeType2Seconds / 60); // Convertir a minutos y redondear hacia abajo
+
+            // Preparar el JSON para el mensaje teórico de tipo 1 (met01/teorica)
+            $theoreticalShiftMessageMet01 = json_encode([
+                'value' => $totalDowntimeType1Minutes // Valor del downtime en minutos
+            ]);
+
+            // Preparar el JSON para el mensaje teórico de tipo 2 (met02/teorica)
+            $theoreticalShiftMessageMet02 = json_encode([
+                'value' => $totalDowntimeType2Minutes // Valor del downtime en minutos
+            ]);
+
+            // Publicar los mensajes MQTT en mqtt_topic2 para los valores 'teorica'
+            $mqttTopic2TeoricaMet01 = $monitor->mqtt_topic2 . '-met01/teorica';
+            $mqttTopic2TeoricaMet02 = $monitor->mqtt_topic2 . '-met02/teorica';
+
+            $this->publishMqttMessage($mqttTopic2TeoricaMet01, $theoreticalShiftMessageMet01);
+            $this->publishMqttMessage($mqttTopic2TeoricaMet02, $theoreticalShiftMessageMet02);
+
+            // Log para verificar la publicación de mensajes teóricos
+            $this->info("Teorico (downtime_count en minutos, sensor_type 1): {$theoreticalShiftMessageMet01} en {$mqttTopic2TeoricaMet01}");
+            $this->info("Teorico (downtime_count en minutos, sensor_type 2): {$theoreticalShiftMessageMet02} en {$mqttTopic2TeoricaMet02}");
+        }
+
+
+        // Log para verificar la publicación de otros mensajes
+        $this->info("Mensajes publicados para la línea de producción {$monitor->production_line_id}:");
+        $this->info("Real (cajas/minuto): {$realMessage} en {$mqttTopicReal}");
+        $this->info("Teorica (cajas/minuto): {$theoreticalMessage} en {$mqttTopicTeorica}");
     }
 
     /**
-     * Procesar los datos del modbus y mostrar información relevante
+     * Publicar el mensaje MQTT en los servidores
      */
-    private function processModbusData($modbus)
+    private function publishMqttMessage($topic, $message)
     {
-        $this->info("Processing modbus: {$modbus->name}");
+        try {
+            // Inserta en la tabla mqtt_send_server1
+            MqttSendServer1::createRecord($topic, $message);
 
-        // Mostrar información relevante del modbus
-        $this->info("Modbus '{$modbus->name}' - Last value: {$modbus->last_value}");
+            // Inserta en la tabla mqtt_send_server2
+            MqttSendServer2::createRecord($topic, $message);
+
+            $this->info("Mensaje almacenado en mqtt_send_server1 y mqtt_send_server2 para el topic: {$topic}");
+        } catch (\Exception $e) {
+            Log::error("Error almacenando el mensaje en las bases de datos: " . $e->getMessage());
+        }
     }
 }
