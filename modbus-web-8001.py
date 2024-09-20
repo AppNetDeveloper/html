@@ -23,7 +23,9 @@ modbus_configurations = [
     {"unit_id": 1, "address": 100},
     {"unit_id": 1, "address": 101},
     {"unit_id": 1, "address": 310},
-    {"unit_id": 1, "address": 311},  # bascula fija fuera
+    {"unit_id": 1, "address": 311},  # peso dinamico de 301
+    {"unit_id": 1, "address": 350},  # bascula fija fuera?
+    {"unit_id": 1, "address": 351},  # bascula fija fuera
     # Añade más configuraciones aquí según sea necesario
 ]
 
