@@ -28,6 +28,7 @@ class Modbus extends Model
         'calibration_type',
         'rec_box', // conteo de cajas por order_notice
         'rec_box_shift',// conteo de cajas por turno
+        'rec_box_unlimited', // conteo de cajas sin limite
         'model_name',
         'name',
         'last_value', // último valor de la modbus

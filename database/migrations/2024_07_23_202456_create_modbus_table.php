@@ -30,6 +30,7 @@ return new class extends Migration
             $table->string('last_rep')->nullable(); //numero de repeticion que se ha recivido en un valor estable de last_kg
             $table->string('rec_box')->nullable(); //numero de cajas que se han hecho es un recuento por order notice
             $table->string('rec_box_shift')->nullable(); //numero de cajas que se han hecho es un recuento por shift
+            $table->string('rec_box_unlimited')->nullable(); //numero de cajas que se han realizado sin resetear nunca
             $table->string('last_value')->nullable(); //el ultimo valor de la modbus
             $table->string('variacion_number')->nullable(); // variaciones que es permitido entre cada lectura para ponerse estable.
             $table->string('model_name')->nullable(); //con esto identificamos si es bascula o otro sensor

@@ -162,7 +162,7 @@ class ReadModbus extends Command
     {
         switch ($config->model_name) {
             case 'weight':
-                $this->processWeightModel($config, $value);
+                $this->processWeightModel($config, $value, $data);
                 break;
             case 'height':
                 $this->processHeightModel($config, $value, $data);
@@ -189,7 +189,7 @@ class ReadModbus extends Command
         return null;
     }
 
-    public function processWeightModel($config, $value)
+    public function processWeightModel($config, $value, $data)
     {
         $updatedValue = $value / 10;
         
@@ -240,7 +240,7 @@ class ReadModbus extends Command
             // Logea que el valor no ha cambiado y no se envía el mensaje MQTT
             Log::info("Mismo valor no se manda MQTT: " . json_encode(['value' => $lastValue, 'time' => date('c')]));
         }
-        $this->processWeightData($config, $updatedValue);
+        $this->processWeightData($config, $updatedValue, $data);
     }
 
     // Implementar funciones para otros modelos
@@ -325,7 +325,7 @@ class ReadModbus extends Command
     }
 
 
-    private function processWeightData(Modbus $config, $value)
+    private function processWeightData(Modbus $config, $value, $data)
     {
     // Obtener valores actuales de la base de datos
     $maxKg = intval($config->max_kg);
@@ -342,7 +342,7 @@ class ReadModbus extends Command
     // Inicializar la variable para el número de cajas
     $newBoxNumber = intval($config->rec_box);
     $newBoxNumberShift = intval($config->rec_box_shift);
-
+    $newBoxNumberUnlimited = intval($config->rec_box_unlimited);    
         // Lógica de control de peso y repeticiones
         if ($value >= $minKg) { // Si el valor actual es mayor o igual al mínimo
             Log::debug("Valor actual ({$value} kg) es mayor o igual al mínimo ({$minKg} kg)"); // Logging detallado
@@ -365,6 +365,15 @@ class ReadModbus extends Command
         } else if ($maxKg > $minKg && $value < $minKg) { // Si el valor es menor que el mínimo y $maxKg no es nulo
             Log::debug("Valor por debajo del mínimo. Enviando mensaje de control de peso: {$maxKg} kg");
 
+            // Verificar si el JSON tiene el campo 'check' y usarlo para asignar a maxKg
+            if (isset($data['check'])) {
+                $maxKg = $data['check'] /10;
+                Log::info("Se ha obtenido el valor de 'check' desde el JSON: {$maxKg}");
+            } else {
+                Log::warning("No se encontró el campo 'check' en los datos recibidos.");
+            }
+
+
             $messageControl = [
                         'type' => "NoEPC",
                         'unit' => "Kg",
@@ -380,8 +389,9 @@ class ReadModbus extends Command
 
 
             // Incrementar el recuento de cajas en rec_box
-            $newBoxNumber++;
-            $newBoxNumberShift++;
+            $newBoxNumber++; // es por orderId
+            $newBoxNumberShift++; //por turno
+            $newBoxNumberUnlimited++; //indefinido
             // Generar un número de barcoder único
             $uniqueBarcoder = uniqid('bar_', true);
 
