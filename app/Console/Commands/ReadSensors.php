@@ -159,7 +159,20 @@ class ReadSensors extends Command
             $value = 1 - $value; // Invierte entre 0 y 1
         }
         
-        Log::info("Mensaje: {$config->name} (ID: {$config->id}) // Tópico: {$config->mqtt_topic_sensor} // Valor: {$value}");
+        // Obtener el último registro para el sensor dado
+        $sensorCount = SensorCount::where('sensor_id', $id)
+            ->orderBy('created_at', 'desc') // Ordenar por el campo created_at para obtener el más reciente
+            ->first();
+
+        // Verificar si el último valor es el mismo que el que se recibe
+        if ($sensorCount && $sensorCount->value == $value) {
+            $this->info("Advertencia: El valor {$value} ya se encuentra guardado en la tabla sensor_counts para el sensor {$id}.");
+            return; // Detener ejecución si el valor ya ha sido registrado
+        }
+
+        // Continuar con el código si el valor es diferente o no existe un registro previo
+
+        $this->info("Mensaje: {$config->name} (ID: {$config->id}) // Tópico: {$config->mqtt_topic_sensor} // Valor: {$value}");
         // Procesar modelo de sensor
         $this->processModel($config, $value);
     }

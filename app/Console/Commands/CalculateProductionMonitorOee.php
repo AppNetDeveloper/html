@@ -76,6 +76,63 @@ class CalculateProductionMonitorOee extends Command
                 } else {
                     $this->info("Cálculos de modbus omitidos para la línea de producción ID {$monitor->production_line_id} (modbus_active es 0).");
                 }
+
+                //sacar todo el tiempo de inactividad de la linea de produccion si no es null
+                if ($monitor->production_line_id != null) {
+                   // Obtenemos el downtime de la línea de producción por production_line_id y sumamos los valores
+                    $downTime = Sensor::where('production_line_id', $monitor->production_line_id)->sum('downtime_count');
+
+                    // Convertimos el tiempo de inactividad en formato de horas, minutos y segundos (H:i:s)
+                    $formattedDownTime = gmdate("H:i:s", $downTime);
+                    $this->info("Tiempo de inactividad: " . $formattedDownTime);
+
+                    // Sacamos la hora de inicio del turno desde monitor_oee (time_start_shift)
+                    $time_start_shift = $monitor->time_start_shift;
+
+                    // Obtenemos la hora actual
+                    $now = Carbon::now();
+
+                    // Calculamos la diferencia en segundos entre la hora actual y el inicio del turno
+                    $diff = $now->diffInSeconds(Carbon::parse($time_start_shift));
+
+                    // Aseguramos que el tiempo total del turno no sea cero para evitar división por cero
+                    if ($diff > 0) {
+                        // Calculamos el porcentaje de inactividad (downtime)
+                        $downtime_percentage = ($downTime / $diff) * 100;
+
+                        // Determinamos el status basado en el porcentaje de inactividad
+                        if ($downtime_percentage >= 40) {
+                            $status = 0; // Downtime mayor o igual a 40%
+                        } elseif ($downtime_percentage >= 20) {
+                            $status = 1; // Downtime mayor o igual a 20% y menor que 40%
+                        } else {
+                            $status = 2; // Downtime menor que 20%
+                        }
+
+                        $this->info("Downtime: $formattedDownTime, Porcentaje de downtime: $downtime_percentage%, Status: $status");
+
+                        // Creamos el JSON con el downtime acumulado y el status correspondiente
+                        $json = json_encode(['value' => $formattedDownTime, 'status' => $status]);
+
+                        // Obtenemos el valor original del mqtt_topic desde monitor_oee
+                        $mqtt_topicKpi1 = $monitor->mqtt_topic;
+
+                        // Expresión regular para eliminar todo lo que esté entre /sta/ y /metrics/
+                        $pattern = '/\/sta\/.*\/metrics\/.*$/';
+
+                        // Reemplazamos la parte que coincide con la expresión regular por la nueva parte
+                        $mqtt_topic_modified = preg_replace($pattern, '', $mqtt_topicKpi1);
+
+                        // Añadimos la nueva parte que necesitamos
+                        $mqtt_topic_modified .= '/kpi1Value';
+
+                        // Publicar el mensaje MQTT con el tópico modificado
+                        $this->publishMqttMessage($mqtt_topic_modified, $json);
+
+                    } else {
+                        $this->info("El tiempo total del turno es cero o no válido.");
+                    }
+                }
             }
 
             // Esperar 1 segundo antes de volver a ejecutar la lógica

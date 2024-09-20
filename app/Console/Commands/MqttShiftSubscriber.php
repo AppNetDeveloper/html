@@ -10,6 +10,7 @@ use PhpMqtt\Client\ConnectionSettings;
 use Carbon\Carbon; // Asegúrate de importar Carbon para el timestamp
 use App\Models\MqttSendServer1;
 use App\Models\MqttSendServer2;
+use App\Models\MonitorOee;
 
 class MqttShiftSubscriber extends Command
 {
@@ -130,6 +131,9 @@ class MqttShiftSubscriber extends Command
             // Reseteo de contadores del sensor
             $this->resetSensorCounters($sensor);
             
+            // Anadir fecha a Oee con el ultimo cambio de turno por linia
+            $this->changeDataTimeOee($sensor);
+
             // Guardar los cambios en el sensor
             $sensor->save();
             $this->info("Sensor ID {$sensor->id} updated with shift_type, event, and counters reset.");
@@ -155,6 +159,17 @@ class MqttShiftSubscriber extends Command
         $sensor->count_order_1 = 0;
         $sensor->downtime_count = 0;
         $sensor->unic_code_order = uniqid();
+    }
+
+    private function changeDataTimeOee($sensor)
+    {
+        $this->info("Actualizar horra de Oee para el la linia {$sensor->production_line_id}.");
+
+        $oee = MonitorOee::where('production_line_id', $sensor->production_line_id)->first();
+        if ($oee) {
+            $oee->time_start_shift = Carbon::now();
+            $oee->save();
+        }
     }
     private function sendMqttTo0($sensor){
         // Json enviar a MQTT conteo por orderId
