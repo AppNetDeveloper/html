@@ -368,9 +368,9 @@ class ReadModbus extends Command
             // Verificar si el JSON tiene el campo 'check' y usarlo para asignar a maxKg
             if (isset($data['check'])) {
                 $maxKg = $data['check'] /10;
-                Log::info("Se ha obtenido el valor de 'check' desde el JSON: {$maxKg}");
+                //Log::info("Se ha obtenido el valor de 'check' desde el JSON: {$maxKg}");
             } else {
-                Log::warning("No se encontró el campo 'check' en los datos recibidos.");
+               // Log::warning("No se encontró el campo 'check' en los datos recibidos.");
             }
 
 
@@ -470,6 +470,7 @@ class ReadModbus extends Command
         $config->update([
             'rec_box' => $newBoxNumber,
             'rec_box_shift' => $newBoxNumberShift,
+            'rec_box_unlimited' => $newBoxNumberUnlimited,
             'max_kg' => $maxKg,
             'last_kg' => $lastKg,
             'last_rep' => $lastRep,
