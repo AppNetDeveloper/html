@@ -7,32 +7,20 @@ from pymodbus.client import ModbusTcpClient
 # --- Configuración ---
 
 # Modbus
-modbus_host = "192.168.1.117"
+modbus_host = "172.18.24.5"
 modbus_port = 502
 
 # Define manualmente las combinaciones de unit_id y address
 modbus_configurations = [
-    {"unit_id": 1, "address": 300},
-    {"unit_id": 1, "address": 301, "check_address": 311},  # bascula cinta con check en 311
-    {"unit_id": 1, "address": 120},
-    {"unit_id": 1, "address": 121},
-    {"unit_id": 1, "address": 220},
-    {"unit_id": 1, "address": 200},
-    {"unit_id": 1, "address": 221},
-    {"unit_id": 1, "address": 201},
-    {"unit_id": 1, "address": 100},
-    {"unit_id": 1, "address": 101},
-    {"unit_id": 1, "address": 310},
-    {"unit_id": 1, "address": 311},  # peso dinamico de 301
-    {"unit_id": 1, "address": 350},  # bascula fija fuera?
-    {"unit_id": 1, "address": 351},  # bascula fija fuera
+    {"unit_id": 1, "address": 2, "check_address": 311},  # bascula cinta con check en 311
+    {"unit_id": 1, "address": 9},
     # Añade más configuraciones aquí según sea necesario
 ]
 
 # MQTT
-mqtt_broker = "172.25.30.240"
+mqtt_broker = "127.0.0.1"
 mqtt_port = 1883
-mqtt_topic_base = "modbus_data/diacaproduct"  # Base topic
+mqtt_topic_base = "modbus_data/ajos"  # Base topic
 
 # Shared data
 lecturas = {}
