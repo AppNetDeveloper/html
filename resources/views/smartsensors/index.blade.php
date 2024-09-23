@@ -13,7 +13,6 @@
                                     <th>ID</th>
                                     <th>Nombre</th>
                                     <th>Tipo de Sensor</th>
-                                    <th>Último Valor</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
@@ -23,7 +22,6 @@
                                     <td>{{ $sensor->id }}</td>
                                     <td>{{ $sensor->name }}</td>
                                     <td>{{ $sensor->sensor_type }}</td>
-                                    <td>{{ $sensor->last_value }}</td>
                                     <td>
                                         <a href="{{ route('smartsensors.edit', $sensor->id) }}" class="btn btn-sm btn-primary">Editar</a>
                                         <form action="{{ route('smartsensors.destroy', $sensor->id) }}" method="POST" style="display:inline;">

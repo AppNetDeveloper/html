@@ -51,7 +51,7 @@
         </div>
 
         <div class="form-group">
-            <label for="mqtt_topic_1">MQTT Topic 1</label>
+            <label for="mqtt_topic_1">MQTT Topic envio topflow tipo: c/cliente/pli/PLI03/sta/PLI03STA01/mac/PLI03STA01MAC03  Los demas los genera solo</label>
             <input type="text" name="mqtt_topic_1" class="form-control" required>
         </div>
 
@@ -117,6 +117,11 @@
         <div class="form-group">
             <label for="downtime_count">Tiempo de Inactividad</label>
             <input type="number" name="downtime_count" class="form-control" value="0" min="0">
+        </div>
+
+        <div class="form-group">
+            <label for="unic_code_order">Código Único de Orden</label>
+            <input type="text" name="unic_code_order" class="form-control">
         </div>
 
         <button type="submit" class="btn btn-success">Crear Sensor</button>

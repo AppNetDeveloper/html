@@ -51,8 +51,9 @@
             <input type="text" name="mqtt_topic_sensor" class="form-control" value="{{ $sensor->mqtt_topic_sensor }}" required>
         </div>
 
+
         <div class="form-group">
-            <label for="mqtt_topic_1">MQTT Topic 1</label>
+            <label for="mqtt_topic_1">MQTT Topic envio topflow tipo: c/cliente/pli/PLI03/sta/PLI03STA01/mac/PLI03STA01MAC03  Los demas los genera solo</label>
             <input type="text" name="mqtt_topic_1" class="form-control" value="{{ $sensor->mqtt_topic_1 }}" required>
         </div>
 
@@ -120,7 +121,13 @@
             <input type="number" name="downtime_count" class="form-control" value="{{ $sensor->downtime_count }}" min="0">
         </div>
 
+        <div class="form-group">
+            <label for="unic_code_order">Código Único de Orden</label>
+            <input type="text" name="unic_code_order" class="form-control" value="{{ $sensor->unic_code_order }}">
+        </div>
+
         <button type="submit" class="btn btn-success">Actualizar Sensor</button>
     </form>
 </div>
 @endsection
+

@@ -24,8 +24,8 @@ class Sensor extends Model
      * @var array
      */
     protected $fillable = [
-        'name',
-        'token',
+        'name', //nombre de sensor
+        'token', //codigo unico que se le aloja a cada sensor
         'production_line_id', //el id de la linia de produccion asi se asocia el sensor
         'barcoder_id', // asociamos el sensor con el barcoder
         'sensor_type',      // 0 es sensor de conteo , 1 es sensor de consumibles, 2 de materia prima, 3 de averia en proceso
@@ -33,19 +33,18 @@ class Sensor extends Model
         'reduced_speed_time_multiplier',//tiempo que es puesto como velocidad lenta, todo que es superior  ESTE ES PARADA
         'json_api', // valor de la api para obtener el valor del sensor si no se pone nada es por defecto value
         'mqtt_topic_sensor',    // valor del topic para recibir el valor del sensor
-        'count_total',          // contador total
+        'count_total',          // contador total 
         'count_total_0',        // contador total 0
         'count_total_1',        // contador total 1
         'count_shift_0',        // contador de turno 0
         'count_shift_1',        // contador de turno 1  
         'count_order_0',        // contador de pedido 0
         'count_order_1',        // contador de pedido 1
-        'mqtt_topic_0',         // topic para el valor 0
         'mqtt_topic_1',         // topic para el valor 1
         'function_model_0',     // funcion para el valor 0
         'function_model_1',     // funcion para el valor 1
         'invers_sensors',       // si el sensor es inverso o no
-        'downtime_count',       // tiempo de descanso
+        'downtime_count',       // tiempo no productivo. se tiene queresetear cada cambio e turno o pedido
         'unic_code_order',      // codigo de orden unico, uso interno nada mas
     ];
 
@@ -104,7 +103,6 @@ class Sensor extends Model
         static::updating(function ($sensor) {
             if ($sensor->isDirty([
                 'mqtt_topic_sensor', 
-                'mqtt_topic_0', 
                 'mqtt_topic_1',
             ])) {
                 self::restartSupervisor();
