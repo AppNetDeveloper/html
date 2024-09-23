@@ -498,8 +498,8 @@ class CalculateProductionMonitorOee extends Command
         $this->info("Cajas producidas en la semana: $boxesWeek");
         
         // Crear los JSON con el downtime acumulado y el status correspondiente
-        $jsonShift = json_encode(['value' => $boxesShift, 'status' => 2]);
-        $jsonWeek = json_encode(['value' => $boxesWeek, 'status' => 2]);
+        $jsonShift = json_encode(['value' => $totalUnitsShift, 'status' => 2]);
+        $jsonWeek = json_encode(['value' => $totalUnitsWeek, 'status' => 2]);
     
         // Obtener el valor original del mqtt_topic desde monitor_oee
         $mqtt_topicKpi1 = $monitor->mqtt_topic;
@@ -508,11 +508,11 @@ class CalculateProductionMonitorOee extends Command
         $pattern = '/\/sta\/.*\/metrics\/.*$/';
         $mqtt_topic_modified = preg_replace($pattern, '', $mqtt_topicKpi1);
     
-        // Publicar el mensaje MQTT para el KPI 2 (cajas por turno)
+        // Publicar el mensaje MQTT para el KPI 2 (por semana)
         $mqtt_topic_kpi2 = $mqtt_topic_modified . '/kpi2Value';
         $this->publishMqttMessage($mqtt_topic_kpi2, $jsonWeek);
     
-        // Publicar el mensaje MQTT para el KPI 3 (cajas por semana)
+        // Publicar el mensaje MQTT para el KPI 3 (por turno)
         $mqtt_topic_kpi3 = $mqtt_topic_modified . '/kpi3Value';
         $this->publishMqttMessage($mqtt_topic_kpi3, $jsonShift);
     }

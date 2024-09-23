@@ -165,7 +165,7 @@ class MqttShiftSubscriber extends Command
     {
         $this->info("Actualizar horra de Oee para el la linia {$sensor->production_line_id}.");
 
-        $oee = MonitorOee::where('production_line_id', $sensor->production_line_id)->first();
+        $oee = MonitorOee::where('production_line_id', $sensor->production_line_id);
         if ($oee) {
             $oee->time_start_shift = Carbon::now();
             $oee->save();
