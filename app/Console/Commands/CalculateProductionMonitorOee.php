@@ -77,62 +77,10 @@ class CalculateProductionMonitorOee extends Command
                     $this->info("Cálculos de modbus omitidos para la línea de producción ID {$monitor->production_line_id} (modbus_active es 0).");
                 }
 
-                //sacar todo el tiempo de inactividad de la linea de produccion si no es null
-                if ($monitor->production_line_id != null) {
-                   // Obtenemos el downtime de la línea de producción por production_line_id y sumamos los valores
-                    $downTime = Sensor::where('production_line_id', $monitor->production_line_id)->sum('downtime_count');
-
-                    // Convertimos el tiempo de inactividad en formato de horas, minutos y segundos (H:i:s)
-                    $formattedDownTime = gmdate("H:i:s", $downTime);
-                    $this->info("Tiempo de inactividad: " . $formattedDownTime);
-
-                    // Sacamos la hora de inicio del turno desde monitor_oee (time_start_shift)
-                    $time_start_shift = $monitor->time_start_shift;
-
-                    // Obtenemos la hora actual
-                    $now = Carbon::now();
-
-                    // Calculamos la diferencia en segundos entre la hora actual y el inicio del turno
-                    $diff = $now->diffInSeconds(Carbon::parse($time_start_shift));
-
-                    // Aseguramos que el tiempo total del turno no sea cero para evitar división por cero
-                    if ($diff > 0) {
-                        // Calculamos el porcentaje de inactividad (downtime)
-                        $downtime_percentage = ($downTime / $diff) * 100;
-
-                        // Determinamos el status basado en el porcentaje de inactividad
-                        if ($downtime_percentage >= 40) {
-                            $status = 0; // Downtime mayor o igual a 40%
-                        } elseif ($downtime_percentage >= 20) {
-                            $status = 1; // Downtime mayor o igual a 20% y menor que 40%
-                        } else {
-                            $status = 2; // Downtime menor que 20%
-                        }
-
-                        $this->info("Downtime: $formattedDownTime, Porcentaje de downtime: $downtime_percentage%, Status: $status");
-
-                        // Creamos el JSON con el downtime acumulado y el status correspondiente
-                        $json = json_encode(['value' => $formattedDownTime, 'status' => $status]);
-
-                        // Obtenemos el valor original del mqtt_topic desde monitor_oee
-                        $mqtt_topicKpi1 = $monitor->mqtt_topic;
-
-                        // Expresión regular para eliminar todo lo que esté entre /sta/ y /metrics/
-                        $pattern = '/\/sta\/.*\/metrics\/.*$/';
-
-                        // Reemplazamos la parte que coincide con la expresión regular por la nueva parte
-                        $mqtt_topic_modified = preg_replace($pattern, '', $mqtt_topicKpi1);
-
-                        // Añadimos la nueva parte que necesitamos
-                        $mqtt_topic_modified .= '/kpi1Value';
-
-                        // Publicar el mensaje MQTT con el tópico modificado
-                        $this->publishMqttMessage($mqtt_topic_modified, $json);
-
-                    } else {
-                        $this->info("El tiempo total del turno es cero o no válido.");
-                    }
-                }
+                //calcular inactividad por turno total
+                $this->calcInactiveTimeShift($monitor);
+                //calcula UDS semana y turno
+                $this->calcUdsShiftAndWeek($monitor);
             }
 
             // Esperar 1 segundo antes de volver a ejecutar la lógica
@@ -416,6 +364,160 @@ class CalculateProductionMonitorOee extends Command
         $this->info("Real (cajas/minuto): {$realMessage} en {$mqttTopicReal}");
         $this->info("Teorica (cajas/minuto): {$theoreticalMessage} en {$mqttTopicTeorica}");
     }
+
+    public function calcInactiveTimeShift($monitor) {
+        //sacar todo el tiempo de inactividad de la linea de produccion si no es null
+        if ($monitor->production_line_id != null) {
+            // Obtenemos el downtime de la línea de producción por production_line_id y sumamos los valores
+             $downTime = Sensor::where('production_line_id', $monitor->production_line_id)->sum('downtime_count');
+
+             // Convertimos el tiempo de inactividad en formato de horas, minutos y segundos (H:i:s)
+             $formattedDownTime = gmdate("H:i:s", $downTime);
+             $this->info("Tiempo de inactividad: " . $formattedDownTime);
+
+             // Sacamos la hora de inicio del turno desde monitor_oee (time_start_shift)
+             $time_start_shift = $monitor->time_start_shift;
+
+             // Obtenemos la hora actual
+             $now = Carbon::now();
+
+             // Calculamos la diferencia en segundos entre la hora actual y el inicio del turno
+             $diff = $now->diffInSeconds(Carbon::parse($time_start_shift));
+
+             // Aseguramos que el tiempo total del turno no sea cero para evitar división por cero
+             if ($diff > 0) {
+                 // Calculamos el porcentaje de inactividad (downtime)
+                 $downtime_percentage = ($downTime / $diff) * 100;
+
+                 // Determinamos el status basado en el porcentaje de inactividad
+                 if ($downtime_percentage >= 40) {
+                     $status = 0; // Downtime mayor o igual a 40%
+                 } elseif ($downtime_percentage >= 20) {
+                     $status = 1; // Downtime mayor o igual a 20% y menor que 40%
+                 } else {
+                     $status = 2; // Downtime menor que 20%
+                 }
+
+                 $this->info("Downtime: $formattedDownTime, Porcentaje de downtime: $downtime_percentage%, Status: $status");
+
+                 // Creamos el JSON con el downtime acumulado y el status correspondiente
+                 $json = json_encode(['value' => $formattedDownTime, 'status' => $status]);
+
+                 // Obtenemos el valor original del mqtt_topic desde monitor_oee
+                 $mqtt_topicKpi1 = $monitor->mqtt_topic;
+
+                 // Expresión regular para eliminar todo lo que esté entre /sta/ y /metrics/
+                 $pattern = '/\/sta\/.*\/metrics\/.*$/';
+
+                 // Reemplazamos la parte que coincide con la expresión regular por la nueva parte
+                 $mqtt_topic_modified = preg_replace($pattern, '', $mqtt_topicKpi1);
+
+                 // Añadimos la nueva parte que necesitamos
+                 $mqtt_topic_modified .= '/kpi1Value';
+
+                 // Publicar el mensaje MQTT con el tópico modificado
+                 $this->publishMqttMessage($mqtt_topic_modified, $json);
+
+             } else {
+                 $this->info("El tiempo total del turno es cero o no válido.");
+             }
+         }
+    }
+    public function calcUdsShiftAndWeek($monitor)
+    {
+        // Inicializar contadores de unidades
+        $totalUnitsShift = 0;
+        $totalUnitsWeek = 0;
+    
+        // Obtener el ID de la línea de producción desde el monitor
+        $production_line_id = $monitor->production_line_id;
+    
+        // Obtener el tiempo de inicio de turno desde el monitor
+        $time_start_shift = $monitor->time_start_shift;
+    
+        // Buscar todos los sensores asociados a la línea de producción
+        $sensors = Sensor::where('production_line_id', $production_line_id)->get();
+    
+        // Validar si se encontraron sensores
+        if ($sensors->isEmpty()) {
+            $this->info("No se encontraron sensores para la línea de producción con ID: $production_line_id.");
+            Log::warning("No se encontraron sensores para la línea de producción con ID: $production_line_id.");
+            return;
+        }
+    
+        // Procesar cada sensor encontrado
+        foreach ($sensors as $sensor) {
+            // Obtener el registro del barcode asociado al sensor
+            $barcode = Barcode::find($sensor->barcoder_id);
+    
+            if (!$barcode || !$barcode->order_notice) {
+                $this->info("No se encontró el registro del barcode o el campo order_notice está vacío para el sensor con ID: {$sensor->id}.");
+                Log::warning("No se encontró el registro del barcode o el campo order_notice está vacío para el sensor con ID: {$sensor->id}.");
+                continue;
+            }
+    
+            // Decodificar el JSON almacenado en order_notice
+            $orderNotice = json_decode($barcode->order_notice, true);
+    
+            // Extraer valores específicos del JSON
+            $unitsPerBox = $orderNotice['refer']['groupLevel'][0]['uds'] ?? null;
+    
+            // Buscar en sensor_counts todas las producciones del sensor en el turno actual
+            $unitsInShift = SensorCount::where('sensor_id', $sensor->id)
+                ->where('value', 1)
+                ->where('created_at', '>=', $time_start_shift)
+                ->sum('value'); // Sumamos todas las producciones del turno
+    
+            // Sumar las unidades producidas en este turno
+            $totalUnitsShift += $unitsInShift;
+    
+            // Buscar en sensor_counts todas las producciones del sensor en la semana actual
+            $currentWeekStart = now()->startOfWeek();
+            $unitsInWeek = SensorCount::where('sensor_id', $sensor->id)
+                ->where('value', 1)
+                ->whereBetween('created_at', [$currentWeekStart, now()])
+                ->sum('value'); // Sumamos todas las producciones de la semana
+    
+            // Sumar las unidades producidas en esta semana
+            $totalUnitsWeek += $unitsInWeek;
+        }
+    
+        // Cálculo de cajas (paquetes) completas por turno y semana
+        if ($unitsPerBox && $unitsPerBox > 0) {
+            $boxesShift = floor($totalUnitsShift / $unitsPerBox); // Cajas completas en el turno
+            $boxesWeek = floor($totalUnitsWeek / $unitsPerBox);   // Cajas completas en la semana
+        } else {
+            $this->info("Las unidades por caja (unitsPerBox) no están definidas o son inválidas.");
+            return;
+        }
+    
+        // Devolvemos o guardamos los resultados en una tabla o un log si es necesario
+        $this->info("Unidades producidas en el turno: $totalUnitsShift");
+        $this->info("Cajas producidas en el turno: $boxesShift");
+        $this->info("Unidades producidas en la semana: $totalUnitsWeek");
+        $this->info("Cajas producidas en la semana: $boxesWeek");
+        
+        // Crear los JSON con el downtime acumulado y el status correspondiente
+        $jsonShift = json_encode(['value' => $boxesShift, 'status' => 2]);
+        $jsonWeek = json_encode(['value' => $boxesWeek, 'status' => 2]);
+    
+        // Obtener el valor original del mqtt_topic desde monitor_oee
+        $mqtt_topicKpi1 = $monitor->mqtt_topic;
+    
+        // Expresión regular para eliminar todo lo que esté entre /sta/ y /metrics/
+        $pattern = '/\/sta\/.*\/metrics\/.*$/';
+        $mqtt_topic_modified = preg_replace($pattern, '', $mqtt_topicKpi1);
+    
+        // Publicar el mensaje MQTT para el KPI 2 (cajas por turno)
+        $mqtt_topic_kpi2 = $mqtt_topic_modified . '/kpi2Value';
+        $this->publishMqttMessage($mqtt_topic_kpi2, $jsonWeek);
+    
+        // Publicar el mensaje MQTT para el KPI 3 (cajas por semana)
+        $mqtt_topic_kpi3 = $mqtt_topic_modified . '/kpi3Value';
+        $this->publishMqttMessage($mqtt_topic_kpi3, $jsonShift);
+    }
+    
+    
 
     /**
      * Publicar el mensaje MQTT en los servidores
