@@ -40,8 +40,8 @@
     .time-container {
       display: flex;
       flex-direction: column;
-      align-items: flex-end; /* Alinear todo a la derecha */
-      margin-left: auto; /* Empujar el contenedor hacia la derecha */
+      align-items: flex-end;
+      margin-left: auto;
     } 
 
     .time {
@@ -51,7 +51,7 @@
 
     #scaleName {
       font-size: 2.5vh;
-      color: #ffcc00; /* Cambiamos el color para que sea amarillo */
+      color: #ffcc00;
       text-align: right;
     }
     
@@ -91,7 +91,8 @@
       flex-direction: column;
       align-items: center;
       margin: 10px;
-      min-width: 180px;
+      width: 32%; /* Las cajas ocuparán aproximadamente un tercio de la pantalla */
+      min-height: 200px; /* Altura mínima */
       text-align: center;
       flex-grow: 1;
       padding: 15px;
@@ -99,47 +100,39 @@
       background-color: #3b3c55;
       box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
     }
-    .weight-display {
-      font-size: 10vw;
+
+
+    .weight-display, .dimension-display, .boxNumberDisplay, .lastBoxNumberDisplay {
+      font-size: 5vw; /* Ajustamos para que todos los textos tengan el mismo tamaño */
       font-weight: bold;
-      color: #ffcc00;
+      color: #ffcc00; /* Este es el color que estás usando para el peso en vivo */
       line-height: 1;
       word-wrap: break-word;
     }
-    
-    #weightDisplay {
-      font-size: 8vw;
-      font-weight: bold;
-      color: #ffcc00;
-      line-height: 1;
-      word-wrap: break-word;
-    }
+
     .dimension-display {
-      font-size: 10vw; /* Tamaño del texto para peso y dimensiones */
+      font-size: 5vw; /* Tamaño del texto */
       font-weight: bold;
-      color: #ffffff;
+      color: #ffffff; /* Cambia el color a blanco */
       line-height: 1;
       word-wrap: break-word;
     }
-    #dimensionDisplay {
-      font-size: 8vw;
+
+
+    #weightDisplay, #dimensionDisplay, #lastWeightDisplay, #lastDimensionDisplay, #boxNumberDisplay, #lastBoxNumberDisplay {
+      font-size: 5vw; /* Mismo tamaño de texto para todos los indicadores */
       font-weight: bold;
-      color: #ffffff;
+      color: #ffcc00; /* Mismo color de texto */
       line-height: 1;
       word-wrap: break-word;
     }
 
     .unit {
-      font-size: 60%; /* Las unidades serán un 60% del tamaño del texto principal */
-      vertical-align: super; /* Ajusta la posición de las unidades */
+      font-size: 40%;
+      vertical-align: super;
+      color: #ffffff; /* Color blanco para las unidades */
     }
-    
-    #lastWeightDisplay {
-      font-size: 6vh;
-      font-weight: bold;
-      color: #ffcc00;
-    }
-    
+
     #lastBarcode {
       margin-top: 10px;
       width: 100%;
@@ -161,39 +154,31 @@
       color: #ffffff;
     }
 
-    .live-icon {
-      width: 100px;
-      animation: blink 1s infinite;
-    }
-
-    .history-icon {
-      width: 80px;
-      margin-bottom: 10px;
-    }
-    
-    @keyframes blink {
-      0% { opacity: 1; }
-      50% { opacity: 0; }
-      100% { opacity: 1; }
-    }
-    
     @media (max-width: 768px) {
       .box-content {
         flex-direction: column;
       }
-    
+
       .weight-display, .dimension-display {
         font-size: 20vw;
       }
-    
+
+      .info-box {
+        width: 100%;
+        height: auto;
+        margin-bottom: 10px;
+      }
+
       .info-box img {
         width: 12vh;
       }
-    
+
       .info-box p {
         font-size: 2vh;
       }
     }
+   
+
   </style>
 </head>
 <body>
@@ -218,7 +203,7 @@
             </div>
             <div class="info-box">
                 <img src="recuento.png" alt="Pallets">
-                <p id="boxNumberDisplay">1120 palets</p>
+                <p id="boxNumberDisplay">1120 <b class="unit">BOX</b></p>
             </div>
         </div>
     </div>
@@ -235,7 +220,7 @@
             </div>
             <div class="info-box">
                 <img src="recuento.png" alt="Pallets">
-                <p id="lastBoxNumberDisplay">1119 palets</p>
+                <p id="lastBoxNumberDisplay">1119 <b class="unit">BOX</b></p>
             </div>
         </div>
         <div class="barcode" id="barcode">
@@ -246,7 +231,6 @@
   </main>
 
   <script>
-    // Función para obtener el token de la URL
     function getTokenFromUrl() {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get('token');
@@ -264,7 +248,7 @@
             }
 
             const data = await response.json();
-            console.log("Datos recibidos:", data); // Verifica los datos recibidos
+            console.log("Datos recibidos:", data);
 
             const grossWeight = parseFloat(data.gross_weight) || 0;
             const lastControlWeight = parseFloat(data.last_control_weight) || 0;
@@ -272,11 +256,11 @@
             document.getElementById('scaleName').innerHTML = data.name + '&nbsp;'|| "Nombre de la Báscula";
             document.getElementById('weightDisplay').innerHTML = grossWeight.toFixed(1) + '<b class="unit">Kg</b>';
             document.getElementById('dimensionDisplay').innerHTML = data.dimension + '<b class="unit">mm</b>';
-            document.getElementById('boxNumberDisplay').textContent = data.box_number + " palets";
+            document.getElementById('boxNumberDisplay').innerHTML = data.box_number + '<b class="unit">Box</b>';
 
             document.getElementById('lastWeightDisplay').innerHTML = lastControlWeight.toFixed(1) + '<b class="unit">Kg</b>';
             document.getElementById('lastDimensionDisplay').innerHTML = data.last_dimension + '<b class="unit">mm</b>';
-            document.getElementById('lastBoxNumberDisplay').textContent = data.last_box_number + " palets";
+            document.getElementById('lastBoxNumberDisplay').innerHTML = data.last_box_number + '<b class="unit">Box</b>';
 
             JsBarcode("#lastBarcode", data.last_barcoder.toString(), {
                 format: "CODE128",
