@@ -271,10 +271,12 @@ class ReadModbus extends Command
 
             Log::info("Nuevo dimension_max guardado en modbuses: {$currentValue}");
 
-            // Actualizar dimension_max en otros registros de Modbuses donde dimension_id = $config->id
+            // Actualizar dimension en otros registros de Modbuses donde dimension_id = $config->id
             Modbus::where('dimension_id', $config->id)
-            ->where('dimension', '<', $currentValue) // Verifica que el valor actual es mayor
-            ->update(['dimension' => $currentValue]);
+                    ->where('dimension', '<', $currentValue) // Verifica que el valor actual es mayor
+                    ->where('max_kg', '!=', 0) // Verifica que max_kg no sea 0
+                    ->update(['dimension' => $currentValue]);
+
 
         Log::info("dimension_max actualizado en otros registros de Modbuses donde dimension_id = {$config->id}");
 
