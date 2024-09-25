@@ -20,9 +20,6 @@ class CreateSensorsTable extends Migration
             $table->foreignId('production_line_id')->constrained('production_lines')->onDelete('cascade');
             $table->foreignId('barcoder_id')->constrained('barcodes')->onDelete('cascade'); // Apunta a 'barcodes'
             $table->integer('sensor_type')->default(0);
-            $table->integer('optimal_production_time')->nullable(); // Tiempo óptimo de producción de una caja
-            $table->integer('reduced_speed_time_multiplier')->nullable(); // Multiplicador para velocidad reducida
-            $table->integer('downtime_count')->default(0);  // Nuevo campo para contar inactividad
             $table->json('json_api')->nullable(); // Campo json_api que puede ser nulo
             $table->string('mqtt_topic_sensor'); // Nuevo campo mqtt_topic_sensor
             $table->integer('count_total')->default(0); // contador total de lecturas
@@ -39,6 +36,9 @@ class CreateSensorsTable extends Migration
             $table->string('unic_code_order')->nullable();  // Nuevo campo unic_code_order
             $table->string('shift_type')->nullable();  // Tipo de turno
             $table->string('event')->nullable();       // Evento
+            $table->integer('downtime_count')->default(0);  // Nuevo campo para contar inactividad
+            $table->integer('optimal_production_time')->nullable(); // Tiempo óptimo de producción de una caja
+            $table->integer('reduced_speed_time_multiplier')->nullable(); // Multiplicador para velocidad reducida
             $table->timestamps();
         });
     }

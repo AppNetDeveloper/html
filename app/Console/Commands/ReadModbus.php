@@ -191,7 +191,7 @@ class ReadModbus extends Command
 
     public function processWeightModel($config, $value, $data)
     {
-        $updatedValue = $value / 10;
+        $updatedValue = $value / $config->conversion_factor;
         
         
         if ($config->calibration_type == '0') { 
@@ -208,10 +208,8 @@ class ReadModbus extends Command
             //Por momento no tengo logica de recalibrate por hRDWARE
         }
         
-        $mqttTopic = $config->mqtt_topic_gross;
-
-
-
+        $mqttTopic = $config->mqtt_topic . '1/gross_weight';
+        $mqttTopic2 = $config->mqtt_topic . '2/gross_weight';
        // Obtiene el último valor guardado
         $lastValue = $config->last_value;
         Log::info("Mi valor:{$lastValue}");
@@ -236,6 +234,8 @@ class ReadModbus extends Command
 
             // Publica el mensaje MQTT
             $this->publishMqttMessage($mqttTopic, $message);
+            //OJO CON ESTO ES SOLO SI LA BASCULA TIENE UN SOLO CONTADOR OJO
+            $this->publishMqttMessage($mqttTopic2, $message);
         } else {
             // Logea que el valor no ha cambiado y no se envía el mensaje MQTT
             Log::info("Mismo valor no se manda MQTT: " . json_encode(['value' => $lastValue, 'time' => date('c')]));
@@ -330,14 +330,18 @@ class ReadModbus extends Command
     private function processWeightData(Modbus $config, $value, $data)
     {
     // Obtener valores actuales de la base de datos
-    $maxKg = intval($config->max_kg);
+    $maxKg = floatval($config->max_kg);
+    $totalKgOrder = floatval($config->total_kg_order);
+    $totalKgShift = floatval($config->total_kg_shift);
     $repNumber = intval($config->rep_number);
-    $minKg = intval($config->min_kg);
-    $lastKg = intval($config->last_kg);
+    $minKg = floatval($config->min_kg);
+    $lastKg = floatval($config->last_kg);
     $lastRep = intval($config->last_rep);
-    $variacionNumber = intval($config->variacion_number);
-    $topic_control = $config->mqtt_topic_control;
-    $topic_box_control = $config->mqtt_topic_boxcontrol;
+    $variacionNumber = floatval($config->variacion_number);
+    $topic_control = $config->mqtt_topic . '1/control_weight';
+    $topic_control2 = $config->mqtt_topic . '2/control_weight';
+    $topic_box_control = $config->mqtt_topic . '1';
+    $topic_box_control2 = $config->mqtt_topic . '2';
     $dimensionFinal = intval($config->dimension);
     //Log::debug("({$minKg} kg)");
 
@@ -388,7 +392,7 @@ class ReadModbus extends Command
                         'dimension' => $dimensionFinal
                 ];
             $this->publishMqttMessage($topic_control, $messageControl); // Enviar mensaje de control
-
+            $this->publishMqttMessage($topic_control2, $messageControl); // Enviar mensaje de control    
 
             // Incrementar el recuento de cajas en rec_box
             $newBoxNumber++; // es por orderId
@@ -396,6 +400,8 @@ class ReadModbus extends Command
             $newBoxNumberUnlimited++; //indefinido
             // Generar un número de barcoder único
             $uniqueBarcoder = uniqid('bar_', true);
+
+                
 
             // Intentar guardar los datos en la tabla control_weight
         try {
@@ -432,18 +438,30 @@ class ReadModbus extends Command
             ]);
         }
 
-
+            $totalKgShift=$maxKg + $totalKgShift;
+            $totalKgOrder= $maxKg + $totalKgOrder;
             $maxKg = 0; // Reiniciar el valor máximo
             $lastKg = 0; // Reiniciar el último valor
             $lastRep = 0; // Reiniciar el contador de repeticiones
             $dimensionFinal = 0; //Reiniciar altura de la caja palet
 
+
             //llamar mqtt recuento de bultos cajas
             $messageBoxNumber = [
                     'value' => $newBoxNumber,
-                    'status' => '2'
-                ];
+                    'status' => 2
+            ]; 
             $this->publishMqttMessage($topic_box_control, $messageBoxNumber); // Enviar mensaje de control
+
+            //actualizr el peso acumulado por turno y order cuando se ha generado una nueva caja
+                
+
+            $messageTotalKgOrder = [
+                'value' => round($totalKgOrder), // Redondea sin decimales
+                'status' => 2
+            ];
+            
+            $this->publishMqttMessage($topic_box_control2, $messageTotalKgOrder); // Enviar mensaje de control
 
                 //llamar a la api externa si se ha pedido desde el cliente, esto comprueba si el cliente nos ha mandado valor en api para devolverle las info
 
@@ -476,7 +494,9 @@ class ReadModbus extends Command
             'max_kg' => $maxKg,
             'last_kg' => $lastKg,
             'last_rep' => $lastRep,
-            'dimension' => $dimensionFinal
+            'dimension' => $dimensionFinal,
+            'total_kg_order' => $totalKgOrder,
+            'total_kg_shift' => $totalKgShift
         ]);
     }
     private function printLabel($config, $uniqueBarcoder)
@@ -571,8 +591,6 @@ class ReadModbus extends Command
 
     private function publishMqttMessage($topic, $message)
     {
-        ///MqttHelper::publishMessage($topic, $message, env('MQTT_SERVER'), intval(env('MQTT_PORT')));
-       //MqttPersistentHelper::publishMessage($topic, $message, env('MQTT_SERVER'), intval(env('MQTT_PORT')));
        try {
         // Inserta en la tabla mqtt_send_server1
         MqttSendServer1::createRecord($topic, $message);

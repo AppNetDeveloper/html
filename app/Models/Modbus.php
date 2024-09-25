@@ -12,12 +12,13 @@ class Modbus extends Model
         'production_line_id',
         'json_api',
         'mqtt_topic_modbus', // Corregido el nombre del campo
-        'mqtt_topic_gross',
-        'mqtt_topic_control',
-        'mqtt_topic_boxcontrol',
+        'mqtt_topic', //topico para mandar a topflow
         'token',
         'dimension_id',
         'dimension',
+        'conversion_factor',
+        'total_kg_order',
+        'total_kg_shift',
         'max_kg',
         'rep_number',
         'min_kg',
@@ -38,6 +39,12 @@ class Modbus extends Model
         'dimension_variacion', // variación de dimensión
         'offset_meter',
         'printer_id',
+        'unic_code_order',// Nuevo campo unic_code_order
+        'shift_type', // Tipo de turno
+        'event',      // Evento
+        'downtime_count',  // Nuevo campo para contar inactividad
+        'optimal_production_time', // Tiempo óptimo de producción de una caja
+        'reduced_speed_time_multiplier', // Multiplicador para velocidad reducida
     ];
 
     public $timestamps = true; // Habilitar el manejo automático de timestamps

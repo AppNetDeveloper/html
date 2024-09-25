@@ -158,24 +158,35 @@ class MqttShiftSubscriber extends Command
         $sensor->count_order_0 = 0;
         $sensor->count_order_1 = 0;
         $sensor->downtime_count = 0;
-        $sensor->unic_code_order = uniqid();
+        $sensor->unic_code_order = uniqid(); // Generar un nuevo código único para el pedido
+
+        // Guardar los cambios en el sensor
+        $sensor->save();
+
     }
 
     private function changeDataTimeOee($sensor)
     {
         $this->info("Actualizar horra de Oee para el la linia {$sensor->production_line_id}.");
 
-        $oee = MonitorOee::where('production_line_id', $sensor->production_line_id);
-        if ($oee) {
-            $oee->time_start_shift = Carbon::now();
-            $oee->save();
+        $oees = MonitorOee::where('production_line_id', $sensor->production_line_id)->get();
+
+        if ($oees->isNotEmpty()) {
+            foreach ($oees as $oee) {
+                $oee->time_start_shift = Carbon::now();
+                $oee->save();
+            }
+            $this->info("Shift time updated for all monitors in production line {$sensor->production_line_id}.");
+        } else {
+            $this->warn("No monitors found for production line {$sensor->production_line_id}.");
         }
+
     }
     private function sendMqttTo0($sensor){
         // Json enviar a MQTT conteo por orderId
         $processedMessage = json_encode([
             'value' => 0,
-            'status' => 2,
+            'status' => 2
         ]);
 
         // Publicar el mensaje a través de MQTT
