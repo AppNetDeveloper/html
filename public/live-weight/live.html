@@ -91,8 +91,8 @@
       flex-direction: column;
       align-items: center;
       margin: 10px;
-      width: 32%; /* Las cajas ocuparán aproximadamente un tercio de la pantalla */
-      min-height: 200px; /* Altura mínima */
+      width: 32%; 
+      min-height: 200px; 
       text-align: center;
       flex-grow: 1;
       padding: 15px;
@@ -101,36 +101,34 @@
       box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
     }
 
-
     .weight-display, .dimension-display, .boxNumberDisplay, .lastBoxNumberDisplay {
-      font-size: 5vw; /* Ajustamos para que todos los textos tengan el mismo tamaño */
+      font-size: 5vw;
       font-weight: bold;
-      color: #ffcc00; /* Este es el color que estás usando para el peso en vivo */
+      color: #ffcc00; /* Color default para los números */
       line-height: 1;
       word-wrap: break-word;
     }
 
     .dimension-display {
-      font-size: 5vw; /* Tamaño del texto */
+      font-size: 5vw; 
       font-weight: bold;
-      color: #ffffff; /* Cambia el color a blanco */
+      color: #ffcc00; /* Números en amarillo */
       line-height: 1;
       word-wrap: break-word;
     }
 
-
     #weightDisplay, #dimensionDisplay, #lastWeightDisplay, #lastDimensionDisplay, #boxNumberDisplay, #lastBoxNumberDisplay {
-      font-size: 5vw; /* Mismo tamaño de texto para todos los indicadores */
+      font-size: 5vw; 
       font-weight: bold;
-      color: #ffcc00; /* Mismo color de texto */
       line-height: 1;
       word-wrap: break-word;
+      color: #ffcc00; /* Asegurarse que los números sean siempre amarillos */
     }
 
     .unit {
       font-size: 40%;
       vertical-align: super;
-      color: #ffffff; /* Color blanco para las unidades */
+      color: #ffffff; /* Color blanco para las unidades (Kg, mm, BOX) */
     }
 
     #lastBarcode {
@@ -177,8 +175,41 @@
         font-size: 2vh;
       }
     }
-   
 
+    @keyframes zoomEffect {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.2);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .zoom {
+      animation: zoomEffect 2s;
+    }
+
+    @keyframes zoomEffectRed {
+      0% {
+        transform: scale(1);
+        color: #ffcc00; /* Color original */
+      }
+      50% {
+        transform: scale(1.2);
+        color: red; /* Color rojo durante el zoom */
+      }
+      100% {
+        transform: scale(1);
+        color: #ffcc00; /* Regresa a color amarillo */
+      }
+    }
+
+    .zoom-red {
+      animation: zoomEffectRed 2s;
+    }
   </style>
 </head>
 <body>
@@ -231,6 +262,14 @@
   </main>
 
   <script>
+    let lastWeight = null;
+    let lastDimension = null;
+    let lastBoxNumber = null;
+
+    let liveWeight = null;
+    let liveDimension = null;
+    let liveBoxNumber = null;
+
     function getTokenFromUrl() {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get('token');
@@ -254,9 +293,54 @@
             const lastControlWeight = parseFloat(data.last_control_weight) || 0;
 
             document.getElementById('scaleName').innerHTML = data.name + '&nbsp;'|| "Nombre de la Báscula";
+
+            // Detect changes in live data and apply zoom effect
+            if (grossWeight !== liveWeight) {
+                document.getElementById('weightDisplay').classList.add('zoom');
+                setTimeout(() => {
+                    document.getElementById('weightDisplay').classList.remove('zoom');
+                }, 2000);
+            }
+
+            if (data.dimension !== liveDimension) {
+                document.getElementById('dimensionDisplay').classList.add('zoom');
+                setTimeout(() => {
+                    document.getElementById('dimensionDisplay').classList.remove('zoom');
+                }, 2000);
+            }
+
+            if (data.box_number !== liveBoxNumber) {
+                document.getElementById('boxNumberDisplay').classList.add('zoom');
+                setTimeout(() => {
+                    document.getElementById('boxNumberDisplay').classList.remove('zoom');
+                }, 2000);
+            }
+
             document.getElementById('weightDisplay').innerHTML = grossWeight.toFixed(1) + '<b class="unit">Kg</b>';
             document.getElementById('dimensionDisplay').innerHTML = data.dimension + '<b class="unit">mm</b>';
             document.getElementById('boxNumberDisplay').innerHTML = data.box_number + '<b class="unit">Box</b>';
+
+            // Detect changes in last data and apply zoom effect with color change to red
+            if (lastControlWeight !== lastWeight) {
+                document.getElementById('lastWeightDisplay').classList.add('zoom-red');
+                setTimeout(() => {
+                    document.getElementById('lastWeightDisplay').classList.remove('zoom-red');
+                }, 2000);
+            }
+
+            if (data.last_dimension !== lastDimension) {
+                document.getElementById('lastDimensionDisplay').classList.add('zoom-red');
+                setTimeout(() => {
+                    document.getElementById('lastDimensionDisplay').classList.remove('zoom-red');
+                }, 2000);
+            }
+
+            if (data.last_box_number !== lastBoxNumber) {
+                document.getElementById('lastBoxNumberDisplay').classList.add('zoom-red');
+                setTimeout(() => {
+                    document.getElementById('lastBoxNumberDisplay').classList.remove('zoom-red');
+                }, 2000);
+            }
 
             document.getElementById('lastWeightDisplay').innerHTML = lastControlWeight.toFixed(1) + '<b class="unit">Kg</b>';
             document.getElementById('lastDimensionDisplay').innerHTML = data.last_dimension + '<b class="unit">mm</b>';
@@ -268,6 +352,16 @@
                 fontSize: 20,
                 height: 80
             });
+
+            // Update last known values
+            lastWeight = lastControlWeight;
+            lastDimension = data.last_dimension;
+            lastBoxNumber = data.last_box_number;
+
+            // Update live known values
+            liveWeight = grossWeight;
+            liveDimension = data.dimension;
+            liveBoxNumber = data.box_number;
 
         } catch (error) {
             console.error("Error al obtener o procesar datos de la API:", error);
