@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <title>BOIZOLO Autoconto</title>
+  <title>BOISOLO Autoconto</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
@@ -20,6 +20,10 @@
       font-family: 'Roboto', sans-serif;
       box-sizing: border-box;
       overflow: hidden;
+
+      background: url('/live-weight/9984.jpg') no-repeat center center fixed;
+      background-size: cover;
+      
     }
     
     header {
@@ -42,7 +46,7 @@
       flex-direction: column;
       align-items: flex-end;
       margin-left: auto;
-    } 
+    }
 
     .time {
       font-size: 4vh;
@@ -77,24 +81,19 @@
       flex-direction: column;
       align-items: center;
     }
-    
+
     .box-content {
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
       width: 100%;
-      flex-wrap: wrap;
     }
     
     .info-box {
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin: 10px;
-      width: 32%; 
-      min-height: 200px; 
       text-align: center;
-      flex-grow: 1;
       padding: 15px;
       border-radius: 8px;
       background-color: #3b3c55;
@@ -104,31 +103,23 @@
     .weight-display, .dimension-display, .boxNumberDisplay, .lastBoxNumberDisplay {
       font-size: 5vw;
       font-weight: bold;
-      color: #ffcc00; /* Color default para los números */
-      line-height: 1;
-      word-wrap: break-word;
-    }
-
-    .dimension-display {
-      font-size: 5vw; 
-      font-weight: bold;
-      color: #ffcc00; /* Números en amarillo */
+      color: #ffcc00;
       line-height: 1;
       word-wrap: break-word;
     }
 
     #weightDisplay, #dimensionDisplay, #lastWeightDisplay, #lastDimensionDisplay, #boxNumberDisplay, #lastBoxNumberDisplay {
-      font-size: 5vw; 
+      font-size: 5vw;
       font-weight: bold;
       line-height: 1;
       word-wrap: break-word;
-      color: #ffcc00; /* Asegurarse que los números sean siempre amarillos */
+      color: #ffcc00;
     }
 
     .unit {
       font-size: 40%;
-      vertical-align: super;
-      color: #ffffff; /* Color blanco para las unidades (Kg, mm, BOX) */
+      vertical-align: baseline;
+      color: #ffffff;
     }
 
     #lastBarcode {
@@ -154,17 +145,11 @@
 
     @media (max-width: 768px) {
       .box-content {
-        flex-direction: column;
+        grid-template-columns: 1fr;
       }
 
       .weight-display, .dimension-display {
         font-size: 20vw;
-      }
-
-      .info-box {
-        width: 100%;
-        height: auto;
-        margin-bottom: 10px;
       }
 
       .info-box img {
@@ -195,15 +180,15 @@
     @keyframes zoomEffectRed {
       0% {
         transform: scale(1);
-        color: #ffcc00; /* Color original */
+        color: #ffcc00;
       }
       50% {
         transform: scale(1.2);
-        color: red; /* Color rojo durante el zoom */
+        color: red;
       }
       100% {
         transform: scale(1);
-        color: #ffcc00; /* Regresa a color amarillo */
+        color: #ffcc00;
       }
     }
 
@@ -251,11 +236,11 @@
             </div>
             <div class="info-box">
                 <img src="recuento.png" alt="Pallets">
-                <p id="lastBoxNumberDisplay">1119 <b class="unit">BOX</b></p>
+                <p id="lastBoxNumberDisplay">1119 <b class="unit">Bultos</b></p>
             </div>
         </div>
         <div class="barcode" id="barcode">
-            <center><p>Barcoder Anonimus BOX</p></center>
+            <center><p>&Uacute;ltimo C&oacute;digo de Barras: SIN LECTURA</p></center>
             <svg id="lastBarcode"></svg>
         </div>
     </div>
@@ -318,7 +303,7 @@
 
             document.getElementById('weightDisplay').innerHTML = grossWeight.toFixed(1) + '<b class="unit">Kg</b>';
             document.getElementById('dimensionDisplay').innerHTML = data.dimension + '<b class="unit">mm</b>';
-            document.getElementById('boxNumberDisplay').innerHTML = data.box_number + '<b class="unit">Box</b>';
+            document.getElementById('boxNumberDisplay').innerHTML = data.box_number + '<b class="unit">Bultos</b>';
 
             // Detect changes in last data and apply zoom effect with color change to red
             if (lastControlWeight !== lastWeight) {
@@ -344,7 +329,7 @@
 
             document.getElementById('lastWeightDisplay').innerHTML = lastControlWeight.toFixed(1) + '<b class="unit">Kg</b>';
             document.getElementById('lastDimensionDisplay').innerHTML = data.last_dimension + '<b class="unit">mm</b>';
-            document.getElementById('lastBoxNumberDisplay').innerHTML = data.last_box_number + '<b class="unit">Box</b>';
+            document.getElementById('lastBoxNumberDisplay').innerHTML = data.last_box_number + '<b class="unit">Bultos</b>';
 
             JsBarcode("#lastBarcode", data.last_barcoder.toString(), {
                 format: "CODE128",
