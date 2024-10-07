@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Animación con Lottie</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.7.5/lottie.min.js"></script>
+</head>
+<body style="background-color:rgb(20, 19, 19);">
+  <div id="contenedorAnimacion"></div>
+  <button id="cambiarValoresBtn20">Cambiar a 20</button>
+  <button id="cambiarValoresBtn40">Cambiar a 40</button>
+  <button id="cambiarValoresBtn60">Cambiar a 60</button>
+  <button id="cambiarValoresBtn80">Cambiar a 80</button>
+  <button id="cambiarValoresBtn100">Cambiar a 100</button>
+  <button id="cambiarValoresBtn0">Cambiar a 0</button>
+
+  <script>
+    let animacion;
+    let animacionData;
+
+    // Cargar el archivo JSON y modificarlo dinámicamente antes de la carga
+    async function cargarJSON() {
+      try {
+        const response = await fetch('hoppers_complete.json');
+        animacionData = await response.json();
+        console.log("JSON de animación cargado exitosamente.");
+        cargarAnimacion(animacionData);
+      } catch (error) {
+        console.error("Error al cargar el JSON de la animación:", error);
+      }
+    }
+
+    // Función para cargar la animación
+    function cargarAnimacion(data) {
+      if (animacion) {
+        animacion.destroy(); // Destruimos cualquier animación previa
+      }
+      animacion = lottie.loadAnimation({
+        container: document.getElementById('contenedorAnimacion'),
+        renderer: 'svg',
+        loop: true,
+        autoplay: true,
+        animationData: data // Usamos el JSON modificado
+      });
+      animacion.addEventListener('DOMLoaded', function() {
+        console.log("Animación completamente cargada y lista.");
+        mostrarValorActualSlider(); // Mostrar el valor actual del slider al cargar la animación
+      });
+    }
+
+    // Función para mostrar el valor actual del slider en la consola
+    function mostrarValorActualSlider() {
+      const layers = animacionData.layers;
+      for (let i = 0; i < layers.length; i++) {
+        if (layers[i].nm === 'hopper2') {
+          const effects = layers[i].ef;
+          for (let j = 0; j < effects.length; j++) {
+            if (effects[j].nm === 'fillinglevels02') {
+              let valorActual = effects[j].ef[0].v.k;
+              console.log("Valor actual del slider al cargar la animación:", valorActual);
+            }
+          }
+        }
+      }
+    }
+
+    // Función para modificar el valor del Slider en el JSON de forma gradual
+    function modificarSliderGradual(nuevoValor) {
+      console.log("Iniciando modificación gradual del slider hacia:", nuevoValor);
+
+      // Buscar la capa correspondiente en el JSON y modificar el valor del slider
+      const layers = animacionData.layers;
+      for (let i = 0; i < layers.length; i++) {
+        if (layers[i].nm === 'hopper2') {
+          const effects = layers[i].ef;
+          for (let j = 0; j < effects.length; j++) {
+            if (effects[j].nm === 'fillinglevels02') {
+              let valorActual = effects[j].ef[0].v.k;
+              let paso = (nuevoValor - valorActual) / 20; // Definir 20 pasos para una transición suave
+
+              let contador = 0;
+
+              function actualizarValor() {
+                if (contador <= 20) {
+                  let valorIntermedio = valorActual + (paso * contador);
+                  effects[j].ef[0].v.k = Math.round(valorIntermedio); // Redondear para mantener valores enteros
+                  console.log("Valor intermedio del slider en el JSON:", effects[j].ef[0].v.k);
+
+                  contador++;
+                  setTimeout(actualizarValor, 100); // Esperamos 100ms entre cada actualización
+                } else {
+                  console.log("Modificación gradual completada. Valor final:", nuevoValor);
+                  // Recargar la animación después de completar la actualización
+                  cargarAnimacion(animacionData);
+                }
+              }
+
+              actualizarValor();
+            }
+          }
+        }
+      }
+    }
+
+    // Cargar el JSON de la animación al inicio
+    cargarJSON();
+
+    // Eventos para los botones que modifican los valores del slider
+    document.getElementById('cambiarValoresBtn20').addEventListener('click', function() {
+      modificarSliderGradual(20); // Cambiamos el valor del slider a 20
+    });
+
+    document.getElementById('cambiarValoresBtn40').addEventListener('click', function() {
+      modificarSliderGradual(40); // Cambiamos el valor del slider a 40
+    });
+
+    document.getElementById('cambiarValoresBtn60').addEventListener('click', function() {
+      modificarSliderGradual(60); // Cambiamos el valor del slider a 60
+    });
+
+    document.getElementById('cambiarValoresBtn80').addEventListener('click', function() {
+      modificarSliderGradual(80); // Cambiamos el valor del slider a 80
+    });
+
+    document.getElementById('cambiarValoresBtn100').addEventListener('click', function() {
+      modificarSliderGradual(100); // Cambiamos el valor del slider a 100
+    });
+
+    document.getElementById('cambiarValoresBtn0').addEventListener('click', function() {
+      modificarSliderGradual(0); // Cambiamos el valor del slider a 0
+    });
+  </script>
+</body>
+</html>
+

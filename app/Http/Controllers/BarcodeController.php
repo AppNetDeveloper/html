@@ -106,10 +106,6 @@ class BarcodeController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'mqtt_topic_barcodes' => 'required|string|max:255',
-            'mqtt_topic_orders' => 'required|string|max:255',
-            'mqtt_topic_finish' => 'required|string|max:255',
-            'mqtt_topic_pause' => 'required|string|max:255',
-            'mqtt_topic_shift' => 'required|string|max:255',
             'machine_id' => 'nullable|string|max:255',
             'ope_id' => 'nullable|string|max:255',
             'order_notice' => 'nullable|json',

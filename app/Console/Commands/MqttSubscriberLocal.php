@@ -7,7 +7,7 @@ use App\Models\Barcode;
 use PhpMqtt\Client\MqttClient;
 use PhpMqtt\Client\ConnectionSettings;
 use App\Models\Sensor;
-use App\Models\Modbuse;
+use App\Models\Modbus;
 
 class MqttSubscriberLocal extends Command
 {
@@ -40,7 +40,8 @@ class MqttSubscriberLocal extends Command
         $connectionSettings->setUsername(env('MQTT_USERNAME'));
         $connectionSettings->setPassword(env('MQTT_PASSWORD'));
 
-        $mqtt = new MqttClient($server, $port, uniqid());
+        //$mqtt = new MqttClient($server, $port, uniqid());
+        $mqtt = new MqttClient($server, $port, "order-notices-externo");
         $mqtt->connect($connectionSettings, true); // Limpia la sesión
 
         return $mqtt;
@@ -48,7 +49,9 @@ class MqttSubscriberLocal extends Command
 
     private function subscribeToAllTopics(MqttClient $mqtt)
     {
-        $topics = Barcode::pluck('mqtt_topic_orders')->toArray();
+        $topics = Barcode::pluck('mqtt_topic_barcodes')->map(function ($topic) {
+            return $topic . "/prod_order_notice";
+        })->toArray();
 
         foreach ($topics as $topic) {
             if (!in_array($topic, $this->subscribedTopics)) {
@@ -66,8 +69,10 @@ class MqttSubscriberLocal extends Command
 
     private function checkAndSubscribeNewTopics(MqttClient $mqtt)
     {
-        $currentTopics = Barcode::pluck('mqtt_topic_orders')->toArray();
-
+       // $currentTopics = Barcode::pluck('mqtt_topic_orders')->toArray();
+       $currentTopics = Barcode::pluck('mqtt_topic_barcodes')->map(function ($topic) {
+            return $topic . "/prod_order_notice";
+        })->toArray();
         // Comparar con los tópicos a los que ya estamos suscritos
         foreach ($currentTopics as $topic) {
             if (!in_array($topic, $this->subscribedTopics)) {
@@ -84,34 +89,55 @@ class MqttSubscriberLocal extends Command
 
     private function processMessage($topic, $message)
     {
-        $barcode = Barcode::where('mqtt_topic_orders', $topic)->first();
-
+        // Eliminar el sufijo "/prod_order_notice" del tópico
+        $originalTopic = str_replace('/prod_order_notice', '', $topic);
+    
+        // Buscar el código de barras usando el tópico original
+        $barcode = Barcode::where('mqtt_topic_orders', $originalTopic)->first();
+    
         if ($barcode) {
             // Actualizar el aviso de orden para el código de barras encontrado
             $barcode->order_notice = $message;
             $barcode->save();
-            $this->info("Updated order notice for barcode {$barcode->id}");
-            //resetear los valores a 0 en sensors
+            $this->info("Aviso de pedido actualizado para código de barras {$barcode->id}");
+    
+            // Resetear los valores de sensores y modbuses
+            $this->resetSensors($barcode->id, $topic);
+            $this->resetModbuses($barcode->id, $topic);
+        } else {
+            $this->error("Barcode not found for topic: {$topic}");
+        }
+    }
+    
 
-            // Resetear los valores a 0 en la tabla sensors
-            $sensors = Sensor::where('barcoder_id', $barcode->id)->get();
+    private function resetSensors($barcodeId, $topic)
+    {
+        Sensor::where('barcoder_id', $barcodeId)->chunk(100, function ($sensors) use ($topic) {
             foreach ($sensors as $sensor) {
                 $sensor->count_order_0 = 0;
                 $sensor->count_order_1 = 0;
                 $sensor->save();
                 $this->info("Reset count_order_0 and count_order_1 for sensor with id {$sensor->id}");
             }
+        });
 
-            // Resetear el campo rec_box a 0 en la tabla modbuses
-            $modbuses = Modbus::where('barcoder_id', $barcode->id)->get();
+        if (Sensor::where('barcoder_id', $barcodeId)->count() == 0) {
+            $this->error("Sensor not found for topic: {$topic}");
+        }
+    }
+
+    private function resetModbuses($barcodeId, $topic)
+    {
+        Modbus::where('barcoder_id', $barcodeId)->chunk(100, function ($modbuses) use ($topic) {
             foreach ($modbuses as $modbus) {
                 $modbus->rec_box = 0;
                 $modbus->save();
                 $this->info("Reset rec_box for modbus with id {$modbus->id}");
             }
+        });
 
-        } else {
-            $this->error("Barcode not found for topic: {$topic}");
+        if (Modbus::where('barcoder_id', $barcodeId)->count() == 0) {
+            $this->error("Modbus not found for topic: {$topic}");
         }
     }
 }

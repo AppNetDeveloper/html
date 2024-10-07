@@ -14,8 +14,7 @@ class PublishToMqttServer1 extends Command
 {
     protected $signature = 'mqtt:publish-server1';
     protected $description = 'Publishes data to MQTT Server 1 based on mqtt_send_server1 table';
-
-    protected $mqtt;
+    protected $mqtt; // Definición de la propiedad MQTT
 
     public function __construct()
     {
@@ -24,15 +23,16 @@ class PublishToMqttServer1 extends Command
 
     public function handle()
     {
-        $this->initializeMqttClient();
-
         while (true) {
             try {
                 $mqttEntries = MqttSendServer1::all();
 
                 foreach ($mqttEntries as $entry) {
-                    if ($this->publishToMqtt($entry)) {
-                        $entry->delete(); // Elimina la entrada después de publicarla exitosamente
+                    if ($this->initializeMqttClient()) {
+                        if ($this->publishToMqtt($entry)) {
+                            $entry->delete(); // Elimina la entrada después de publicarla exitosamente
+                        }
+                        $this->disconnectMqttClient();
                     }
                 }
 
@@ -55,9 +55,11 @@ class PublishToMqttServer1 extends Command
 
         try {
             $this->mqtt->connect($connectionSettings, true);
+            return true;
         } catch (ConnectionException $e) {
-            Log::error("Connection error on MQTT Server 1: " . $e->getMessage());
+            $this->error("Connection error on MQTT Server 1: " . $e->getMessage());
             $this->reconnectClient();
+            return false;
         }
     }
 
@@ -65,12 +67,24 @@ class PublishToMqttServer1 extends Command
     {
         try {
             $this->mqtt->publish($entry->topic, $entry->json_data, 0);
-            //Log::info("Mesaje enviado a MQTT Server 1");
+            $this->info("Mesaje enviado a MQTT Server 1 topico: " . $entry->topic . " json_data: " . $entry->json_data . " Servidor: " . env('MQTT_SERVER') . " port: " . env('MQTT_PORT'));
             return true;
         } catch (DataTransferException $e) {
-            Log::error("Data transfer error on MQTT Server 1: " . $e->getMessage());
+            $this->error("Data transfer error on MQTT Server 1: " . $e->getMessage());
             $this->reconnectClient();
             return false;
+        }
+    }
+
+    private function disconnectMqttClient()
+    {
+        if ($this->mqtt) {
+            try {
+                $this->mqtt->disconnect();
+                $this->info("Servidor desconectado por petición servidor1");
+            } catch (\Exception $e) {
+                $this->error("Error al desconectar el cliente MQTT: " . $e->getMessage());
+            }
         }
     }
 
@@ -86,9 +100,6 @@ class PublishToMqttServer1 extends Command
 
     public function __destruct()
     {
-        if ($this->mqtt) {
-            $this->mqtt->disconnect();
-            Log::info("Servidor desconectado por peticion servidor1");
-        }
+        $this->disconnectMqttClient();
     }
 }

@@ -14,10 +14,6 @@ class Barcode extends Model
         'name',
         'token',
         'mqtt_topic_barcodes',
-        'mqtt_topic_orders',
-        'mqtt_topic_finish',
-        'mqtt_topic_pause',
-        'mqtt_topic_shift',
         'machine_id',
         'ope_id',
         'order_notice',
@@ -29,7 +25,8 @@ class Barcode extends Model
         'user_ssh_password',
         'port_barcoder'.
         'conexion_type',
-
+        'iniciar_model',
+        'sended',
     ];
 
     protected $hidden = [

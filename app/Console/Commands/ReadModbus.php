@@ -32,26 +32,46 @@ class ReadModbus extends Command
     protected $mqttService;
 
     protected $subscribedTopics = [];
-    public function __construct()
-    {
-        parent::__construct();
-        MqttPersistentHelper::init();
-    }
+    protected $shouldContinue = true;
 
     public function handle()
-    {
-        $mqtt = $this->initializeMqttClient(env('MQTT_SENSORICA_SERVER'), intval(env('MQTT_SENSORICA_PORT')));
-        $this->subscribeToAllTopics($mqtt);
+{
+    pcntl_async_signals(true);
 
-        // Bucle principal para verificar y suscribirse a nuevos tópicos
-        while (true) {
-            $this->checkAndSubscribeNewTopics($mqtt);
-            $mqtt->loop(true); // Mantener la conexión activa y procesar mensajes
+    // Manejar señales para una terminación controlada
+    pcntl_signal(SIGTERM, function () {
+        $this->shouldContinue = false;
+    });
 
-            // Permitir que Laravel maneje eventos internos mientras esperamos nuevos mensajes
-            usleep(100000); // Esperar 0.1 segundos
-        }
+    pcntl_signal(SIGINT, function () {
+        $this->shouldContinue = false;
+    });
+
+    $this->shouldContinue = true;
+
+    $mqtt = $this->initializeMqttClient(env('MQTT_SENSORICA_SERVER'), intval(env('MQTT_SENSORICA_PORT')));
+    $this->subscribeToAllTopics($mqtt);
+
+    // Bucle principal para verificar y suscribirse a nuevos tópicos
+    while ($this->shouldContinue) {
+        // Verificar y suscribir a nuevos tópicos
+        $this->checkAndSubscribeNewTopics($mqtt);
+
+        // Mantener la conexión activa y procesar mensajes MQTT
+        $mqtt->loop(true);
+
+        // Permitir que el sistema maneje señales
+        pcntl_signal_dispatch();
+
+        // Reducir la carga del sistema esperando un corto período
+        usleep(100000); // Esperar 0.1 segundos
     }
+
+    // Desconectar el cliente MQTT de forma segura
+    $mqtt->disconnect();
+    $this->info("MQTT Subscriber stopped gracefully.");
+}
+
 
     private function initializeMqttClient($server, $port)
     {

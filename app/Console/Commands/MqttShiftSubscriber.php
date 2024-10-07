@@ -11,6 +11,7 @@ use Carbon\Carbon; // Asegúrate de importar Carbon para el timestamp
 use App\Models\MqttSendServer1;
 use App\Models\MqttSendServer2;
 use App\Models\MonitorOee;
+use Illuminate\Support\Facades\Log;
 
 class MqttShiftSubscriber extends Command
 {
@@ -18,21 +19,47 @@ class MqttShiftSubscriber extends Command
     protected $description = 'Subscribe to MQTT topics and update shift control information from sensors';
 
     protected $subscribedTopics = [];
+    protected $shouldContinue = true;
 
     public function handle()
     {
+        // Manejo de señales para una terminación controlada
+        pcntl_async_signals(true);
+        pcntl_signal(SIGTERM, function () {
+            $this->shouldContinue = false;
+        });
+        pcntl_signal(SIGINT, function () {
+            $this->shouldContinue = false;
+        });
+
+        $this->shouldContinue = true;
+
+        // Inicializar el cliente MQTT
         $mqtt = $this->initializeMqttClient(env('MQTT_SERVER'), intval(env('MQTT_PORT')));
+
+        // Suscribirse a los tópicos
         $this->subscribeToAllTopics($mqtt);
 
         // Bucle principal para verificar y suscribirse a nuevos tópicos
-        while (true) {
+        while ($this->shouldContinue) {
+            // Verificar y suscribir a nuevos tópicos
             $this->checkAndSubscribeNewTopics($mqtt);
-            $mqtt->loop(true); // Mantener la conexión activa y procesar mensajes
 
-            // Permitir que Laravel maneje eventos internos mientras esperamos nuevos mensajes
+            // Mantener la conexión activa y procesar mensajes MQTT
+            $mqtt->loop(true);
+
+            // Permitir que el sistema maneje señales
+            pcntl_signal_dispatch();
+
+            // Reducir la carga del sistema esperando un corto período
             usleep(100000); // Esperar 0.1 segundos
         }
+
+        // Desconectar el cliente MQTT de forma segura
+        $mqtt->disconnect();
+        $this->info("MQTT Subscriber stopped gracefully.");
     }
+
 
     private function initializeMqttClient($server, $port)
     {

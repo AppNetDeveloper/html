@@ -21,4 +21,5 @@ class MqttSendServer1 extends Model
             'json_data' => is_array($jsonData) ? json_encode($jsonData) : $jsonData,
         ]);
     }
+
 }

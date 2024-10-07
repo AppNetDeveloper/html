@@ -15,25 +15,21 @@ class CreateBarcodesTable extends Migration
     {
         Schema::create('barcodes', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('production_line_id');
-            $table->string('name');
-            $table->string('token')->unique();
-            $table->string('mqtt_topic_barcodes')->nullable();
-            $table->string('mqtt_topic_orders')->nullable();
-            $table->string('mqtt_topic_finish')->nullable();
-            $table->string('mqtt_topic_pause')->nullable();
-            $table->string('mqtt_topic_shift')->nullable();
-            $table->string('machine_id')->nullable(); // Permite valores nulos
-            $table->string('ope_id')->nullable();    // Permite valores nulos
-            $table->json('order_notice')->nullable(); // Almacena datos JSON
-            $table->string('last_barcode')->nullable();
+            $table->unsignedBigInteger('production_line_id'); // Id de linea de produccion es una key
+            $table->string('name'); // nombre del lectura de codigo de barras
+            $table->string('token')->unique(); //token unico
+            $table->string('mqtt_topic_barcodes')->nullable(); //el mqtt topic donde segeneran los otros topicos par escuchar y mandar 
+            $table->string('machine_id')->nullable(); // Permite valores nulos, es el id de la maquina
+            $table->string('ope_id')->nullable();    // Permite valores nulos,  es ENVASADO etc
+            $table->json('order_notice')->nullable(); // Almacena datos JSONm esto es el json entero del pedido en curso
+            $table->string('last_barcode')->nullable(); // el ultimo barcode leido
             $table->string('ip_zerotier')->nullable();
             $table->string('user_ssh')->nullable();
             $table->string('port_ssh')->nullable();
             $table->string('user_ssh_password')->nullable();
             $table->string('ip_barcoder')->nullable();
             $table->string('port_barcoder')->nullable();
-            $table->string('conexion_type')->nullable();
+            $table->string('conexion_type')->nullable()->default(1);
             $table->timestamps();
 
             $table->foreign('production_line_id')->references('id')->on('production_lines');

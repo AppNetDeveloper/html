@@ -10,6 +10,7 @@ class Modbus extends Model
 {
     protected $fillable = [
         'production_line_id',
+        'barcoder_id',
         'json_api',
         'mqtt_topic_modbus', // Corregido el nombre del campo
         'mqtt_topic', //topico para mandar a topflow

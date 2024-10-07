@@ -51,7 +51,7 @@ class PublishToMqttServer2 extends Command
         $connectionSettings->setUseTls(false);
         $connectionSettings->setTlsSelfSignedAllowed(false);
 
-        $this->mqtt = new MqttClient(env('MQTT_SENSORICA_SERVER'), intval(env('MQTT_SENSORICA_PORT')), uniqid());
+        $this->mqtt = new MqttClient(env('MQTT_SENSORICA_SERVER'), intval(env('MQTT_SENSORICA_PORT')), "sensorica");
 
         try {
             $this->mqtt->connect($connectionSettings, true);

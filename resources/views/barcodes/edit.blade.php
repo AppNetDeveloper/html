@@ -33,30 +33,10 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="mqtt_topic_barcodes">{{ __('MQTT Topic Barcodes') }}</label>
+                            <label for="mqtt_topic_barcodes">{{ __('MQTT Topic SIN EL MAC') }}</label>
                             <input type="text" class="form-control" id="mqtt_topic_barcodes" name="mqtt_topic_barcodes" value="{{ $barcode->mqtt_topic_barcodes }}">
                         </div>
-
-                        <div class="form-group">
-                            <label for="mqtt_topic_orders">{{ __('MQTT Topic Orders') }}</label>
-                            <input type="text" class="form-control" id="mqtt_topic_orders" name="mqtt_topic_orders" value="{{ $barcode->mqtt_topic_orders }}">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="mqtt_topic_finish">{{ __('MQTT Topic Finish') }}</label>
-                            <input type="text" class="form-control" id="mqtt_topic_finish" name="mqtt_topic_finish" value="{{ $barcode->mqtt_topic_finish }}">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="mqtt_topic_pause">{{ __('MQTT Topic Pause') }}</label>
-                            <input type="text" class="form-control" id="mqtt_topic_pause" name="mqtt_topic_pause" value="{{ $barcode->mqtt_topic_pause }}">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="mqtt_topic_shift">{{ __('MQTT Topic Turno Programado') }}</label>
-                            <input type="text" class="form-control" id="mqtt_topic_shift" name="mqtt_topic_shift" value="{{ $barcode->mqtt_topic_shift }}">
-                        </div>
-
+                        
                         <div class="form-group">
                             <label for="machine_id">{{ __('Machine ID') }}</label>
                             <input type="text" class="form-control" id="machine_id" name="machine_id" value="{{ $barcode->machine_id }}">

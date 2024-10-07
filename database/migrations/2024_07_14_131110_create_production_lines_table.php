@@ -14,10 +14,10 @@ class CreateProductionLinesTable extends Migration
     public function up()
     {
         Schema::create('production_lines', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('customer_id');
-            $table->string('name');
-            $table->string('token')->unique();
+            $table->id(); //id unico
+            $table->unsignedBigInteger('customer_id'); // key de cliente. 
+            $table->string('name'); //nombre linea de produccion
+            $table->string('token')->unique(); //token unico
             $table->timestamps();
 
             $table->foreign('customer_id')->references('id')->on('customers');
