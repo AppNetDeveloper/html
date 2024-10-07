@@ -8,18 +8,13 @@ use Illuminate\Support\Facades\Log;
 use App\Models\MqttSendServer1;
 use App\Models\MqttSendServer2;
 
+
 class TcpClient extends Command
 {
     protected $signature = 'tcp:client';
     protected $description = 'Connect to multiple TCP servers and read messages continuously';
 
-    protected $processes = [];          // Almacenar los PID de procesos
-    protected $connections = [];        // Almacenar conexiones activas por barcode
-    protected $connectionStates = [];   // Almacenar estados de conexión de cada barcode
-    protected $previousBarcodes = [];   // Almacenar barcodes previos
-
-    protected $failedAttempts = []; // Almacenar intentos fallidos de cada barcode
-
+    protected $processes = [];
 
     public function __construct()
     {
@@ -28,93 +23,35 @@ class TcpClient extends Command
 
     public function handle()
     {
+        // Matar todos los procesos existentes antes de iniciar
         $this->terminateAllProcesses();
 
-        // Inicializar el bucle principal
+        // Obtener todos los barcodes de la base de datos y establecer conexiones
+        $barcodes = Barcode::all();
+        foreach ($barcodes as $barcode) {
+            $this->startConnection($barcode);
+        }
+
+        // Esperar indefinidamente para mantener los procesos activos
         while (true) {
-            // Obtener todos los barcodes de la base de datos
-            $barcodes = Barcode::all();
-
-            // Comprobar cambios en los barcodes
-            $this->checkForChanges($barcodes);
-
-            // Esperar un tiempo antes de volver a verificar
-            sleep(1); // Esperar 10 segundos antes de la próxima verificación
+            sleep(60);
         }
     }
 
     private function terminateAllProcesses()
     {
         foreach ($this->processes as $id => $pid) {
-            if (isset($this->failedAttempts[$id]) && $this->failedAttempts[$id] >= 3) {
-                $this->info("Stopping TCP client for barcode ID: $id due to repeated failures");
-                if (posix_kill($pid, SIGTERM)) {
-                    unset($this->processes[$id]);
-                    unset($this->connections[$id]);
-                    unset($this->connectionStates[$id]);
-                    unset($this->failedAttempts[$id]);
-                    $this->info("Successfully stopped process for barcode ID: $id");
-                } else {
-                    $this->error("Failed to stop process for barcode ID: $id with PID: $pid");
-                }
-            }
-        }
-    }
-    
-
-    protected function checkForChanges($currentBarcodes)
-    {
-        $currentIds = $currentBarcodes->pluck('id')->toArray();
-        $previousIds = array_keys($this->processes);
-
-        // Encontrar IDs que han sido eliminados
-        $removedIds = array_diff($previousIds, $currentIds);
-        foreach ($removedIds as $id) {
-            $this->stopProcess($id);
-        }
-
-        // Encontrar o iniciar procesos para nuevos barcodes y reiniciar los procesos si hay cambios
-        foreach ($currentBarcodes as $barcode) {
-            if (!isset($this->processes[$barcode->id])) {
-                // Iniciar proceso si no existe
-                $this->startProcess($barcode);
-            } elseif ($this->hasBarcodeChanged($barcode)) {
-                // Si hay cambios, reiniciar proceso
-                $this->stopProcess($barcode->id);
-                $this->startProcess($barcode);
-            }
-        }
-    }
-
-    protected function hasBarcodeChanged($barcode)
-    {
-        if (!isset($this->connections[$barcode->id])) {
-            return true;
-        }
-
-        $previousConnection = $this->connections[$barcode->id];
-        $currentIp = $barcode->conexion_type == 1 ? $barcode->ip_barcoder : $barcode->ip_zerotier;
-        $currentPort = $barcode->port_barcoder;
-
-        return $previousConnection['ip'] !== $currentIp || $previousConnection['port'] !== $currentPort;
-    }
-
-    protected function stopProcess($id)
-    {
-        if (isset($this->processes[$id])) {
             $this->info("Stopping TCP client for barcode ID: $id");
-            if (posix_kill($this->processes[$id], SIGTERM)) {
+            if (posix_kill($pid, SIGTERM)) {
                 unset($this->processes[$id]);
-                unset($this->connections[$id]);
-                unset($this->connectionStates[$id]);
                 $this->info("Successfully stopped process for barcode ID: $id");
             } else {
-                $this->error("Failed to stop process for barcode ID: $id with PID: {$this->processes[$id]}");
+                $this->error("Failed to stop process for barcode ID: $id with PID: $pid");
             }
         }
     }
 
-    protected function startProcess($barcode)
+    protected function startConnection($barcode)
     {
         $ip = $barcode->conexion_type == 1 ? $barcode->ip_barcoder : $barcode->ip_zerotier;
         $port = $barcode->port_barcoder;
@@ -130,10 +67,6 @@ class TcpClient extends Command
         } elseif ($pid) {
             // Proceso padre
             $this->processes[$barcode->id] = $pid; // Guardar el PID del proceso hijo
-            $this->connections[$barcode->id] = [
-                'ip' => $ip,
-                'port' => $port,
-            ];
         } else {
             // Proceso hijo
             $this->handleBarcode($barcode);
@@ -144,110 +77,98 @@ class TcpClient extends Command
     protected function handleBarcode($barcode)
     {
         $conexionType = $barcode->conexion_type;
-    
+
         if ($conexionType == 0) {
             $this->info("No TCP connection will be made for barcode ID {$barcode->id}.");
             return;
         }
-    
+
+        // Obtener la información de conexión
         $host = $conexionType == 1 ? $barcode->ip_barcoder : $barcode->ip_zerotier;
         $port = $barcode->port_barcoder;
-    
+
+        // Verificar si los valores de IP y puerto son válidos
         if (empty($host) || empty($port)) {
             $this->info("Ignoring TCP client for barcode ID: {$barcode->id} due to empty IP or port.");
             return;
         }
-    
-        // Evitar múltiples conexiones simultáneas
-        if (isset($this->connectionStates[$barcode->id]) && $this->connectionStates[$barcode->id] === true) {
-            $this->info("Ya existe una conexión activa para barcode ID {$barcode->id}, evitando conexión duplicada.");
-            return;
-        }
-    
-        // Marcar la conexión como activa
-        $this->connectionStates[$barcode->id] = true;
-        $this->failedAttempts[$barcode->id] = 0; // Reiniciar los intentos fallidos para este barcode
-    
+
+        // Bucle principal para gestionar la reconexión
         while (true) {
             $this->info("Connecting to TCP server at $host:$port for barcode ID {$barcode->id}");
-    
-            // Crear un socket TCP/IP
-            $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+            $socket = @socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+
             if ($socket === false) {
                 $this->error("Error al crear el socket: " . socket_strerror(socket_last_error()));
-                $this->failedAttempts[$barcode->id]++;
-                sleep(5);
+                sleep(5); // Esperar 5 segundos antes de intentar nuevamente
                 continue;
             }
-    
-            // Conectar al servidor TCP
-            $result = @socket_connect($socket, $host, $port); // Usar @ para silenciar advertencias
+
+            // Intentar conectar al servidor TCP
+            $result = @socket_connect($socket, $host, $port);
+
             if ($result === false) {
                 $errorCode = socket_last_error($socket);
                 $this->error("Error al conectar al servidor: " . socket_strerror($errorCode) . " (Código de error: $errorCode)");
-                socket_close($socket); // Cerrar el socket en caso de error
-                $this->failedAttempts[$barcode->id]++;
-    
-                // Remover la condición que detiene el proceso tras 3 intentos fallidos
-                sleep(5);
-                continue;
+                socket_close($socket);
+                sleep(5); // Esperar 5 segundos antes de intentar reconectar
+                continue; // Reiniciar el bucle y volver a intentar conectar
             }
-    
-            // Conexión exitosa
+
             $this->info("Conectado al servidor TCP en $host:$port para barcode ID {$barcode->id}");
-            $this->failedAttempts[$barcode->id] = 0; // Reiniciar los intentos fallidos si la conexión tiene éxito
-    
-            // Bucle para leer mensajes continuamente
+
+            // Leer mensajes continuamente hasta que haya un error
             while (true) {
                 $response = @socket_read($socket, 2048, PHP_NORMAL_READ);
                 if ($response === false) {
                     $this->error("Error al leer del servidor: " . socket_strerror(socket_last_error($socket)));
-                    break; // Salir del bucle si hay error y reconectar después
+                    break; // Salir del bucle y cerrar la conexión para reconectar
                 }
-    
+
                 // Verifica si el servidor ha cerrado la conexión
                 if ($response === '') {
                     $this->info("El servidor ha cerrado la conexión para barcode ID {$barcode->id}");
-                    break; // Salir para intentar reconectar
+                    break; // Salir del bucle y reconectar
                 }
-    
-                $this->info("Mensaje recibido del servidor para barcode ID {$barcode->id}: $response");
-    
-                // Procesar el mensaje recibido si no está vacío
+
+                // Procesar el mensaje recibido
                 if (trim($response) !== '') {
                     $this->processMessage($barcode, $response);
+                } else {
+                    $this->info("Mensaje vacío recibido para barcode ID {$barcode->id}, ignorando.");
                 }
             }
-    
+
             // Cerrar el socket antes de intentar reconectar
             socket_close($socket);
             $this->info("Intentando reconectar en 5 segundos para barcode ID {$barcode->id}...");
-            sleep(5);
+            sleep(5); // Esperar antes de intentar reconectar
         }
-    
-        // Marcar la conexión como cerrada al salir del bucle (en caso de terminación controlada)
-        $this->connectionStates[$barcode->id] = false;
-    }
-    
-    
+    }  
 
     protected function processMessage($barcode, $message)
     {
-        $this->info("Processing message for barcode ID {$barcode->id} : $message");
+        // Mensaje recibido de depuración
+        $this->info("Processing message for barcode ID {$barcode->id}: $message");
 
+        // Verifica si el mensaje está vacío o solo contiene espacios
         if (trim($message) === '') {
-            //$this->info("Mensaje vacío para barcode ID {$barcode->id}, ignorando.");
-            return;
+            $this->info("Mensaje vacío para barcode ID {$barcode->id}, ignorando.");
+            return; // Salir si el mensaje está vacío
         }
-
+        // Procesar el comando
         $this->handleMqttCommands($barcode->id, $message);
     }
-
 
     protected function handleMqttCommands($id, $barcodeValue)
     {
        // $this->info("estoy aqui {$id}: $barcodeValue");
-        $barcode = Barcode::where('id', (int)$id)->first();
+        $barcode = $this->barcoderLatest($id);
+        // Si el resultado es null, espera y vuelve a intentar una vez más
+        if ($barcode === null) {
+            sleep(1); // Espera 1 segundo antes de intentar de nuevo
+            $barcode = $this->barcoderLatest($id);
+        }
         $mqttTopicBase = $barcode->mqtt_topic_barcodes;
         $mqttTopicBarcodes = $mqttTopicBase ."/prod_order_mac";
        // $this->info("mqtt topic : " . $mqttTopicBarcodes);
@@ -400,44 +321,29 @@ class TcpClient extends Command
             }
             
         } elseif ($lastBarcode === 'INICIAR' && $barcodeValue === 'FINALIZAR') {
-            // Case 3: lastBarcode is INICIAR and barcodeValue is FINALIZAR
-            $relatedBarcodes = Barcode::where('mqtt_topic_barcodes', $mqttTopicBase)->get();
-    
-                foreach ($relatedBarcodes as $relatedBarcode) {
-                    // Aquí puedes realizar cualquier acción que necesites con cada barcode relacionado
-                    $this->info("Encontrada línea relacionada con ID: {$relatedBarcode->id} y valor de iniciar_model: {$relatedBarcode->iniciar_model}");
-                    // Si necesitas algo específico de cada barcode relacionado, puedes trabajar con $relatedBarcode aquí
-                    // Re actualizar el last_barcode
-                    $updatedOrderNotice = json_decode($relatedBarcode->order_notice, true);
+
+                    $updatedOrderNotice = json_decode($barcode->order_notice, true);
                     $updatedOrderId = $updatedOrderNotice['orderId'] ?? null;
                     $comando = [
                         "orderId" => $updatedOrderId
                     ];
                     $this->publishMqttMessage($mqttTopicFinish, $comando);
-        
-                    $relatedBarcode->last_barcode = "FINALIZAR";
-                    $relatedBarcode->save();
-                }
+                    
+                    $barcode->last_barcode = "FINALIZAR";
+                    $barcode->save();
             
         } elseif ($lastBarcode === 'INICIAR' && $barcodeValue === 'PAUSAR') {
-            // Case 4: lastBarcode is INICIAR and barcodeValue is PAUSAR
-            $relatedBarcodes = Barcode::where('mqtt_topic_barcodes', $mqttTopicBase)->get();
-    
-                foreach ($relatedBarcodes as $relatedBarcode) {
-                    // Aquí puedes realizar cualquier acción que necesites con cada barcode relacionado
-                    $this->info("Encontrada línea relacionada con ID: {$relatedBarcode->id} y valor de iniciar_model: {$relatedBarcode->iniciar_model}");
-                    // Si necesitas algo específico de cada barcode relacionado, puedes trabajar con $relatedBarcode aquí
-                    // Re actualizar el last_barcode
-                    $updatedOrderNotice = json_decode($relatedBarcode->order_notice, true);
+
+                    $updatedOrderNotice = json_decode($barcode->order_notice, true);
                     $updatedOrderId = $updatedOrderNotice['orderId'] ?? null;
                     $comando = [
                         "orderId" => $updatedOrderId
                     ];
                     $this->publishMqttMessage($mqttTopicPause, $comando);
         
-                    $relatedBarcode->last_barcode = "PAUSAR";
-                    $relatedBarcode->save();
-                }
+                    $barcode->last_barcode = "PAUSAR";
+                    $barcode->save();
+
         } elseif ($barcodeValue === 'Turno Programado') {
             // Case 5: barcodeValue is Turno Programado
             $comando = [
@@ -523,7 +429,6 @@ class TcpClient extends Command
         try {
             // Inserta en la tabla mqtt_send_server1
            MqttSendServer2::createRecord($topic, $message);
-           usleep(1000000);
             // Inserta en la tabla mqtt_send_server2
             MqttSendServer1::createRecord($topic, $message);
             
