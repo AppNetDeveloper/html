@@ -133,9 +133,9 @@ class TcpClient extends Command
 
                 // Procesar el mensaje recibido
                 if (trim($response) !== '') {
-                    $this->processMessage($barcode, $response);
+                    $this->processMessage($barcode->id, $response);
                 } else {
-                    $this->info("Mensaje vacío recibido para barcode ID {$barcode->id}, ignorando.");
+                    //$this->info("Mensaje vacío recibido para barcode ID {$barcode->id}, ignorando.");
                 }
             }
 
@@ -146,21 +146,7 @@ class TcpClient extends Command
         }
     }  
 
-    protected function processMessage($barcode, $message)
-    {
-        // Mensaje recibido de depuración
-        $this->info("Processing message for barcode ID {$barcode->id}: $message");
-
-        // Verifica si el mensaje está vacío o solo contiene espacios
-        if (trim($message) === '') {
-            $this->info("Mensaje vacío para barcode ID {$barcode->id}, ignorando.");
-            return; // Salir si el mensaje está vacío
-        }
-        // Procesar el comando
-        $this->handleMqttCommands($barcode->id, $message);
-    }
-
-    protected function handleMqttCommands($id, $barcodeValue)
+    protected function processMessage($id, $barcodeValue)
     {
        // $this->info("estoy aqui {$id}: $barcodeValue");
         $barcode = $this->barcoderLatest($id);
@@ -352,6 +338,7 @@ class TcpClient extends Command
             ];
             $this->publishMqttMessage($mqttTopicShift, $comando);
         }
+        
     }
 
     private function waitTimeNow($id, $dataTime)
@@ -393,14 +380,35 @@ class TcpClient extends Command
     
     private function orderIdNew($barcodenew)
     {
+        // Verificar si $barcodenew no es null
+        if ($barcodenew === null) {
+            $this->info("El objeto barcodenew es null. No se puede proceder.");
+            return null;
+        }
+    
+        // Intentar obtener el order_notice y verificar si es null o está vacío
         $updatedOrderNotice = json_decode($barcodenew->order_notice, true);
+    
+        if ($updatedOrderNotice === null) {
+            // Buscar en la base de datos nuevamente por el ID
+            $barcodeFromDb = Barcode::find($barcodenew->id);
+    
+            // Si sigue siendo null, asignar un valor por defecto
+            if ($barcodeFromDb === null || $barcodeFromDb->order_notice === null) {
+                $this->info("El valor order_notice sigue siendo null. Asignando valor por defecto.");
+                return null; // Puedes cambiar el valor por defecto aquí si es necesario
+            }
+    
+            // Intentar obtener el order_notice de la nueva consulta
+            $updatedOrderNotice = json_decode($barcodeFromDb->order_notice, true);
+        }
+    
+        // Extraer el orderId, si existe
         $updatedOrderId = $updatedOrderNotice['orderId'] ?? null;
-        
-
-        $this->info("actualizo json de la db: " . $updatedOrderId);
+    
+        $this->info("Actualizo JSON de la db: " . ($updatedOrderId ?? "Valor por defecto NULL"));
         return $updatedOrderId;
     }
-
     private function sendNextOrder($machineId, $mqttTopic)
     {
         $comando = [
@@ -414,6 +422,9 @@ class TcpClient extends Command
 
     private function sendOrderMac($action,$updatedOrderId,$machineId, $mqttTopicBarcodes)
     {
+            // Convertir $action a entero para evitar problemas con el formato
+            $action = (int) $action;
+            
                 $comando = [
                     "action" => $action,
                     "orderId" => $updatedOrderId,
