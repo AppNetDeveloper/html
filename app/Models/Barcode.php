@@ -33,6 +33,28 @@ class Barcode extends Model
         //'token',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Evento 'updating' para detectar cambios
+        static::updating(function ($sensor) {
+            if ($sensor->isDirty([
+                'ip_barcoder', 
+                'port_barcoder',
+            ])) {
+                self::restartSupervisor();
+            }
+        });
+        static::created(function ($sensor) {
+            
+            self::restartSupervisor();
+       });
+        static::deleted(function ($sensor) {
+            self::restartSupervisor();
+        });
+    }
+
     public function productionLine()
     {
         return $this->belongsTo(ProductionLine::class);
