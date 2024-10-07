@@ -60,7 +60,7 @@ class MqttSubscriber extends Command
         $connectionSettings->setUsername(env('MQTT_USERNAME'));
         $connectionSettings->setPassword(env('MQTT_PASSWORD'));
 
-        $mqtt = new MqttClient($server, $port, "order-notices-externo");
+        $mqtt = new MqttClient($server, $port, uniqid());
         $mqtt->connect($connectionSettings, true);
 
         return $mqtt;

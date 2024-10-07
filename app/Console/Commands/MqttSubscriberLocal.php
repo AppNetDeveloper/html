@@ -41,7 +41,7 @@ class MqttSubscriberLocal extends Command
         $connectionSettings->setPassword(env('MQTT_PASSWORD'));
 
         //$mqtt = new MqttClient($server, $port, uniqid());
-        $mqtt = new MqttClient($server, $port, "order-notices-externo");
+        $mqtt = new MqttClient($server, $port, uniqid());
         $mqtt->connect($connectionSettings, true); // Limpia la sesión
 
         return $mqtt;
