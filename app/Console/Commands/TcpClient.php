@@ -148,7 +148,7 @@ class TcpClient extends Command
 
     protected function processMessage($id, $barcodeValue)
     {
-       // $this->info("estoy aqui {$id}: $barcodeValue");
+        $this->info("Lectura del barcode id : {$id}  value : $barcodeValue");
         $barcode = $this->barcoderLatest($id);
         // Si el resultado es null, espera y vuelve a intentar una vez más
         if ($barcode === null) {
