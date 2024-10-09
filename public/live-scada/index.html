@@ -9,6 +9,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.7.5/lottie.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     html, body {
       width: 100%;
@@ -96,82 +98,55 @@
       margin-bottom: 20px;
     }
 
-    .botones-container {
-      display: flex;
-      flex-direction: row;
-      flex-wrap: wrap;
-      justify-content: center;
-      width: 100%;
-    }
-
-    .botones-container button {
-      margin: 10px;
-      padding: 10px 20px;
-      background-color: #ffcc00;
-      border: none;
-      border-radius: 5px;
-      color: #28293e;
-      font-size: 1.2em;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-
-    .botones-container button:hover {
-      background-color: #ffc107;
-    }
-
     .columna-derecha {
-      display: flex;
-      flex-direction: row;
-      flex-wrap: wrap;
-      margin-left: 20px;
-      width: 45%;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      max-width: 50%;
     }
 
     .card-tolva {
-      background-color: #f8f9fa;
+      background-color: #ffffff; /*  #3b3c55 Nuevo color de fondo más oscuro */
       color: #000;
       border-radius: 10px;
       padding: 15px;
       margin: 10px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      flex: 0 0 calc(50% - 20px);
       transition: transform 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
     }
 
-    .card-tolva:active {
-      transform: scale(1.05);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    .settings-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #000;
+      font-size: 1.5em;
+      transition: transform 0.3s ease;
     }
 
-    .card-tolva .card-title {
+    .settings-btn:hover {
+      transform: rotate(90deg);
+    }
+
+    .card-title {
       font-size: 1.5em;
       text-align: center;
     }
 
-    .card-tolva .card-weight {
-      font-size: 2em;
+    .card-weight {
+      font-size: 3em;
       font-weight: bold;
       text-align: center;
+      color: #ffcc00;
     }
 
-    .btn-vaciar {
-      background-color: #dc3545;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      padding: 10px;
-      cursor: pointer;
-      transition: background-color 0.3s ease, transform 0.1s ease;
-      margin-bottom: 10px;
-    }
-
-    .btn-vaciar:hover {
-      background-color: #c82333;
-    }
-
-    .btn-vaciar:active {
-      transform: scale(0.95);
+    .card-weight span {
+      font-size: 0.5em;
+      color: #000000;
     }
 
     .material-select {
@@ -189,56 +164,6 @@
       border-color: #ffcc00;
       box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
       outline: none;
-    }
-
-    .select2-container--default .select2-selection--single {
-      background-color: #fff;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      padding: 5px;
-      color: #000;
-    }
-
-    .select2-container--default .select2-selection--single .select2-selection__rendered {
-      color: #000 !important;
-    }
-
-    .select2-container--default .select2-selection--single .select2-selection__arrow b {
-      border-color: #000 transparent transparent transparent;
-    }
-
-    @media (max-width: 768px) {
-      .box {
-        flex-direction: column;
-        align-items: center;
-      }
-
-      .animacion-container {
-        max-width: 100%;
-        padding: 15px;
-      }
-
-      #contenedorAnimacion {
-        height: 300px;
-      }
-
-      .botones-container {
-        margin-left: 0;
-      }
-
-      .botones-container button {
-        font-size: 1em;
-        padding: 8px 16px;
-      }
-
-      .columna-derecha {
-        width: 100%;
-      }
-
-      .card-tolva {
-        flex: 0 0 100%;
-        margin-bottom: 15px;
-      }
     }
   </style>
 </head>
@@ -258,14 +183,11 @@
       </div>
       <div class="columna-derecha">
         <div class="card-tolva">
-          <button id="cambiarValoresBtn0Tolva1" class="btn-vaciar">VACIAR</button>
-          <button id="cambiarValoresBtn20Tolva1" class="btn-vaciar">20</button>
-          <button id="cambiarValoresBtn40Tolva1" class="btn-vaciar">40</button>
-          <button id="cambiarValoresBtn60Tolva1" class="btn-vaciar">60</button>
-          <button id="cambiarValoresBtn80Tolva1" class="btn-vaciar">80</button>
-          <button id="cambiarValoresBtn100Tolva1" class="btn-vaciar">100</button>
+          <button class="settings-btn" onclick="mostrarOpciones('hopper1')">
+            <i class="fas fa-cog"></i>
+          </button>
           <div class="card-title">Tolva 01</div>
-          <div class="card-weight">567 kg</div>
+          <div class="card-weight">567 <span>Kg</span></div>
           <select class="material-select">
             <option value="arena">Arena</option>
             <option value="cemento">Cemento</option>
@@ -273,14 +195,11 @@
           </select>
         </div>
         <div class="card-tolva">
-          <button id="cambiarValoresBtn0Tolva2" class="btn-vaciar">VACIAR</button>
-          <button id="cambiarValoresBtn20Tolva2" class="btn-vaciar">20</button>
-          <button id="cambiarValoresBtn40Tolva2" class="btn-vaciar">40</button>
-          <button id="cambiarValoresBtn60Tolva2" class="btn-vaciar">60</button>
-          <button id="cambiarValoresBtn80Tolva2" class="btn-vaciar">80</button>
-          <button id="cambiarValoresBtn100Tolva2" class="btn-vaciar">100</button>
+          <button class="settings-btn" onclick="mostrarOpciones('hopper2')">
+            <i class="fas fa-cog"></i>
+          </button>
           <div class="card-title">Tolva 02</div>
-          <div class="card-weight">345 kg</div>
+          <div class="card-weight">345 <span>Kg</span></div>
           <select class="material-select">
             <option value="arena">Arena</option>
             <option value="cemento">Cemento</option>
@@ -288,14 +207,11 @@
           </select>
         </div>
         <div class="card-tolva">
-          <button id="cambiarValoresBtn0Tolva3" class="btn-vaciar">VACIAR</button>
-          <button id="cambiarValoresBtn20Tolva3" class="btn-vaciar">20</button>
-          <button id="cambiarValoresBtn40Tolva3" class="btn-vaciar">40</button>
-          <button id="cambiarValoresBtn60Tolva3" class="btn-vaciar">60</button>
-          <button id="cambiarValoresBtn80Tolva3" class="btn-vaciar">80</button>
-          <button id="cambiarValoresBtn100Tolva3" class="btn-vaciar">100</button>
+          <button class="settings-btn" onclick="mostrarOpciones('hopper3')">
+            <i class="fas fa-cog"></i>
+          </button>
           <div class="card-title">Tolva 03</div>
-          <div class="card-weight">412 kg</div>
+          <div class="card-weight">412 <span>Kg</span></div>
           <select class="material-select">
             <option value="arena">Arena</option>
             <option value="cemento">Cemento</option>
@@ -303,14 +219,11 @@
           </select>
         </div>
         <div class="card-tolva">
-          <button id="cambiarValoresBtn0Tolva4" class="btn-vaciar">VACIAR</button>
-          <button id="cambiarValoresBtn20Tolva4" class="btn-vaciar">20</button>
-          <button id="cambiarValoresBtn40Tolva4" class="btn-vaciar">40</button>
-          <button id="cambiarValoresBtn60Tolva4" class="btn-vaciar">60</button>
-          <button id="cambiarValoresBtn80Tolva4" class="btn-vaciar">80</button>
-          <button id="cambiarValoresBtn100Tolva4" class="btn-vaciar">100</button>
+          <button class="settings-btn" onclick="mostrarOpciones('hopper4')">
+            <i class="fas fa-cog"></i>
+          </button>
           <div class="card-title">Tolva 04</div>
-          <div class="card-weight">390 kg</div>
+          <div class="card-weight">390 <span>Kg</span></div>
           <select class="material-select">
             <option value="arena">Arena</option>
             <option value="cemento">Cemento</option>
@@ -318,14 +231,11 @@
           </select>
         </div>
         <div class="card-tolva">
-          <button id="cambiarValoresBtn0Tolva5" class="btn-vaciar">VACIAR</button>
-          <button id="cambiarValoresBtn20Tolva5" class="btn-vaciar">20</button>
-          <button id="cambiarValoresBtn40Tolva5" class="btn-vaciar">40</button>
-          <button id="cambiarValoresBtn60Tolva5" class="btn-vaciar">60</button>
-          <button id="cambiarValoresBtn80Tolva5" class="btn-vaciar">80</button>
-          <button id="cambiarValoresBtn100Tolva5" class="btn-vaciar">100</button>
+          <button class="settings-btn" onclick="mostrarOpciones('hopper5')">
+            <i class="fas fa-cog"></i>
+          </button>
           <div class="card-title">Tolva 05</div>
-          <div class="card-weight">278 kg</div>
+          <div class="card-weight">278 <span>Kg</span></div>
           <select class="material-select">
             <option value="arena">Arena</option>
             <option value="cemento">Cemento</option>
@@ -333,14 +243,11 @@
           </select>
         </div>
         <div class="card-tolva">
-          <button id="cambiarValoresBtn0Tolva6" class="btn-vaciar">VACIAR</button>
-          <button id="cambiarValoresBtn20Tolva6" class="btn-vaciar">20</button>
-          <button id="cambiarValoresBtn40Tolva6" class="btn-vaciar">40</button>
-          <button id="cambiarValoresBtn60Tolva6" class="btn-vaciar">60</button>
-          <button id="cambiarValoresBtn80Tolva6" class="btn-vaciar">80</button>
-          <button id="cambiarValoresBtn100Tolva6" class="btn-vaciar">100</button>
+          <button class="settings-btn" onclick="mostrarOpciones('mix')">
+            <i class="fas fa-cog"></i>
+          </button>
           <div class="card-title">Tolva 06</div>
-          <div class="card-weight">320 kg</div>
+          <div class="card-weight">320 <span>Kg</span></div>
           <select class="material-select">
             <option value="arena">Arena</option>
             <option value="cemento">Cemento</option>
@@ -369,6 +276,9 @@
         });
         document.getElementById('timeDisplay').textContent = formattedTime;
       }, 1000);
+
+      // Cargar animación Lottie
+      cargarJSON();
     });
 
     let animacion;
@@ -401,6 +311,33 @@
       });
     }
 
+    function mostrarOpciones(tolvaId) {
+      Swal.fire({
+        title: 'Opciones de Tolva',
+        text: 'Seleccione una acción',
+        showCancelButton: true,
+        showConfirmButton: false,
+        customClass: {
+          popup: 'custom-popup-class'
+        },
+        html: `
+          <button class="btn-vaciar" onclick="cerrarYModificarSlider(0, '${tolvaId}')">VACIAR</button>
+          <button class="btn-vaciar" onclick="cerrarYModificarSlider(20, '${tolvaId}')">20</button>
+          <button class="btn-vaciar" onclick="cerrarYModificarSlider(40, '${tolvaId}')">40</button>
+          <button class="btn-vaciar" onclick="cerrarYModificarSlider(60, '${tolvaId}')">60</button>
+          <button class="btn-vaciar" onclick="cerrarYModificarSlider(80, '${tolvaId}')">80</button>
+          <button class="btn-vaciar" onclick="cerrarYModificarSlider(100, '${tolvaId}')">100</button>
+        `
+      });
+    }
+
+    function cerrarYModificarSlider(nuevoValor, tolvaId) {
+      Swal.close();
+      setTimeout(function() {
+        modificarSliderGradual(nuevoValor, tolvaId);
+      }, 300);
+    }
+
     function modificarSliderGradual(nuevoValor, tolvaId) {
       console.log("Cambiando el valor del slider a:", nuevoValor, "para la tolva:", tolvaId);
 
@@ -418,151 +355,6 @@
         }
       }
     }
-
-    cargarJSON();
-
-        document.getElementById('cambiarValoresBtn20Tolva1').addEventListener('click', function() {
-          modificarSliderGradual(20, 'hopper1');
-    });
-
-    document.getElementById('cambiarValoresBtn40Tolva1').addEventListener('click', function() {
-      modificarSliderGradual(40, 'hopper1');
-    });
-
-    document.getElementById('cambiarValoresBtn60Tolva1').addEventListener('click', function() {
-      modificarSliderGradual(60, 'hopper1');
-    });
-
-    document.getElementById('cambiarValoresBtn80Tolva1').addEventListener('click', function() {
-      modificarSliderGradual(80, 'hopper1');
-    });
-
-    document.getElementById('cambiarValoresBtn100Tolva1').addEventListener('click', function() {
-      modificarSliderGradual(100, 'hopper1');
-    });
-
-    document.getElementById('cambiarValoresBtn0Tolva1').addEventListener('click', function() {
-      modificarSliderGradual(0, 'hopper1');
-    });
-
-    document.getElementById('cambiarValoresBtn20Tolva2').addEventListener('click', function() {
-      modificarSliderGradual(20, 'hopper2');
-    });
-
-    document.getElementById('cambiarValoresBtn40Tolva2').addEventListener('click', function() {
-      modificarSliderGradual(40, 'hopper2');
-    });
-
-    document.getElementById('cambiarValoresBtn60Tolva2').addEventListener('click', function() {
-      modificarSliderGradual(60, 'hopper2');
-    });
-
-    document.getElementById('cambiarValoresBtn80Tolva2').addEventListener('click', function() {
-      modificarSliderGradual(80, 'hopper2');
-    });
-
-    document.getElementById('cambiarValoresBtn100Tolva2').addEventListener('click', function() {
-      modificarSliderGradual(100, 'hopper2');
-    });
-    document.getElementById('cambiarValoresBtn0Tolva2').addEventListener('click', function() {
-      modificarSliderGradual(0, 'hopper2');
-    });
-
-    document.getElementById('cambiarValoresBtn20Tolva3').addEventListener('click', function() {
-      modificarSliderGradual(20, 'hopper3');
-    });
-
-    document.getElementById('cambiarValoresBtn40Tolva3').addEventListener('click', function() {
-      modificarSliderGradual(40, 'hopper3');
-    });
-
-    document.getElementById('cambiarValoresBtn60Tolva3').addEventListener('click', function() {
-      modificarSliderGradual(60, 'hopper3');
-    });
-
-    document.getElementById('cambiarValoresBtn80Tolva3').addEventListener('click', function() {
-      modificarSliderGradual(80, 'hopper3');
-    });
-
-    document.getElementById('cambiarValoresBtn100Tolva3').addEventListener('click', function() {
-      modificarSliderGradual(100, 'hopper3');
-    });
-
-    document.getElementById('cambiarValoresBtn0Tolva3').addEventListener('click', function() {
-      modificarSliderGradual(0, 'hopper3');
-    });
-
-    document.getElementById('cambiarValoresBtn20Tolva4').addEventListener('click', function() {
-      modificarSliderGradual(20, 'hopper4');
-    });
-
-    document.getElementById('cambiarValoresBtn40Tolva4').addEventListener('click', function() {
-      modificarSliderGradual(40, 'hopper4');
-    });
-
-    document.getElementById('cambiarValoresBtn60Tolva4').addEventListener('click', function() {
-      modificarSliderGradual(60, 'hopper4');
-    });
-
-    document.getElementById('cambiarValoresBtn80Tolva4').addEventListener('click', function() {
-      modificarSliderGradual(80, 'hopper4');
-    });
-
-    document.getElementById('cambiarValoresBtn100Tolva4').addEventListener('click', function() {
-      modificarSliderGradual(100, 'hopper4');
-    });
-
-    document.getElementById('cambiarValoresBtn0Tolva4').addEventListener('click', function() {
-      modificarSliderGradual(0, 'hopper4');
-    });
-
-    document.getElementById('cambiarValoresBtn20Tolva5').addEventListener('click', function() {
-      modificarSliderGradual(20, 'hopper5');
-    });
-
-    document.getElementById('cambiarValoresBtn40Tolva5').addEventListener('click', function() {
-      modificarSliderGradual(40, 'hopper5');
-    });
-
-    document.getElementById('cambiarValoresBtn60Tolva5').addEventListener('click', function() {
-      modificarSliderGradual(60, 'hopper5');
-    });
-
-    document.getElementById('cambiarValoresBtn80Tolva5').addEventListener('click', function() {
-      modificarSliderGradual(80, 'hopper5');
-    });
-
-    document.getElementById('cambiarValoresBtn100Tolva5').addEventListener('click', function() {
-      modificarSliderGradual(100, 'hopper5');
-    });
-
-    document.getElementById('cambiarValoresBtn0Tolva5').addEventListener('click', function() {
-      modificarSliderGradual(0, 'hopper5');
-    });
-
-    document.getElementById('cambiarValoresBtn20Tolva6').addEventListener('click', function() {
-      modificarSliderGradual(20, 'mix');
-    });
-
-    document.getElementById('cambiarValoresBtn40Tolva6').addEventListener('click', function() {
-      modificarSliderGradual(40, 'mix');
-    });
-
-    document.getElementById('cambiarValoresBtn60Tolva6').addEventListener('click', function() {
-      modificarSliderGradual(60, 'mix');
-    });
-
-    document.getElementById('cambiarValoresBtn80Tolva6').addEventListener('click', function() {
-      modificarSliderGradual(80, 'mix');
-    });
-
-    document.getElementById('cambiarValoresBtn100Tolva6').addEventListener('click', function() {
-      modificarSliderGradual(100, 'mix');
-    });
-
-    document.getElementById('cambiarValoresBtn0Tolva6').addEventListener('click', function() {
-      modificarSliderGradual(0, 'mix');
-    });
   </script>
 </body>
 </html>
