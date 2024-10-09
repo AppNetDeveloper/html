@@ -199,25 +199,31 @@ class TcpClient extends Command
                 $this->sendNextOrder($barcode->machine_id, $mqttTopicNext);
                  // Re actualizar el last_barcode
                 $barcodenew = $this->waitTimeNow($id, $nowDateTime);
-                //actualizar el OrderId
-                $updatedOrderId = $this->orderIdNew($barcodenew);
-                
-                foreach ($relatedBarcodes as $relatedBarcode) {
-                    // Aquí puedes realizar cualquier acción que necesites con cada barcode relacionado
-                    $this->info("mando mqtt a: {$relatedBarcode->id} y valor de iniciar_model: {$relatedBarcode->iniciar_model}");
-                   //ahorra mandamos el mac
-                    $this->sendOrderMac("0",$updatedOrderId,$relatedBarcode->machine_id, $mqttTopicBarcodes);
+
+                if ($barcodenew !== "ERROR") {
+                    //actualizar el OrderId
+                    $updatedOrderId = $this->orderIdNew($barcodenew);
+                    
+                    foreach ($relatedBarcodes as $relatedBarcode) {
+                        // Aquí puedes realizar cualquier acción que necesites con cada barcode relacionado
+                        $this->info("mando mqtt a: {$relatedBarcode->id} y valor de iniciar_model: {$relatedBarcode->iniciar_model}");
+                    //ahorra mandamos el mac
+                        $this->sendOrderMac("0",$updatedOrderId,$relatedBarcode->machine_id, $mqttTopicBarcodes);
+                    }
                 }
             }
 
             if ($iniciarModel === 'INICIAR-2') {
-                // Buscar todas las líneas que tienen el mismo `mqtt_topic_barcodes` con el valor `$mqttTopicBase`
-                $relatedBarcodes = Barcode::where('mqtt_topic_barcodes', $mqttTopicBase)->get();
-    
+                $relatedBarcodes = Barcode::where('mqtt_topic_barcodes', $mqttTopicBase)
+                                            ->orderByRaw("CAST(SUBSTRING(machine_id, -2) AS UNSIGNED) ASC")
+                                            ->get();
+                
+                $this->info("Se encontraron {$relatedBarcodes->count()} líneas para INICIAR-2.");
+
                 foreach ($relatedBarcodes as $relatedBarcode) {
                     // Aquí puedes realizar cualquier acción que necesites con cada barcode relacionado
                     $this->info("Encontrada línea relacionada con ID: {$relatedBarcode->id} y valor de iniciar_model: {$relatedBarcode->iniciar_model}");
-                    // Si necesitas algo específico de cada barcode relacionado, puedes trabajar con $relatedBarcode aquí
+                    
                     $relatedBarcode->sended = 1;
                     $relatedBarcode->last_barcode = "INICIAR";
                     $relatedBarcode->save();
@@ -227,11 +233,15 @@ class TcpClient extends Command
                     $this->sendNextOrder($relatedBarcode->machine_id, $mqttTopicNext);
                     // Re actualizar el last_barcode
                     $barcodenew = $this->waitTimeNow($relatedBarcode->id, $nowDateTime);
-                    //actualizar el OrderId
-                    $updatedOrderId = $this->orderIdNew($barcodenew);
-                    //ahorra preguntamos el next orderid
-                    $this->sendOrderMac("0",$updatedOrderId,$relatedBarcode->machine_id, $mqttTopicBarcodes);
+
+                    if ($barcodenew !== "ERROR") {
+                        //actualizar el OrderId
+                        $updatedOrderId = $this->orderIdNew($barcodenew);
+                        //ahorra preguntamos el next orderid
+                        $this->sendOrderMac("0",$updatedOrderId,$relatedBarcode->machine_id, $mqttTopicBarcodes);
+                    }
                 }
+                
             }
             
             
@@ -239,7 +249,9 @@ class TcpClient extends Command
 
             if ($iniciarModel === 'INICIAR') {
                 // Buscar todas las líneas que tienen el mismo `mqtt_topic_barcodes` con el valor `$mqttTopicBase`
-                $relatedBarcodes = Barcode::where('mqtt_topic_barcodes', $mqttTopicBase)->get();
+                $relatedBarcodes = Barcode::where('mqtt_topic_barcodes', $mqttTopicBase)
+                                            ->orderByRaw("CAST(SUBSTRING(machine_id, -2) AS UNSIGNED) ASC")
+                                            ->get();
                 foreach ($relatedBarcodes as $relatedBarcode) {
                     // Aquí puedes realizar cualquier acción que necesites con cada barcode relacionado
                     $this->info("Encontrada línea relacionada con ID: {$relatedBarcode->id} y valor de iniciar_model: {$relatedBarcode->iniciar_model}");
@@ -265,17 +277,23 @@ class TcpClient extends Command
                 $this->sendNextOrder($barcode->machine_id, $mqttTopicNext);
                 // Re actualizar el last_barcode
                 $barcodenew = $this->waitTimeNow($barcode->id, $nowDateTime);
-                $updatedOrderId = $this->orderIdNew($barcodenew);
-                
-                foreach ($relatedBarcodes as $relatedBarcode) {
-                    // Aquí puedes realizar cualquier acción que necesites con cada barcode relacionado
-                    $this->info("mando mqtt a: {$relatedBarcode->id} y valor de iniciar_model: {$relatedBarcode->iniciar_model}");
-                   //ahorra mandamos el mac
-                    $this->sendOrderMac("0",$updatedOrderId,$relatedBarcode->machine_id, $mqttTopicBarcodes);
+
+                if ($barcodenew !== "ERROR") {
+                    $updatedOrderId = $this->orderIdNew($barcodenew);
+                    
+                    foreach ($relatedBarcodes as $relatedBarcode) {
+                        // Aquí puedes realizar cualquier acción que necesites con cada barcode relacionado
+                        $this->info("mando mqtt a: {$relatedBarcode->id} y valor de iniciar_model: {$relatedBarcode->iniciar_model}");
+                    //ahorra mandamos el mac
+                        $this->sendOrderMac("0",$updatedOrderId,$relatedBarcode->machine_id, $mqttTopicBarcodes);
+                    }
                 }
+
             }
             if ($iniciarModel === 'INICIAR-2') {
-                $relatedBarcodes = Barcode::where('mqtt_topic_barcodes', $mqttTopicBase)->get();
+                $relatedBarcodes = Barcode::where('mqtt_topic_barcodes', $mqttTopicBase)
+                                            ->orderByRaw("CAST(SUBSTRING(machine_id, -2) AS UNSIGNED) ASC")
+                                            ->get();
     
                 foreach ($relatedBarcodes as $relatedBarcode) {
                     // Aquí puedes realizar cualquier acción que necesites con cada barcode relacionado
@@ -298,10 +316,14 @@ class TcpClient extends Command
                     $this->sendNextOrder($relatedBarcode->machine_id, $mqttTopicNext);
                     // Re actualizar el last_barcode
                     $barcodenew = $this->waitTimeNow($relatedBarcode->id, $nowDateTime);
-                    //actualizar el OrderId
-                    $updatedOrderId = $this->orderIdNew($barcodenew);
-                    //ahorra preguntamos el next orderid
-                    $this->sendOrderMac("0",$updatedOrderId,$relatedBarcode->machine_id, $mqttTopicBarcodes);
+
+                    if ($barcodenew !== "ERROR") {
+                        //actualizar el OrderId
+                        $updatedOrderId = $this->orderIdNew($barcodenew);
+                        //ahorra preguntamos el next orderid
+                        $this->sendOrderMac("0",$updatedOrderId,$relatedBarcode->machine_id, $mqttTopicBarcodes);
+                    }
+                  
                 }
                 
             }
@@ -370,8 +392,8 @@ class TcpClient extends Command
             $retryCount++;
         }
         // Si alcanzamos el máximo de reintentos sin cumplir la condición, retornamos la línea encontrada (aunque sin cambios).
-        $this->error("No se pudo actualizar el barcode después de varios intentos.");
-        return $barcodenew;
+        $this->error("No se pudo actualizar el barcode con el nuevo OrderID. Se ha alcanzado el tiempo después de varios intentos.");
+        return "ERROR";
     }
 
     private function barcoderLatest($id)
