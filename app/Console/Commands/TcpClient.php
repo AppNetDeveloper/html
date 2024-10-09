@@ -262,9 +262,9 @@ class TcpClient extends Command
 
                 $nowDateTime = date('Y-m-d H:i:s');
                 //ahorra preguntamos el next orderid
-                $this->sendNextOrder($relatedBarcode->machine_id, $mqttTopicNext);
+                $this->sendNextOrder($barcode->machine_id, $mqttTopicNext);
                 // Re actualizar el last_barcode
-                $barcodenew = $this->waitTimeNow($relatedBarcode->id, $nowDateTime);
+                $barcodenew = $this->waitTimeNow($barcode->id, $nowDateTime);
                 $updatedOrderId = $this->orderIdNew($barcodenew);
                 
                 foreach ($relatedBarcodes as $relatedBarcode) {
@@ -337,6 +337,9 @@ class TcpClient extends Command
                 "event" => "start"
             ];
             $this->publishMqttMessage($mqttTopicShift, $comando);
+        }else {
+            // Si ninguna de las condiciones se cumple
+            $this->info('Barcode no válido.' .$barcodeValue. ' ' . $lastBarcode. ' ' . $id);
         }
         
     }
