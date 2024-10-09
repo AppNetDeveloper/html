@@ -1,24 +1,379 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Animación con Lottie</title>
+  <title>BOISOLO SCADA</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.7.5/lottie.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      background-color: #1e1e2f;
+      color: #ffffff;
+      font-family: 'Roboto', sans-serif;
+      box-sizing: border-box;
+      overflow: hidden;
+      background: url('/live-weight/9984.jpg') no-repeat center center fixed;
+      background-size: cover;
+    }
+    
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 30px;
+      background-color: #28293e;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .logo {
+      max-width: 25%;
+      height: auto;
+    }
+    
+    .time-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      margin-left: auto;
+    }
+
+    .time {
+      font-size: 4vh;
+      margin-right: 20px;
+    }
+
+    #scaleName {
+      font-size: 2.5vh;
+      color: #ffcc00;
+      text-align: right;
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    
+    .box {
+      background-color: #2e2f47;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      width: 98%;
+      max-width: 2400px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .animacion-container {
+      flex: 1;
+      max-width: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #contenedorAnimacion {
+      width: 100%;
+      height: 600px;
+      margin-bottom: 20px;
+    }
+
+    .botones-container {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .botones-container button {
+      margin: 10px;
+      padding: 10px 20px;
+      background-color: #ffcc00;
+      border: none;
+      border-radius: 5px;
+      color: #28293e;
+      font-size: 1.2em;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .botones-container button:hover {
+      background-color: #ffc107;
+    }
+
+    .columna-derecha {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      margin-left: 20px;
+      width: 45%;
+    }
+
+    .card-tolva {
+      background-color: #f8f9fa;
+      color: #000;
+      border-radius: 10px;
+      padding: 15px;
+      margin: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      flex: 0 0 calc(50% - 20px);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card-tolva:active {
+      transform: scale(1.05);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-tolva .card-title {
+      font-size: 1.5em;
+      text-align: center;
+    }
+
+    .card-tolva .card-weight {
+      font-size: 2em;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .btn-vaciar {
+      background-color: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.1s ease;
+      margin-bottom: 10px;
+    }
+
+    .btn-vaciar:hover {
+      background-color: #c82333;
+    }
+
+    .btn-vaciar:active {
+      transform: scale(0.95);
+    }
+
+    .material-select {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      color: #000;
+      background-color: #fff;
+    }
+
+    .material-select:focus {
+      border-color: #ffcc00;
+      box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+      outline: none;
+    }
+
+    .select2-container--default .select2-selection--single {
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 5px;
+      color: #000;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+      color: #000 !important;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__arrow b {
+      border-color: #000 transparent transparent transparent;
+    }
+
+    @media (max-width: 768px) {
+      .box {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .animacion-container {
+        max-width: 100%;
+        padding: 15px;
+      }
+
+      #contenedorAnimacion {
+        height: 300px;
+      }
+
+      .botones-container {
+        margin-left: 0;
+      }
+
+      .botones-container button {
+        font-size: 1em;
+        padding: 8px 16px;
+      }
+
+      .columna-derecha {
+        width: 100%;
+      }
+
+      .card-tolva {
+        flex: 0 0 100%;
+        margin-bottom: 15px;
+      }
+    }
+  </style>
 </head>
-<body style="background-color:rgb(20, 19, 19);">
-  <div id="contenedorAnimacion"></div>
-  <button id="cambiarValoresBtn20">Cambiar a 20</button>
-  <button id="cambiarValoresBtn40">Cambiar a 40</button>
-  <button id="cambiarValoresBtn60">Cambiar a 60</button>
-  <button id="cambiarValoresBtn80">Cambiar a 80</button>
-  <button id="cambiarValoresBtn100">Cambiar a 100</button>
-  <button id="cambiarValoresBtn0">Cambiar a 0</button>
+<body>
+  <header class="d-flex justify-content-between align-items-center">
+    <img src="logo.png" alt="Logo" class="logo">
+    <div class="time-container">
+      <div class="time" id="timeDisplay">02:33:21</div>
+      <div id="scaleName" class="center-name">Client Name</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="box">
+      <div class="animacion-container">
+        <div id="contenedorAnimacion"></div>
+      </div>
+      <div class="columna-derecha">
+        <div class="card-tolva">
+          <button id="cambiarValoresBtn0Tolva1" class="btn-vaciar">VACIAR</button>
+          <button id="cambiarValoresBtn20Tolva1" class="btn-vaciar">20</button>
+          <button id="cambiarValoresBtn40Tolva1" class="btn-vaciar">40</button>
+          <button id="cambiarValoresBtn60Tolva1" class="btn-vaciar">60</button>
+          <button id="cambiarValoresBtn80Tolva1" class="btn-vaciar">80</button>
+          <button id="cambiarValoresBtn100Tolva1" class="btn-vaciar">100</button>
+          <div class="card-title">Tolva 01</div>
+          <div class="card-weight">567 kg</div>
+          <select class="material-select">
+            <option value="arena">Arena</option>
+            <option value="cemento">Cemento</option>
+            <option value="aditivo">Aditivo</option>
+          </select>
+        </div>
+        <div class="card-tolva">
+          <button id="cambiarValoresBtn0Tolva2" class="btn-vaciar">VACIAR</button>
+          <button id="cambiarValoresBtn20Tolva2" class="btn-vaciar">20</button>
+          <button id="cambiarValoresBtn40Tolva2" class="btn-vaciar">40</button>
+          <button id="cambiarValoresBtn60Tolva2" class="btn-vaciar">60</button>
+          <button id="cambiarValoresBtn80Tolva2" class="btn-vaciar">80</button>
+          <button id="cambiarValoresBtn100Tolva2" class="btn-vaciar">100</button>
+          <div class="card-title">Tolva 02</div>
+          <div class="card-weight">345 kg</div>
+          <select class="material-select">
+            <option value="arena">Arena</option>
+            <option value="cemento">Cemento</option>
+            <option value="aditivo">Aditivo</option>
+          </select>
+        </div>
+        <div class="card-tolva">
+          <button id="cambiarValoresBtn0Tolva3" class="btn-vaciar">VACIAR</button>
+          <button id="cambiarValoresBtn20Tolva3" class="btn-vaciar">20</button>
+          <button id="cambiarValoresBtn40Tolva3" class="btn-vaciar">40</button>
+          <button id="cambiarValoresBtn60Tolva3" class="btn-vaciar">60</button>
+          <button id="cambiarValoresBtn80Tolva3" class="btn-vaciar">80</button>
+          <button id="cambiarValoresBtn100Tolva3" class="btn-vaciar">100</button>
+          <div class="card-title">Tolva 03</div>
+          <div class="card-weight">412 kg</div>
+          <select class="material-select">
+            <option value="arena">Arena</option>
+            <option value="cemento">Cemento</option>
+            <option value="aditivo">Aditivo</option>
+          </select>
+        </div>
+        <div class="card-tolva">
+          <button id="cambiarValoresBtn0Tolva4" class="btn-vaciar">VACIAR</button>
+          <button id="cambiarValoresBtn20Tolva4" class="btn-vaciar">20</button>
+          <button id="cambiarValoresBtn40Tolva4" class="btn-vaciar">40</button>
+          <button id="cambiarValoresBtn60Tolva4" class="btn-vaciar">60</button>
+          <button id="cambiarValoresBtn80Tolva4" class="btn-vaciar">80</button>
+          <button id="cambiarValoresBtn100Tolva4" class="btn-vaciar">100</button>
+          <div class="card-title">Tolva 04</div>
+          <div class="card-weight">390 kg</div>
+          <select class="material-select">
+            <option value="arena">Arena</option>
+            <option value="cemento">Cemento</option>
+            <option value="aditivo">Aditivo</option>
+          </select>
+        </div>
+        <div class="card-tolva">
+          <button id="cambiarValoresBtn0Tolva5" class="btn-vaciar">VACIAR</button>
+          <button id="cambiarValoresBtn20Tolva5" class="btn-vaciar">20</button>
+          <button id="cambiarValoresBtn40Tolva5" class="btn-vaciar">40</button>
+          <button id="cambiarValoresBtn60Tolva5" class="btn-vaciar">60</button>
+          <button id="cambiarValoresBtn80Tolva5" class="btn-vaciar">80</button>
+          <button id="cambiarValoresBtn100Tolva5" class="btn-vaciar">100</button>
+          <div class="card-title">Tolva 05</div>
+          <div class="card-weight">278 kg</div>
+          <select class="material-select">
+            <option value="arena">Arena</option>
+            <option value="cemento">Cemento</option>
+            <option value="aditivo">Aditivo</option>
+          </select>
+        </div>
+        <div class="card-tolva">
+          <button id="cambiarValoresBtn0Tolva6" class="btn-vaciar">VACIAR</button>
+          <button id="cambiarValoresBtn20Tolva6" class="btn-vaciar">20</button>
+          <button id="cambiarValoresBtn40Tolva6" class="btn-vaciar">40</button>
+          <button id="cambiarValoresBtn60Tolva6" class="btn-vaciar">60</button>
+          <button id="cambiarValoresBtn80Tolva6" class="btn-vaciar">80</button>
+          <button id="cambiarValoresBtn100Tolva6" class="btn-vaciar">100</button>
+          <div class="card-title">Tolva 06</div>
+          <div class="card-weight">320 kg</div>
+          <select class="material-select">
+            <option value="arena">Arena</option>
+            <option value="cemento">Cemento</option>
+            <option value="aditivo">Aditivo</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </main>
 
   <script>
+    $(document).ready(function() {
+      $('.material-select').select2({
+        placeholder: 'Seleccione un material',
+        allowClear: true
+      });
+
+      // Actualizar el reloj cada segundo
+      setInterval(() => {
+        const now = new Date();
+        const formattedTime = now.toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
+        document.getElementById('timeDisplay').textContent = formattedTime;
+      }, 1000);
+    });
+
     let animacion;
     let animacionData;
 
-    // Cargar el archivo JSON y modificarlo dinámicamente antes de la carga
     async function cargarJSON() {
       try {
         const response = await fetch('hoppers_complete.json');
@@ -30,106 +385,184 @@
       }
     }
 
-    // Función para cargar la animación
     function cargarAnimacion(data) {
       if (animacion) {
-        animacion.destroy(); // Destruimos cualquier animación previa
+        animacion.destroy();
       }
       animacion = lottie.loadAnimation({
         container: document.getElementById('contenedorAnimacion'),
         renderer: 'svg',
         loop: true,
         autoplay: true,
-        animationData: data // Usamos el JSON modificado
+        animationData: data
       });
       animacion.addEventListener('DOMLoaded', function() {
         console.log("Animación completamente cargada y lista.");
-        mostrarValorActualSlider(); // Mostrar el valor actual del slider al cargar la animación
       });
     }
 
-    // Función para mostrar el valor actual del slider en la consola
-    function mostrarValorActualSlider() {
+    function modificarSliderGradual(nuevoValor, tolvaId) {
+      console.log("Cambiando el valor del slider a:", nuevoValor, "para la tolva:", tolvaId);
+
       const layers = animacionData.layers;
       for (let i = 0; i < layers.length; i++) {
-        if (layers[i].nm === 'hopper2') {
+        if (layers[i].nm === tolvaId) {
           const effects = layers[i].ef;
           for (let j = 0; j < effects.length; j++) {
-            if (effects[j].nm === 'fillinglevels02') {
-              let valorActual = effects[j].ef[0].v.k;
-              console.log("Valor actual del slider al cargar la animación:", valorActual);
+            if (effects[j].nm.startsWith('fillinglevels')) {
+              effects[j].ef[0].v.k = nuevoValor;
+              console.log("Valor actualizado del slider en el JSON para", tolvaId, ":", nuevoValor);
+              cargarAnimacion(animacionData);
             }
           }
         }
       }
     }
 
-    // Función para modificar el valor del Slider en el JSON de forma gradual
-    function modificarSliderGradual(nuevoValor) {
-      console.log("Iniciando modificación gradual del slider hacia:", nuevoValor);
-
-      // Buscar la capa correspondiente en el JSON y modificar el valor del slider
-      const layers = animacionData.layers;
-      for (let i = 0; i < layers.length; i++) {
-        if (layers[i].nm === 'hopper2') {
-          const effects = layers[i].ef;
-          for (let j = 0; j < effects.length; j++) {
-            if (effects[j].nm === 'fillinglevels02') {
-              let valorActual = effects[j].ef[0].v.k;
-              let paso = (nuevoValor - valorActual) / 20; // Definir 20 pasos para una transición suave
-
-              let contador = 0;
-
-              function actualizarValor() {
-                if (contador <= 20) {
-                  let valorIntermedio = valorActual + (paso * contador);
-                  effects[j].ef[0].v.k = Math.round(valorIntermedio); // Redondear para mantener valores enteros
-                  console.log("Valor intermedio del slider en el JSON:", effects[j].ef[0].v.k);
-
-                  contador++;
-                  setTimeout(actualizarValor, 100); // Esperamos 100ms entre cada actualización
-                } else {
-                  console.log("Modificación gradual completada. Valor final:", nuevoValor);
-                  // Recargar la animación después de completar la actualización
-                  cargarAnimacion(animacionData);
-                }
-              }
-
-              actualizarValor();
-            }
-          }
-        }
-      }
-    }
-
-    // Cargar el JSON de la animación al inicio
     cargarJSON();
 
-    // Eventos para los botones que modifican los valores del slider
-    document.getElementById('cambiarValoresBtn20').addEventListener('click', function() {
-      modificarSliderGradual(20); // Cambiamos el valor del slider a 20
+        document.getElementById('cambiarValoresBtn20Tolva1').addEventListener('click', function() {
+          modificarSliderGradual(20, 'hopper1');
     });
 
-    document.getElementById('cambiarValoresBtn40').addEventListener('click', function() {
-      modificarSliderGradual(40); // Cambiamos el valor del slider a 40
+    document.getElementById('cambiarValoresBtn40Tolva1').addEventListener('click', function() {
+      modificarSliderGradual(40, 'hopper1');
     });
 
-    document.getElementById('cambiarValoresBtn60').addEventListener('click', function() {
-      modificarSliderGradual(60); // Cambiamos el valor del slider a 60
+    document.getElementById('cambiarValoresBtn60Tolva1').addEventListener('click', function() {
+      modificarSliderGradual(60, 'hopper1');
     });
 
-    document.getElementById('cambiarValoresBtn80').addEventListener('click', function() {
-      modificarSliderGradual(80); // Cambiamos el valor del slider a 80
+    document.getElementById('cambiarValoresBtn80Tolva1').addEventListener('click', function() {
+      modificarSliderGradual(80, 'hopper1');
     });
 
-    document.getElementById('cambiarValoresBtn100').addEventListener('click', function() {
-      modificarSliderGradual(100); // Cambiamos el valor del slider a 100
+    document.getElementById('cambiarValoresBtn100Tolva1').addEventListener('click', function() {
+      modificarSliderGradual(100, 'hopper1');
     });
 
-    document.getElementById('cambiarValoresBtn0').addEventListener('click', function() {
-      modificarSliderGradual(0); // Cambiamos el valor del slider a 0
+    document.getElementById('cambiarValoresBtn0Tolva1').addEventListener('click', function() {
+      modificarSliderGradual(0, 'hopper1');
+    });
+
+    document.getElementById('cambiarValoresBtn20Tolva2').addEventListener('click', function() {
+      modificarSliderGradual(20, 'hopper2');
+    });
+
+    document.getElementById('cambiarValoresBtn40Tolva2').addEventListener('click', function() {
+      modificarSliderGradual(40, 'hopper2');
+    });
+
+    document.getElementById('cambiarValoresBtn60Tolva2').addEventListener('click', function() {
+      modificarSliderGradual(60, 'hopper2');
+    });
+
+    document.getElementById('cambiarValoresBtn80Tolva2').addEventListener('click', function() {
+      modificarSliderGradual(80, 'hopper2');
+    });
+
+    document.getElementById('cambiarValoresBtn100Tolva2').addEventListener('click', function() {
+      modificarSliderGradual(100, 'hopper2');
+    });
+    document.getElementById('cambiarValoresBtn0Tolva2').addEventListener('click', function() {
+      modificarSliderGradual(0, 'hopper2');
+    });
+
+    document.getElementById('cambiarValoresBtn20Tolva3').addEventListener('click', function() {
+      modificarSliderGradual(20, 'hopper3');
+    });
+
+    document.getElementById('cambiarValoresBtn40Tolva3').addEventListener('click', function() {
+      modificarSliderGradual(40, 'hopper3');
+    });
+
+    document.getElementById('cambiarValoresBtn60Tolva3').addEventListener('click', function() {
+      modificarSliderGradual(60, 'hopper3');
+    });
+
+    document.getElementById('cambiarValoresBtn80Tolva3').addEventListener('click', function() {
+      modificarSliderGradual(80, 'hopper3');
+    });
+
+    document.getElementById('cambiarValoresBtn100Tolva3').addEventListener('click', function() {
+      modificarSliderGradual(100, 'hopper3');
+    });
+
+    document.getElementById('cambiarValoresBtn0Tolva3').addEventListener('click', function() {
+      modificarSliderGradual(0, 'hopper3');
+    });
+
+    document.getElementById('cambiarValoresBtn20Tolva4').addEventListener('click', function() {
+      modificarSliderGradual(20, 'hopper4');
+    });
+
+    document.getElementById('cambiarValoresBtn40Tolva4').addEventListener('click', function() {
+      modificarSliderGradual(40, 'hopper4');
+    });
+
+    document.getElementById('cambiarValoresBtn60Tolva4').addEventListener('click', function() {
+      modificarSliderGradual(60, 'hopper4');
+    });
+
+    document.getElementById('cambiarValoresBtn80Tolva4').addEventListener('click', function() {
+      modificarSliderGradual(80, 'hopper4');
+    });
+
+    document.getElementById('cambiarValoresBtn100Tolva4').addEventListener('click', function() {
+      modificarSliderGradual(100, 'hopper4');
+    });
+
+    document.getElementById('cambiarValoresBtn0Tolva4').addEventListener('click', function() {
+      modificarSliderGradual(0, 'hopper4');
+    });
+
+    document.getElementById('cambiarValoresBtn20Tolva5').addEventListener('click', function() {
+      modificarSliderGradual(20, 'hopper5');
+    });
+
+    document.getElementById('cambiarValoresBtn40Tolva5').addEventListener('click', function() {
+      modificarSliderGradual(40, 'hopper5');
+    });
+
+    document.getElementById('cambiarValoresBtn60Tolva5').addEventListener('click', function() {
+      modificarSliderGradual(60, 'hopper5');
+    });
+
+    document.getElementById('cambiarValoresBtn80Tolva5').addEventListener('click', function() {
+      modificarSliderGradual(80, 'hopper5');
+    });
+
+    document.getElementById('cambiarValoresBtn100Tolva5').addEventListener('click', function() {
+      modificarSliderGradual(100, 'hopper5');
+    });
+
+    document.getElementById('cambiarValoresBtn0Tolva5').addEventListener('click', function() {
+      modificarSliderGradual(0, 'hopper5');
+    });
+
+    document.getElementById('cambiarValoresBtn20Tolva6').addEventListener('click', function() {
+      modificarSliderGradual(20, 'mix');
+    });
+
+    document.getElementById('cambiarValoresBtn40Tolva6').addEventListener('click', function() {
+      modificarSliderGradual(40, 'mix');
+    });
+
+    document.getElementById('cambiarValoresBtn60Tolva6').addEventListener('click', function() {
+      modificarSliderGradual(60, 'mix');
+    });
+
+    document.getElementById('cambiarValoresBtn80Tolva6').addEventListener('click', function() {
+      modificarSliderGradual(80, 'mix');
+    });
+
+    document.getElementById('cambiarValoresBtn100Tolva6').addEventListener('click', function() {
+      modificarSliderGradual(100, 'mix');
+    });
+
+    document.getElementById('cambiarValoresBtn0Tolva6').addEventListener('click', function() {
+      modificarSliderGradual(0, 'mix');
     });
   </script>
 </body>
 </html>
-
