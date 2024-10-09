@@ -27,7 +27,7 @@
  * ©2008-2024 SpryMedia Ltd - datatables.net/license
  */
 
-/*! DataTables 2.1.6
+/*! DataTables 2.1.8
  * © SpryMedia Ltd - datatables.net/license
  */
 
