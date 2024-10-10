@@ -91,6 +91,16 @@ class CalculateProductionMonitorOee extends Command
         return 0;
     }
 
+/**
+ * Calculates production monitoring for sensors and modbuses based on the rules in the monitor_oee table.
+ *
+ * This command continuously executes, checking all MonitorOee records and calculating production data accordingly.
+ *
+ * For each MonitorOee record, it checks if sensor_active is 1. If so, it retrieves all sensors with type = 0
+ * from the corresponding production line ID, processes their data per minute, accumulates real and theoretical production,
+ * and sends accumulated production messages to MQTT. It also calculates inactivity by turn total and UDS week/turn.
+ */
+
     /**
      * Procesar los datos del sensor y devolver la producción real y teórica por minuto
      */
