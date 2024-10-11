@@ -24,6 +24,7 @@ class OrderStat extends Model
         'units_made_real',
         'units_made_theoretical',
         'sensor_stops_count',
+        'sensor_stops_active',
         'sensor_stops_time',
         'production_stops_count',
         'production_stops_time',

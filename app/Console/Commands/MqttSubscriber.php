@@ -104,6 +104,18 @@ class MqttSubscriber extends Command
 
     private function processMessage($topic, $message)
     {
+        // Limpiar el mensaje JSON
+        $cleanMessage = json_decode($message, true);  // Convertir el JSON a un array
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $this->error("El JSON proporcionado no es válido: " . json_last_error_msg());
+            return;
+        }
+
+
+        // Convertir de nuevo a JSON y remover barras invertidas
+        $cleanMessageJson = json_encode($cleanMessage, JSON_UNESCAPED_SLASHES);
+
         $originalTopic = str_replace('/prod_order_notice', '', $topic);
         $barcodes = Barcode::where('mqtt_topic_barcodes', $originalTopic)->get();
     
@@ -117,7 +129,7 @@ class MqttSubscriber extends Command
         foreach ($barcodes as $barcode) {
             if ($barcode->sended == 1) {
                 // Guardar el aviso de pedido
-                $barcode->order_notice = $message;
+                $barcode->order_notice = $cleanMessageJson;
                 $barcode->sended = 0;  // Después de guardar, poner `sended` a 0
                 $barcode->save();
                 $this->info("Aviso de pedido actualizado para código de barras {$barcode->id} y valor de `sended` cambiado a 0");
@@ -141,6 +153,7 @@ class MqttSubscriber extends Command
             $updated = Sensor::where('barcoder_id', $barcodeId)->update([
                 'count_order_0' => 0,
                 'count_order_1' => 0,
+                'downtime_count'=> 0,
             ]);
 
             if ($updated > 0) {

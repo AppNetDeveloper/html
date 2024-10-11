@@ -14,37 +14,69 @@ class MqttSubscriberLocal extends Command
     protected $signature = 'mqtt:subscribe-local';
     protected $description = 'Subscribe to MQTT topics and update order notices';
 
+
     protected $subscribedTopics = [];
+    protected $shouldContinue = true;
 
     public function handle()
     {
-        $mqtt = $this->initializeMqttClient(env('MQTT_SENSORICA_SERVER'), intval(env('MQTT_SENSORICA_PORT')));
-        $this->subscribeToAllTopics($mqtt);
-
-        // Bucle principal para verificar y suscribirse a nuevos tópicos
-        while (true) {
-            $this->checkAndSubscribeNewTopics($mqtt);
-            $mqtt->loop(true); // Mantener la conexión activa y procesar mensajes
-
-            // Permitir que Laravel maneje eventos internos mientras esperamos nuevos mensajes
-            usleep(100000); // Esperar 0.1 segundos
+        // Habilitar señales para poder detener el proceso limpiamente
+        pcntl_async_signals(true);
+        pcntl_signal(SIGTERM, function () {
+            $this->shouldContinue = false;
+        });
+        pcntl_signal(SIGINT, function () {
+            $this->shouldContinue = false;
+        });
+    
+        while ($this->shouldContinue) {
+            try {
+                $mqtt = $this->initializeMqttClient(env('MQTT_SENSORICA_SERVER'), intval(env('MQTT_SENSORICA_PORT')));
+                $this->subscribeToAllTopics($mqtt);
+    
+                while ($this->shouldContinue) {
+                    $this->checkAndSubscribeNewTopics($mqtt);
+                    $mqtt->loop(true);
+                    usleep(100000);
+                }
+    
+                $mqtt->disconnect();
+                $this->info("MQTT Subscriber stopped gracefully.");
+    
+            } catch (\Exception $e) {
+                $this->error("Error connecting or processing MQTT client: " . $e->getMessage());
+                // Esperar un poco antes de intentar reconectar
+                sleep(5);
+                $this->info("Reconnecting to MQTT...");
+            }
         }
     }
+    
 
     private function initializeMqttClient($server, $port)
     {
         $connectionSettings = new ConnectionSettings();
         $connectionSettings->setKeepAliveInterval(60);
         $connectionSettings->setUseTls(false);
-        $connectionSettings->setTlsSelfSignedAllowed(false);
         $connectionSettings->setUsername(env('MQTT_USERNAME'));
         $connectionSettings->setPassword(env('MQTT_PASSWORD'));
 
-        //$mqtt = new MqttClient($server, $port, uniqid());
         $mqtt = new MqttClient($server, $port, uniqid());
-        $mqtt->connect($connectionSettings, true); // Limpia la sesión
+        $mqtt->connect($connectionSettings, true);
 
         return $mqtt;
+    }
+
+    private function subscribeToTopic(MqttClient $mqtt, string $topic)
+    {
+        if (!in_array($topic, $this->subscribedTopics)) {
+            $mqtt->subscribe($topic, function ($topic, $message) {
+                $this->processMessage($topic, $message);
+            }, 0);
+
+            $this->subscribedTopics[] = $topic;
+            $this->info("Subscribed to topic: {$topic}");
+        }
     }
 
     private function subscribeToAllTopics(MqttClient $mqtt)
@@ -54,14 +86,7 @@ class MqttSubscriberLocal extends Command
         })->toArray();
 
         foreach ($topics as $topic) {
-            if (!in_array($topic, $this->subscribedTopics)) {
-                $mqtt->subscribe($topic, function ($topic, $message) {
-                    $this->processMessage($topic, $message);
-                }, 0);
-
-                $this->subscribedTopics[] = $topic;
-                $this->info("Subscribed to topic: {$topic}");
-            }
+            $this->subscribeToTopic($mqtt, $topic);
         }
 
         $this->info('Subscribed to initial topics.');
@@ -69,75 +94,98 @@ class MqttSubscriberLocal extends Command
 
     private function checkAndSubscribeNewTopics(MqttClient $mqtt)
     {
-       // $currentTopics = Barcode::pluck('mqtt_topic_orders')->toArray();
-       $currentTopics = Barcode::pluck('mqtt_topic_barcodes')->map(function ($topic) {
+        $currentTopics = Barcode::pluck('mqtt_topic_barcodes')->map(function ($topic) {
             return $topic . "/prod_order_notice";
         })->toArray();
-        // Comparar con los tópicos a los que ya estamos suscritos
-        foreach ($currentTopics as $topic) {
-            if (!in_array($topic, $this->subscribedTopics)) {
-                // Suscribirse al nuevo tópico
-                $mqtt->subscribe($topic, function ($topic, $message) {
-                    $this->processMessage($topic, $message);
-                }, 0);
 
-                $this->subscribedTopics[] = $topic;
-                $this->info("Subscribed to new topic: {$topic}");
-            }
+        foreach ($currentTopics as $topic) {
+            $this->subscribeToTopic($mqtt, $topic);
         }
     }
 
     private function processMessage($topic, $message)
     {
-        // Eliminar el sufijo "/prod_order_notice" del tópico
+        // Limpiar el mensaje JSON
+        $cleanMessage = json_decode($message, true);  // Convertir el JSON a un array
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $this->error("El JSON proporcionado no es válido: " . json_last_error_msg());
+            return;
+        }
+
+
+        // Convertir de nuevo a JSON y remover barras invertidas
+        $cleanMessageJson = json_encode($cleanMessage, JSON_UNESCAPED_SLASHES);
+
         $originalTopic = str_replace('/prod_order_notice', '', $topic);
+        $barcodes = Barcode::where('mqtt_topic_barcodes', $originalTopic)->get();
     
-        // Buscar el código de barras usando el tópico original
-        $barcode = Barcode::where('mqtt_topic_orders', $originalTopic)->first();
-    
-        if ($barcode) {
-            // Actualizar el aviso de orden para el código de barras encontrado
-            $barcode->order_notice = $message;
-            $barcode->save();
-            $this->info("Aviso de pedido actualizado para código de barras {$barcode->id}");
-    
-            // Resetear los valores de sensores y modbuses
-            $this->resetSensors($barcode->id, $topic);
-            $this->resetModbuses($barcode->id, $topic);
-        } else {
-            $this->error("Barcode not found for topic: {$topic}");
+        if ($barcodes->isEmpty()) {
+            $this->error("No barcodes found for topic: {$topic}");
+            return;
+        }else{
+            $this->info("barcodes found for topic: {$topic}");
         }
-    }
-    
 
-    private function resetSensors($barcodeId, $topic)
+    
+        foreach ($barcodes as $barcode) {
+            $this->info("Verificando barcode ID: {$barcode->id}, sended: {$barcode->sended}");
+            
+                // Guardar el aviso de pedido
+                $barcode->order_notice = $cleanMessageJson;
+                $barcode->sended = 0;  // Después de guardar, poner `sended` a 0
+                try {
+                    $barcode->save();
+                    $this->info("Código de barras guardado correctamente: {$barcode->id}");
+                } catch (\Exception $e) {
+                    $this->error("Error al guardar el código de barras: {$e->getMessage()}");
+                }
+                
+        
+                // Resetear sensores y modbuses asociados
+                $this->resetSensors($barcode->id);
+                $this->resetModbuses($barcode->id);
+
+        }
+        
+    }
+
+    private function resetSensors($barcodeId)
     {
-        Sensor::where('barcoder_id', $barcodeId)->chunk(100, function ($sensors) use ($topic) {
-            foreach ($sensors as $sensor) {
-                $sensor->count_order_0 = 0;
-                $sensor->count_order_1 = 0;
-                $sensor->save();
-                $this->info("Reset count_order_0 and count_order_1 for sensor with id {$sensor->id}");
-            }
-        });
+        try {
+            $updated = Sensor::where('barcoder_id', $barcodeId)->update([
+                'count_order_0' => 0,
+                'count_order_1' => 0,
+                'downtime_count'=> 0,
+            ]);
 
-        if (Sensor::where('barcoder_id', $barcodeId)->count() == 0) {
-            $this->error("Sensor not found for topic: {$topic}");
+            if ($updated > 0) {
+                $this->info("Reset count_order_0 and count_order_1 for {$updated} sensors for barcode ID {$barcodeId}");
+            } else {
+                $this->error("Sensor not found for barcode ID: {$barcodeId}");
+            }
+        } catch (\Exception $e) {
+            $this->error("Error updating sensors: " . $e->getMessage());
         }
     }
 
-    private function resetModbuses($barcodeId, $topic)
+
+    private function resetModbuses($barcodeId)
     {
-        Modbus::where('barcoder_id', $barcodeId)->chunk(100, function ($modbuses) use ($topic) {
-            foreach ($modbuses as $modbus) {
-                $modbus->rec_box = 0;
-                $modbus->save();
-                $this->info("Reset rec_box for modbus with id {$modbus->id}");
+        try {
+            $updated = Modbus::where('barcoder_id', $barcodeId)->update([
+                'rec_box' => 0,
+            ]);
+    
+            if ($updated > 0) {
+                $this->info("Reset rec_box for {$updated} modbuses for barcode ID {$barcodeId}");
+            } else {
+                $this->error("Modbus not found for barcode ID: {$barcodeId}");
             }
-        });
-
-        if (Modbus::where('barcoder_id', $barcodeId)->count() == 0) {
-            $this->error("Modbus not found for topic: {$topic}");
+    
+        } catch (\Exception $e) {
+            $this->error("Error updating Modbus: " . $e->getMessage());
         }
     }
+    
 }

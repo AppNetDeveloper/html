@@ -30,6 +30,10 @@ else
     echo "Entrada añadida correctamente a sudoers."
 fi
 
+
+echo "SHIFT_TIME=08:00:00" >> .env
+
+
 sudo supervisorctl stop all
 rm -rf /etc/supervisor/conf.d/*
 cp laravel*.conf /etc/supervisor/conf.d/

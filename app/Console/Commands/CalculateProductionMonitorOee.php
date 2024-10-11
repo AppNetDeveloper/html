@@ -11,6 +11,7 @@ use App\Models\SensorCount;
 use App\Models\Barcode;
 use App\Models\MqttSendServer1;
 use App\Models\MqttSendServer2;
+use App\Models\OrderStat;
 
 class CalculateProductionMonitorOee extends Command
 {
@@ -79,6 +80,8 @@ class CalculateProductionMonitorOee extends Command
 
                 //calcular inactividad por turno total
                 $this->calcInactiveTimeShift($monitor);
+                //calcular inactividad por turno total
+                $this->calcInactiveTimeOrder($monitor);
                 //calcula UDS semana y turno
                 $this->calcUdsShiftAndWeek($monitor);
             }
@@ -427,6 +430,117 @@ class CalculateProductionMonitorOee extends Command
 
                  // Publicar el mensaje MQTT con el tópico modificado
                  $this->publishMqttMessage($mqtt_topic_modified, $json);
+
+             } else {
+                 $this->info("El tiempo total del turno es cero o no válido.");
+             }
+         }
+    }
+    public function calcInactiveTimeOrder($monitor) {
+        //sacar todo el tiempo de inactividad de la linea de produccion si no es null
+        if ($monitor->production_line_id != null) {
+            // Obtenemos el downtime de la línea de producción por production_line_id y sumamos los valores
+             $downTime = Sensor::where('production_line_id', $monitor->production_line_id)->sum('downtime_count');
+
+             // Convertimos el tiempo de inactividad en formato de horas, minutos y segundos (H:i:s)
+             $formattedDownTime = gmdate("H:i:s", $downTime);
+             $this->info("Tiempo de inactividad: " . $formattedDownTime);
+
+             // Sacamos la hora de inicio del turno desde monitor_oee (time_start_shift)
+             $time_start_shift = $monitor->time_start_shift;
+
+             // Obtenemos la hora actual
+             $now = Carbon::now();
+
+             // Calculamos la diferencia en segundos entre la hora actual y el inicio del turno
+             $diff = $now->diffInSeconds(Carbon::parse($time_start_shift));
+
+            
+             // Aseguramos que el tiempo total del turno no sea cero para evitar división por cero
+             if ($diff > 0) {
+                 // Calculamos el porcentaje de inactividad (downtime)
+                 $downtime_percentage = ($downTime / $diff) * 100;
+
+                 // Determinamos el status basado en el porcentaje de inactividad
+                 if ($downtime_percentage >= 40) {
+                     $status = 0; // Downtime mayor o igual a 40%
+                 } elseif ($downtime_percentage >= 20) {
+                     $status = 1; // Downtime mayor o igual a 20% y menor que 40%
+                 } else {
+                     $status = 2; // Downtime menor que 20%
+                 }
+
+                 $this->info("Downtime: $formattedDownTime, Porcentaje de downtime: $downtime_percentage%, Status: $status");
+
+                 // Creamos el JSON con el downtime acumulado y el status correspondiente
+                 $json = json_encode(['value' => $formattedDownTime, 'status' => $status]);
+
+                 // Obtenemos el valor original del mqtt_topic desde monitor_oee
+                 $mqtt_topicKpi1 = $monitor->mqtt_topic;
+
+                 // Expresión regular para eliminar todo lo que esté entre /sta/ y /metrics/
+                 $pattern = '/\/sta\/.*\/metrics\/.*$/';
+
+                 // Reemplazamos la parte que coincide con la expresión regular por la nueva parte
+                 $mqtt_topic_modified = preg_replace($pattern, '', $mqtt_topicKpi1);
+
+                 // Añadimos la nueva parte que necesitamos
+                 $mqtt_topic_modified .= '/kpi1Value';
+
+                 // Publicar el mensaje MQTT con el tópico modificado
+                // $this->publishMqttMessage($mqtt_topic_modified, $json);
+
+
+                 //actualizamos en la tabla order_stats por el production_line_id  ultima linea de la tabla
+                 //pero ponemos un si el turno ya tiene empezado mas del tiempo de SHIFT_TIME de .env ya no se actualiza
+                $shiftTime = env('SHIFT_TIME', '08:00:00'); // '00:00:00' es el valor por defecto si no se define en el archivo .env
+                list($hours, $minutes, $seconds) = explode(':', $shiftTime);
+
+                // Convertimos el tiempo a segundos
+                $shiftTimeInSeconds = ($hours * 3600) + ($minutes * 60) + $seconds;
+
+                // Buscamos por production_line_id la última línea de la tabla order_stats
+                $orderStats = OrderStat::where('production_line_id', $monitor->production_line_id)
+                                        ->orderBy('id', 'desc')
+                                        ->first();
+
+                // Luego, comparas con $diff que ya está en segundos
+                if ($diff <= $shiftTimeInSeconds) {
+                     //ahora actualizamos el tiempo de inactividad sumado  que es el valor en order_stats - sensor_stops_time que tenemos que introducir $formattedDownTime
+                     // Supongamos que $formattedDownTime está en el formato "00:00:00" (hh:mm:ss) lo traducimos a minutos
+                    list($hours, $minutes, $seconds) = explode(':', $formattedDownTime);
+
+                    // Convertimos todo a minutos
+                    $inactiveTimeInMinutes = ($hours * 60) + $minutes + ($seconds / 60);
+
+                    if ($orderStats) {
+                        // Solo actualizamos si el valor es diferente
+                        if ($orderStats->sensor_stops_time != $inactiveTimeInMinutes) {
+                            // Actualizamos el tiempo de inactividad sumado en minutos
+                            $orderStats->sensor_stops_time = $inactiveTimeInMinutes;
+                            if ($orderStats->sensor_stops_active == '0') {
+                                $orderStats->sensor_stops_count = $orderStats->sensor_stops_count + 1;
+                                $orderStats->sensor_stops_active = 1;
+                                $orderStats->save();
+                            }
+                            $orderStats->save();
+                            $this->info("El valor de sensor_stops_time ha sido actualizado.");
+                        } else {
+                            if ($orderStats->sensor_stops_active == '1') {
+                                $orderStats->sensor_stops_active = 0;
+                                $orderStats->save();
+                            }
+                            // Si el valor es el mismo, no hacemos nada
+                            $this->info("El valor de sensor_stops_time ya es el mismo que inactiveTimeInMinutes, no se necesita actualización.");
+                        }
+                    } else {
+                        // Si no hay registro, mostramos un mensaje de advertencia o manejamos el caso
+                        $this->info("No se encontró un registro en la tabla order_stats para production_line_id: " . $monitor->production_line_id);
+                    }
+
+                }else{
+                    $this->info("El tiempo total del turno es menor al tiempo deSHIFT_TIME");
+                }
 
              } else {
                  $this->info("El tiempo total del turno es cero o no válido.");
