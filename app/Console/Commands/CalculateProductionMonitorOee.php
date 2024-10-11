@@ -517,7 +517,7 @@ class CalculateProductionMonitorOee extends Command
                     if ($orderStats) {
                         // Solo actualizamos si el valor es diferente
                         if ($orderStats->sensor_stops_time != $inactiveTimeInMinutes) {
-                            // Actualizamos el tiempo de inactividad sumado en minutos
+                            // Actualizamos el tiempo de inactividad sumado en minutos y si es diferente se actualiza en caso contrario no se actualiza. Ponemos 1 en stop active para poner  que ya se ha contado 
                             $orderStats->sensor_stops_time = $inactiveTimeInMinutes;
                             if ($orderStats->sensor_stops_active == '0') {
                                 $orderStats->sensor_stops_count = $orderStats->sensor_stops_count + 1;
