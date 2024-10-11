@@ -12,6 +12,7 @@ use App\Models\Barcode;
 use App\Models\MqttSendServer1;
 use App\Models\MqttSendServer2;
 use App\Models\OrderStat;
+use Illuminate\Support\Facades\Log;
 
 class CalculateProductionMonitorOee extends Command
 {
