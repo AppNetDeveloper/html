@@ -181,7 +181,9 @@ class TcpClient extends Command
             //primero llamamos a obtener el orderid pero comprobamos si $iniciarModel es INICIAR o INICIAR-2 si es 2 tenemos que buscar todos los 
             if ($iniciarModel === 'INICIAR') {
                 // Buscar todas las líneas que tienen el mismo `mqtt_topic_barcodes` con el valor `$mqttTopicBase`
-                $relatedBarcodes = Barcode::where('mqtt_topic_barcodes', $mqttTopicBase)->get();
+                $relatedBarcodes = Barcode::where('mqtt_topic_barcodes', $mqttTopicBase)
+                                            ->orderByRaw("CAST(SUBSTRING(machine_id, -2) AS UNSIGNED) ASC")
+                                            ->get();
     
                 foreach ($relatedBarcodes as $relatedBarcode) {
                     // Aquí puedes realizar cualquier acción que necesites con cada barcode relacionado
@@ -191,7 +193,7 @@ class TcpClient extends Command
                     $relatedBarcode->sended = 1;
                     $relatedBarcode->last_barcode = "INICIAR";
                     $relatedBarcode->save();
-                    $this->info("Puesto en modo escucha" );
+                    $this->info("Puesto en modo escucha ID: {$relatedBarcode->id}" );
                 }
                 $nowDateTime = date('Y-m-d H:i:s');
 
@@ -200,7 +202,17 @@ class TcpClient extends Command
                  // Re actualizar el last_barcode
                 $barcodenew = $this->waitTimeNow($id, $nowDateTime);
 
-                if ($barcodenew !== "ERROR") {
+                if ($barcodenew === "ERROR") {
+                    // Detenemos la ejecución si se detecta un error.
+                    foreach ($relatedBarcodes as $relatedBarcode) {
+                        $relatedBarcode->sended = 0;
+                        $relatedBarcode->last_barcode = "FINALIZAR";
+                        $relatedBarcode->save();
+                        $this->error("Error al actualizar el barcode con ID: {$relatedBarcode->id}, Vuelvo a FINZALIAR");
+                    }
+                    return; // Finaliza la ejecución del método actual
+                }
+                
                     //actualizar el OrderId
                     $updatedOrderId = $this->orderIdNew($barcodenew);
                     
@@ -210,7 +222,7 @@ class TcpClient extends Command
                     //ahorra mandamos el mac
                         $this->sendOrderMac("0",$updatedOrderId,$relatedBarcode->machine_id, $mqttTopicBarcodes);
                     }
-                }
+                
             }
 
             if ($iniciarModel === 'INICIAR-2') {
@@ -234,12 +246,19 @@ class TcpClient extends Command
                     // Re actualizar el last_barcode
                     $barcodenew = $this->waitTimeNow($relatedBarcode->id, $nowDateTime);
 
-                    if ($barcodenew !== "ERROR") {
+                    if ($barcodenew === "ERROR") {
+                        // Detenemos la ejecución si se detecta un error.
+                        $relatedBarcode->sended = 0;
+                        $relatedBarcode->last_barcode = "FINALIZAR";
+                        $relatedBarcode->save();
+                        $this->error("Error al actualizar el barcode con ID: {$relatedBarcode->id}, Vuelvo a FINZALIAR");
+                        return; // Finaliza la ejecución del método actual
+                    }
                         //actualizar el OrderId
                         $updatedOrderId = $this->orderIdNew($barcodenew);
                         //ahorra preguntamos el next orderid
                         $this->sendOrderMac("0",$updatedOrderId,$relatedBarcode->machine_id, $mqttTopicBarcodes);
-                    }
+                    
                 }
                 
             }
@@ -278,7 +297,16 @@ class TcpClient extends Command
                 // Re actualizar el last_barcode
                 $barcodenew = $this->waitTimeNow($barcode->id, $nowDateTime);
 
-                if ($barcodenew !== "ERROR") {
+                if ($barcodenew === "ERROR") {
+                    // Detenemos la ejecución si se detecta un error.
+                    foreach ($relatedBarcodes as $relatedBarcode) {
+                        $relatedBarcode->sended = 0;
+                        $relatedBarcode->last_barcode = "FINALIZAR";
+                        $relatedBarcode->save();
+                        $this->error("Error al actualizar el barcode con ID: {$relatedBarcode->id}, Vuelvo a FINZALIAR");
+                    }
+                    return; // Finaliza la ejecución del método actual
+                }
                     $updatedOrderId = $this->orderIdNew($barcodenew);
                     
                     foreach ($relatedBarcodes as $relatedBarcode) {
@@ -287,7 +315,7 @@ class TcpClient extends Command
                     //ahorra mandamos el mac
                         $this->sendOrderMac("0",$updatedOrderId,$relatedBarcode->machine_id, $mqttTopicBarcodes);
                     }
-                }
+                
 
             }
             if ($iniciarModel === 'INICIAR-2') {
@@ -317,12 +345,19 @@ class TcpClient extends Command
                     // Re actualizar el last_barcode
                     $barcodenew = $this->waitTimeNow($relatedBarcode->id, $nowDateTime);
 
-                    if ($barcodenew !== "ERROR") {
+                    if ($barcodenew === "ERROR") {
+                        // Detenemos la ejecución si se detecta un error.
+                        $relatedBarcode->sended = 0;
+                        $relatedBarcode->last_barcode = "FINALIZAR";
+                        $relatedBarcode->save();
+                        $this->error("Error al actualizar el barcode con ID: {$relatedBarcode->id}, Vuelvo a FINZALIAR");
+                        return; // Finaliza la ejecución del método actual
+                    }
                         //actualizar el OrderId
                         $updatedOrderId = $this->orderIdNew($barcodenew);
                         //ahorra preguntamos el next orderid
                         $this->sendOrderMac("0",$updatedOrderId,$relatedBarcode->machine_id, $mqttTopicBarcodes);
-                    }
+                    
                   
                 }
                 
