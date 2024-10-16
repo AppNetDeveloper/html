@@ -16,6 +16,8 @@ class OrderStat extends Model
     protected $fillable = [
         'production_line_id',
         'order_id',
+        'box',
+        'units_box',
         'units',
         'units_per_minute_real',
         'units_per_minute_theoretical',
@@ -24,14 +26,16 @@ class OrderStat extends Model
         'units_made_real',
         'units_made_theoretical',
         'sensor_stops_count',
-        'sensor_stops_active',
         'sensor_stops_time',
-        'production_stops_count',
         'production_stops_time',
         'units_made',
         'units_pending',
         'units_delayed',
         'slow_time',
+        'fast_time',
+        'out_time',
+        'theoretical_end_time',
+        'real_end_time',
         'oee',
     ];
 

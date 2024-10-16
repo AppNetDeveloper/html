@@ -32,6 +32,8 @@ fi
 
 
 echo "SHIFT_TIME=08:00:00" >> .env
+echo "PRODUCTION_MIN_TIME=3" >> .env
+echo "PRODUCTION_MAX_TIME=5" >> .env
 
 
 sudo supervisorctl stop all

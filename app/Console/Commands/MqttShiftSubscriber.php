@@ -12,6 +12,7 @@ use App\Models\MqttSendServer1;
 use App\Models\MqttSendServer2;
 use App\Models\MonitorOee;
 use Illuminate\Support\Facades\Log;
+use App\Models\OrderStat;
 
 class MqttShiftSubscriber extends Command
 {
@@ -161,6 +162,8 @@ class MqttShiftSubscriber extends Command
             // Anadir fecha a Oee con el ultimo cambio de turno por linia
             $this->changeDataTimeOee($sensor);
 
+            $this->changeOrderStatus($sensor->production_line_id);
+
             // Guardar los cambios en el sensor
             $sensor->save();
             $this->info("Sensor ID {$sensor->id} updated with shift_type, event, and counters reset.");
@@ -194,21 +197,31 @@ class MqttShiftSubscriber extends Command
 
     private function changeDataTimeOee($sensor)
     {
-        $this->info("Actualizar horra de Oee para el la linia {$sensor->production_line_id}.");
+        try {
+            // Información sobre la actualización de la hora de inicio de OEE
+            $this->info("Actualizando hora de OEE para la línea {$sensor->production_line_id}.");
 
-        $oees = MonitorOee::where('production_line_id', $sensor->production_line_id)->get();
+            // Obtener todos los registros de MonitorOee relacionados con la línea de producción
+            $oees = MonitorOee::where('production_line_id', $sensor->production_line_id)->get(); // Cargar los modelos
 
-        if ($oees->isNotEmpty()) {
-            foreach ($oees as $oee) {
-                $oee->time_start_shift = Carbon::now();
-                $oee->save();
+            if ($oees->isNotEmpty()) {
+                foreach ($oees as $oee) {
+                    $oee->time_start_shift = Carbon::now();
+                    $oee->save();  // Esto disparará el evento 'updating'
+                }
+
+                $this->info("Hora de inicio del turno actualizada para todos los monitores en la línea de producción {$sensor->production_line_id}.");
+            } else {
+                $this->warn("No se encontraron monitores para la línea de producción {$sensor->production_line_id}.");
             }
-            $this->info("Shift time updated for all monitors in production line {$sensor->production_line_id}.");
-        } else {
-            $this->warn("No monitors found for production line {$sensor->production_line_id}.");
-        }
 
+
+        } catch (\Exception $e) {
+            // Capturar cualquier excepción y mostrar un mensaje de error
+            $this->error("Ocurrió un error al actualizar la hora de OEE para la línea {$sensor->production_line_id}: " . $e->getMessage());
+        }
     }
+
     private function sendMqttTo0($sensor){
         // Json enviar a MQTT conteo por orderId
         $processedMessage = json_encode([
@@ -233,6 +246,61 @@ class MqttShiftSubscriber extends Command
         $this->info("Resetting mqtt counters waiTime to 0 for sensor ID {$sensor->id}.");
     }
 
+    private function changeOrderStatus($productionLineId)
+    {
+        // Buscar la última entrada en 'order_stats' con el mismo 'production_line_id'
+        $lastOrderStat = OrderStat::where('production_line_id', $productionLineId)->latest()->first();
+        
+        $createNewEntry = false; // Indicador para saber si necesitamos crear una nueva entrada
+    
+        if ($lastOrderStat) {
+            // Verificar si el registro se creó hace más de 1 minuto
+            $createdAt = Carbon::parse($lastOrderStat->created_at);
+            $oneMinuteAgo = Carbon::now()->subMinute();
+    
+            // Si el registro tiene más de 1 minuto de antigüedad, establecemos que se debe crear una nueva entrada
+            if ($createdAt->lessThan($oneMinuteAgo)) {
+                $createNewEntry = true;
+            }
+        } else {
+            // Si no hay ningún registro anterior, necesitamos crear una nueva entrada
+            $createNewEntry = true;
+        }
+    
+        // Si se determina que se debe crear una nueva entrada
+        if ($createNewEntry) {
+            // Calcular las unidades restantes (units - units_made_real)
+            $unitsRemaining = $lastOrderStat ? $lastOrderStat->units - $lastOrderStat->units_made_real : 0;
+    
+            // Crear una nueva línea con los campos necesarios y los demás vacíos o en 0
+            OrderStat::create([
+                'production_line_id' => $productionLineId,
+                'order_id' => $lastOrderStat ? $lastOrderStat->order_id : null,
+                'box' => $lastOrderStat ? $lastOrderStat->box : null,
+                'units_box' => $lastOrderStat ? $lastOrderStat->units_box : null,
+                'units' => $unitsRemaining,  // Aquí asignamos lo que queda por fabricar
+                'units_per_minute_real' => null,  // Dejar estos campos vacíos o nulos
+                'units_per_minute_theoretical' => null,
+                'seconds_per_unit_real' => null,
+                'seconds_per_unit_theoretical' => null,
+                'units_made_real' => 0,
+                'units_made_theoretical' => 0,
+                'sensor_stops_count' => 0,
+                'sensor_stops_active' => 0,
+                'sensor_stops_time' => 0,
+                'production_stops_time' => 0,
+                'units_made' => 0,
+                'units_pending' => 0,
+                'units_delayed' => 0,
+                'slow_time' => 0,
+                'oee' => null,  // Dejar vacío o nulo
+            ]);
+    
+            Log::info("Nueva entrada creada en order_stats para la línea de producción: {$productionLineId}");
+        } else {
+            Log::info("No se creó nueva entrada en order_stats ya que el último registro es reciente para la línea de producción: {$productionLineId}");
+        }
+    }
     private function publishMqttMessage($topic, $message)
     {
        try {

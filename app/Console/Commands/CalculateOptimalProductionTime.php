@@ -74,10 +74,18 @@ class CalculateOptimalProductionTime extends Command
                         // Establecer un valor por defecto de 30 si time_11 es nulo, 0 o no se encuentra ningún registro
                         $optimalProductionTime = ($sensorCount && $sensorCount->time_11 > 0) ? $sensorCount->time_11 : 30;
 
-                        // Si optimalProductionTime es 1, incrementar en 1
-                        if ($optimalProductionTime == 1) {
-                            $optimalProductionTime += 1;
+                        // Si optimalProductionTime es inferior a PRODUCTION_MIN_TIM ponemos su valor minimo si es mayor a PRODUCTION_MAX_TIM ponemos su valor maxima
+                        $minTime = env("PRODUCTION_MIN_TIME", 3);
+                        $maxTime = env("PRODUCTION_MAX_TIME", 10);
+
+                        // Asegurarse de que optimalProductionTime esté dentro del rango
+                        if ($optimalProductionTime < $minTime) {
+                            $optimalProductionTime = $minTime;
+                        } elseif ($optimalProductionTime > $maxTime) {
+                            $optimalProductionTime = $maxTime;
                         }
+                                                
+
 
                         // Actualizar el tiempo de producción óptimo en la tabla sensors
                         $sensor->optimal_production_time = $optimalProductionTime;
@@ -85,10 +93,20 @@ class CalculateOptimalProductionTime extends Command
 
                         $this->info("Updated optimal production time for sensor: {$sensor->name} (Product: {$modelProduct})(tiempo sacado: {$optimalProductionTime})");
                     } else {
-                        $this->warn("No model_product found in order_notice for sensor: {$sensor->name}");
+                        $this->warn("No model_product found in order_notice for sensor: {$sensor->name}, modelo : {$modelProduct}, paso a poder valor default. Media entre minimo y maximo");
+                        $minTime = env("PRODUCTION_MIN_TIME", 3);
+                        $maxTime = env("PRODUCTION_MAX_TIME", 10);
+                        // Actualizar el tiempo de producción óptimo en la tabla sensors
+                        $sensor->optimal_production_time = ($minTime + $maxTime) / 2;
+                        $sensor->save();
                     }
                 } else {
-                    $this->warn("No barcode or order_notice found for sensor: {$sensor->name}");
+                    $this->warn("No barcode or order_notice found for sensor: {$sensor->name}, paso a poder valor default. Media entre minimo y maximo");
+                        $minTime = env("PRODUCTION_MIN_TIME", 3);
+                        $maxTime = env("PRODUCTION_MAX_TIME", 10);
+                        // Actualizar el tiempo de producción óptimo en la tabla sensors
+                        $sensor->optimal_production_time = ($minTime + $maxTime) / 2;
+                        $sensor->save();
                 }
             }
 

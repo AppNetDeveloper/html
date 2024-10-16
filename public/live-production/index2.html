@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualización de Datos MQTT en Tiempo Real</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+  <style>
+    body {
+      background-color: #e0e0e0;
+      font-family: 'Arial', sans-serif;
+      color: #333;
+    }
+    .container {
+      margin-top: 50px;
+    }
+    .data-box {
+      padding: 30px;
+      border: 2px solid #333;
+      background-color: #f5f5f5;
+      border-radius: 10px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    .pesoActual {
+      font-size: 48px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .informacion {
+      font-size: 18px;
+      color: #666;
+    }
+    .clock {
+      font-size: 24px;
+      font-weight: bold;
+      color: #000;
+      margin-top: 10px;
+    }
+    .recordBox {
+      margin-top: 20px;
+      padding: 20px;
+      border: 2px solid #007bff;
+      background-color: #d9edf7;
+      border-radius: 10px;
+      color: #004085;
+      text-align: left;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    }
+    .recordBox span {
+      display: block;
+      font-weight: bold;
+      font-size: 18px;
+    }
+    .status-box {
+      padding: 20px;
+      border: 2px solid #28a745;
+      background-color: #d4edda;
+      border-radius: 10px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+      text-align: center;
+      margin-top: 20px;
+    }
+    .status-box .informacion {
+      font-size: 18px;
+    }
+    #codigoBarraPalet, #codigoBarraEnCurso {
+      margin-top: 20px;
+    }
+    .error {
+      color: #dc3545;
+      font-weight: bold;
+    }
+    svg {
+      margin-top: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background-color: #fff;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <div class="data-box">
+          <div class="status-box">
+            <div class="informacion">Estado Actual:</div>
+            <b id="valorActual">Cargando...</b>
+          </div>
+          <div class="pesoActual" id="pesoActual">Cargando...</div>
+          <div class="clock" id="relojDigital">00:00:00</div>
+          <div id="codigoBarraEnCurso">
+            <div class="informacion">Código de barras en curso:</div>
+            <svg id="barcode"></svg>
+          </div>
+        </div>
+        <div class="recordBox" id="recordPalet">
+          <span id="recordPeso">Último palet: Cargando...</span>
+          <div id="codigoBarraPalet">
+            <div class="informacion">Código de barras del último palet:</div>
+            <svg id="barcodePalet"></svg>
+          </div>
+          <span id="apiError" class="error"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    console.log("Script cargado y ejecutado");
+
+    const apiUrl = "http://172.25.30.224:5001/api.json";
+    const printUrl = "http://172.25.30.224:5001/print";
+    const printerName = "HP-LaserJet-MFP-M129-M134"; // Cambia esto por el nombre de tu impresora
+
+    function generarCodigoBarraUnico() {
+      return Date.now().toString();
+    }
+
+    async function obtenerDatosIniciales() {
+      try {
+        console.log("Intentando obtener datos de la API...");
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error(`Error de red: ${response.statusText}`);
+        }
+        const datos = await response.json();
+        console.log("Datos recibidos de la API:", datos);
+        
+        const pesoInicial = datos.ultimoPeso || 120.00;
+        const codigoBarraInicial = datos.codigoBarra || generarCodigoBarraUnico();
+        
+        JsBarcode("#barcodePalet", codigoBarraInicial, {
+          format: "CODE128",
+          displayValue: true,
+          fontSize: 16,
+          height: 60,
+          width: 2,
+          margin: 5
+        });
+        
+        JsBarcode("#barcode", generarCodigoBarraUnico(), {
+          format: "CODE128",
+          displayValue: true,
+          fontSize: 16,
+          height: 60,
+          width: 2,
+          margin: 5
+        });
+        
+        document.getElementById("pesoActual").textContent = pesoInicial.toFixed(2) + " kg";
+        document.getElementById("recordPeso").textContent = "Último palet: " + pesoInicial.toFixed(2) + " kg";
+        document.getElementById("apiError").textContent = "";
+      } catch (error) {
+        console.error("Error al obtener datos iniciales:", error);
+        document.getElementById("valorActual").textContent = "Error al cargar datos";
+        document.getElementById("pesoActual").textContent = "0.00 kg";
+        document.getElementById("recordPeso").textContent = "Último palet: 0.00 kg";
+        document.getElementById("apiError").textContent = "Error al cargar datos desde la API";
+        JsBarcode("#barcode", generarCodigoBarraUnico(), {
+          format: "CODE128",
+          displayValue: true,
+          fontSize: 16,
+          height: 60,
+          width: 2,
+          margin: 5
+        });
+        JsBarcode("#barcodePalet", "000000000", {
+          format: "CODE128",
+          displayValue: true,
+          fontSize: 16,
+          height: 60,
+          width: 2,
+          margin: 5
+        });
+      }
+    }
+
+    async function enviarDatosAPIServer(codigoBarra) {
+      try {
+        console.log("Enviando datos a la API de impresión...");
+        const response = await fetch(printUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            barcode: codigoBarra,
+            printer: printerName
+          })
+        });
+        if (!response.ok) {
+          throw new Error(`Error en la API: ${response.statusText}`);
+        }
+        console.log("Datos enviados a la API de impresión con éxito.");
+      } catch (error) {
+        console.error("Error al enviar datos a la API:", error);
+        document.getElementById("apiError").textContent = "Error al enviar datos a la API";
+      }
+    }
+
+    obtenerDatosIniciales();
+
+    const clientId = "web_client_" + Math.random().toString(16).substr(2, 8);
+    const host = "152.53.18.231";
+    const port = 8083;
+    const topic = "modbus_data/diacaproduct/Unidad1/301";
+
+    console.log("Configuración MQTT definida");
+
+    const client = new Paho.MQTT.Client(host, Number(port), "/mqtt", clientId);
+
+    console.log("Cliente MQTT creado");
+
+    let pesoMaximo = 0;
+    let esperandoLimiteInferior = true;
+    let codigoBarraEnCurso = generarCodigoBarraUnico();
+    let nuevoPalet = false;
+
+    client.onConnectionLost = function(responseObject) {
+      if (responseObject.errorCode !== 0) {
+        console.log("Conexión perdida: " + responseObject.errorMessage);
+        document.getElementById("valorActual").textContent = "Error de conexión al servidor MQTT";
+        document.getElementById("pesoActual").textContent = "0.00 kg";
+        document.getElementById("recordPeso").textContent = "Último palet: 0.00 kg";
+        document.getElementById("apiError").textContent = "Error al conectar al servidor MQTT";
+  
+        JsBarcode("#barcode", "ERROR", {
+          format: "CODE128",
+          displayValue: true,
+          fontSize: 16,
+          height: 60,
+          width: 2,
+          margin: 5
+        });
+  
+        JsBarcode("#barcodePalet", "ERROR", {
+          format: "CODE128",
+          displayValue: true,
+          fontSize: 16,
+          height: 60,
+          width: 2,
+          margin: 5
+        });
+
+        setTimeout(function() {
+          conectarMQTT();
+        }, 1000);
+      }
+    };
+
+    client.onMessageArrived = function(message) {
+      console.log("Mensaje recibido: " + message.payloadString);
+      try {
+        const data = JSON.parse(message.payloadString);
+        const valorKg = data.value / 10;
+
+        document.getElementById("pesoActual").textContent = valorKg.toFixed(2) + " kg";
+        
+        if (valorKg > 5) {
+          if (valorKg > pesoMaximo) {
+            pesoMaximo = valorKg;
+          }
+        }
+
+        if (esperandoLimiteInferior && valorKg <= 0.5) {
+          document.getElementById("recordPeso").textContent = "Último palet: " + pesoMaximo.toFixed(2) + " kg";
+          JsBarcode("#barcodePalet", codigoBarraEnCurso, {
+            format: "CODE128",
+            displayValue: true,
+            fontSize: 16,
+            height: 60,
+            width: 2,
+            margin: 5
+          });
+          enviarDatosAPIServer(codigoBarraEnCurso); // Enviar el código de barras para impresión
+          codigoBarraEnCurso = generarCodigoBarraUnico();
+          JsBarcode("#barcode", codigoBarraEnCurso, {
+            format: "CODE128",
+            displayValue: true,
+            fontSize: 16,
+            height: 60,
+            width: 2,
+            margin: 5
+          });
+          pesoMaximo = 0;
+          esperandoLimiteInferior = false;
+          nuevoPalet = true;
+        } else if (!esperandoLimiteInferior && valorKg > 0.5) {
+          esperandoLimiteInferior = true;
+        }
+      } catch (error) {
+        console.error("Error al procesar el mensaje MQTT:", error);
+        document.getElementById("valorActual").textContent = "Error al procesar el mensaje";
+      }
+    };
+
+    function conectarMQTT() {
+      client.connect({
+        onSuccess: function() {
+          console.log("Conectado al broker MQTT");
+          document.getElementById("valorActual").textContent = "MQTT conectado";
+          client.subscribe(topic);
+        },
+        onFailure: function() {
+          console.log("Error al conectar al broker MQTT");
+          document.getElementById("valorActual").textContent = "Error de conexión MQTT";
+        }
+      });
+    }
+
+    conectarMQTT();
+
+    function actualizarReloj() {
+      const now = new Date();
+      const horas = now.getHours().toString().padStart(2, '0');
+      const minutos = now.getMinutes().toString().padStart(2, '0');
+      const segundos = now.getSeconds().toString().padStart(2, '0');
+      document.getElementById("relojDigital").textContent = `${horas}:${minutos}:${segundos}`;
+    }
+
+    setInterval(actualizarReloj, 1000);
+  </script>
+</body>
+</html>

@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\OrderStat;  // Asegúrate de importar el modelo OrderStat
-// insertr log
 use Illuminate\Support\Facades\Log;
 
 class Barcode extends Model
@@ -73,6 +72,8 @@ class Barcode extends Model
             $orderId = (string)$orderNotice['orderId'];  // Convertir a string explícitamente
             // Extraer 'quantity' del JSON esto no es necesario en string, por no tener caracteros raros
             $units = $orderNotice['quantity'];
+            // Extraer 'uds' del primer nivel dentro de 'groupLevel'
+            $box = $orderNotice['refer']['groupLevel'][0]['uds']; // Accede al valor de 'uds'
             
             // Extraer 'production_line_id' de la tabla 'barcodes'
             $productionLineId = $barcode->production_line_id;
@@ -81,7 +82,9 @@ class Barcode extends Model
             OrderStat::create([
                 'production_line_id' => $productionLineId,
                 'order_id' => $orderId,
-                'units' => $units,
+                'box' => $box,
+                'units_box' => $units,
+                'units' => $box * $units,
                 'units_per_minute_real' => null,  // Dejar vacíos o nulos según tus requisitos
                 'units_per_minute_theoretical' => null,
                 'seconds_per_unit_real' => null,
@@ -90,7 +93,6 @@ class Barcode extends Model
                 'units_made_theoretical' => 0,
                 'sensor_stops_count' => 0,
                 'sensor_stops_time' => 0,
-                'production_stops_count' => 0,
                 'production_stops_time' => 0,
                 'units_made' => 0,
                 'units_pending' => 0,

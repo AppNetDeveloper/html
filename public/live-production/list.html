@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estadísticas de Modbus</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.7.1/css/buttons.dataTables.min.css">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #282c34;
+      color: #ffffff;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 90%;
+      max-width: 1200px;
+      padding: 20px;
+      background-color: #3a3f47;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .logo {
+      max-width: 150px;
+    }
+    .form-row {
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .form-group {
+      flex: 1;
+      margin: 5px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      background-color: #fff;
+      color: #000;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table thead th {
+      background-color: #007bff;
+      color: #fff;
+      padding: 10px;
+      text-align: left;
+    }
+    table tbody td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      color: #000;
+    }
+    table tbody tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+      background-color: #007bff;
+      color: #fff !important;
+      border-radius: 5px;
+      margin: 2px;
+      border: none;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+      background-color: #0056b3;
+      color: #fff !important;
+    }
+    .dataTables_wrapper .dataTables_filter input {
+      border-radius: 5px;
+      border: none;
+      padding: 10px;
+      width: 300px;
+    }
+    .dataTables_wrapper .dataTables_info {
+      color: #ddd;
+    }
+    .btn-primary {
+      background-color: #28a745;
+      border-color: #28a745;
+    }
+    .btn-primary:hover {
+      background-color: #218838;
+      border-color: #1e7e34;
+    }
+    .btn-back {
+      display: inline-block;
+      background-color: #007bff;
+      color: white;
+      font-size: 18px;
+      padding: 10px 20px;
+      border-radius: 5px;
+      margin-top: 20px;
+      text-align: center;
+      text-decoration: none;
+      width: 200px;
+    }
+    .btn-back:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="logo.png" alt="Logo" class="logo">
+    </header>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="modbusSelect">Modbus</label>
+        <select id="modbusSelect" class="form-control">
+          <!-- Las opciones se insertarán aquí mediante JavaScript -->
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="startDate">Fecha de Inicio</label>
+        <input type="datetime-local" id="startDate" class="form-control" value="<?php echo date('Y-m-d\TH:i'); ?>">
+      </div>
+
+      <div class="form-group">
+        <label for="endDate">Fecha de Fin</label>
+        <input type="datetime-local" id="endDate" class="form-control" value="<?php echo date('Y-m-d\TH:i'); ?>">
+      </div>
+
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <button id="fetchData" class="btn btn-primary btn-block">Filtrar</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table id="controlWeightTable" class="display">
+        <thead>
+          <tr>
+            <th>Último Peso</th>
+            <th>Última Dimensión</th>
+            <th>Último Número de Cajas</th>
+            <th>Último Código de Barras</th>
+            <th>Último Código de Barras Final</th>
+            <th>Fecha y Hora</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Los datos se insertarán aquí mediante JavaScript -->
+        </tbody>
+      </table>
+    </div>
+
+    <a href="#" id="btn-back" class="btn-back">Volver</a>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/1.7.1/js/buttons.html5.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/1.7.1/js/buttons.print.min.js"></script>
+  <script>
+    const clientToken = getTokenFromUrl(); // Obtener el token del cliente
+    const modbusUrl = `/api/modbuses?token=${clientToken}`;
+
+    function getTokenFromUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('token');
+    }
+
+    async function fetchModbuses() {
+      try {
+        const response = await fetch(modbusUrl);
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Datos recibidos:", data);
+
+        const selectElement = document.getElementById('modbusSelect');
+        selectElement.innerHTML = '';
+
+        data.forEach(modbus => {
+          const option = document.createElement('option');
+          option.value = modbus.token; // Usar el token como valor
+          option.textContent = modbus.name;
+          selectElement.appendChild(option);
+        });
+
+      } catch (error) {
+        console.error("Error al obtener o procesar datos de la API:", error);
+      }
+    }
+
+    async function fetchControlWeights(modbusToken, startDate, endDate) {
+      try {
+        const url = `/api/control-weights/${modbusToken}/all/?token=${clientToken}&start_date=${startDate}&end_date=${endDate}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Datos recibidos:", data);
+
+        // Destruir el DataTable si ya ha sido inicializado
+        if ($.fn.dataTable.isDataTable('#controlWeightTable')) {
+          $('#controlWeightTable').DataTable().destroy();
+        }
+
+        // Volver a inicializar el DataTable
+        const table = $('#controlWeightTable').DataTable({
+          dom: 'Bfrtip',
+          buttons: [
+            {
+              extend: 'excelHtml5',
+              text: 'Exportar a Excel',
+              title: 'ControlWeights',
+              className: 'btn btn-success'
+            },
+            {
+              extend: 'print',
+              text: 'Imprimir',
+              className: 'btn btn-primary'
+            }
+          ],
+          order: [[5, 'desc']], // Ordenar por la columna de fecha y hora (índice 5)
+          paging: true,
+          pageLength: 10, // Número de líneas por página
+          lengthChange: true, // Mostrar la selección de cuántas líneas por página
+          searching: true // Habilitar búsqueda
+        });
+
+        // Insertar nuevos datos
+        data.forEach(weight => {
+          table.row.add([
+            weight.last_control_weight || 'N/A',
+            weight.last_dimension || 'N/A',
+            weight.last_box_number || 'N/A',
+            weight.last_barcoder || 'N/A',
+            weight.last_final_barcoder || 'N/A',
+            weight.created_at || 'N/A'
+          ]).draw();
+        });
+
+      } catch (error) {
+        console.error("Error al obtener o procesar datos de la API:", error);
+      }
+    }
+
+    document.getElementById('fetchData').addEventListener('click', () => {
+      const modbusToken = document.getElementById('modbusSelect').value;
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      if (modbusToken && startDate && endDate) {
+        fetchControlWeights(modbusToken, startDate, endDate);
+      } else {
+        alert('Por favor, complete todos los campos.');
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', fetchModbuses);
+  </script>
+</body>
+</html>

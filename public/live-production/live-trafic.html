@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>BOIZOLO Autoconto</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <style>
+    body {
+        font-family: sans-serif;
+        background-color: #333;
+        color: white;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 90%;
+        max-width: 1200px;
+        height: 100%;
+        padding: 20px;
+        background-color: #444;
+        border-radius: 8px;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    footer {
+      width: 100%;
+    }
+
+    header {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .logo {
+        max-width: 30%;
+        height: auto;
+    }
+
+    .time {
+      font-size: 24px;
+      margin: 10px 0;
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      flex-grow: 1;
+    }
+
+    .chart-container {
+      width: 100%;
+      height: 400px;
+      margin-top: 20px;
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+      <header class="d-flex justify-content-between align-items-center">
+        <img src="logo.png" alt="Logo" class="logo">
+        <div class="time" id="timeDisplay">02:33:21</div>
+      </header>
+
+      <main>
+        <div class="chart-container">
+          <canvas id="liveChart"></canvas>
+        </div>
+      </main>
+    </div>
+
+    <script>
+        // Configuración de la conexión MQTT
+        const brokerIp = "152.53.18.231";
+        const brokerPort = 8083;
+        const topic = "dicaproduct/sensorica/flujostato/token/635354772";
+
+        const brokerUrl = `wss://${brokerIp}:${brokerPort}/mqtt`;
+
+        let client = new Paho.MQTT.Client(brokerUrl, "webClient_" + parseInt(Math.random() * 100, 10));
+
+        // Callback cuando la conexión es exitosa
+        function onConnect() {
+            console.log("Conectado al broker MQTT");
+            client.subscribe(topic);
+        }
+
+        // Callback cuando llega un mensaje
+        function onMessageArrived(message) {
+            console.log("Mensaje recibido:", message.payloadString);
+            const data = JSON.parse(message.payloadString);
+            const value = data.value;
+
+            updateChart(value);
+        }
+
+        // Callback en caso de error al conectar
+        function onFailure(error) {
+            console.error("Error al conectar al broker MQTT:", error);
+        }
+
+        // Conectar al broker MQTT
+        client.connect({
+            onSuccess: onConnect,
+            onFailure: onFailure,
+            useSSL: true
+        });
+
+        client.onMessageArrived = onMessageArrived; // Asigna el callback de mensajes
+
+        // Configuración inicial del gráfico
+        let chartData = {
+            labels: [],
+            datasets: [{
+                label: 'Value',
+                backgroundColor: 'rgba(0, 123, 255, 0.5)',
+                borderColor: 'rgba(0, 123, 255, 1)',
+                data: []
+            }]
+        };
+
+        const ctx = document.getElementById('liveChart').getContext('2d');
+        const liveChart = new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'second'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Función para actualizar el gráfico con nuevos datos
+        function updateChart(value) {
+            const now = new Date();
+
+            if (chartData.labels.length >= 20) {
+                chartData.labels.shift();
+                chartData.datasets[0].data.shift();
+            }
+
+            chartData.labels.push(now);
+            chartData.datasets[0].data.push(value);
+
+            liveChart.update();
+        }
+
+        // Función para actualizar el tiempo en pantalla
+        function updateTime() {
+            const timeElement = document.getElementById('timeDisplay');
+            const now = new Date();
+            timeElement.textContent = now.toLocaleTimeString();
+        }
+
+        // Actualizar la hora cada segundo
+        setInterval(updateTime, 1000);
+
+    </script>
+</body>
+</html>

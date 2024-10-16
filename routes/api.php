@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\StoreQueueController;
 use App\Http\Controllers\Api\ZerotierIpBarcoderController;
 use App\Http\Controllers\BarcodeController;
 use App\Http\Controllers\Api\SensorController;
+use App\Http\Controllers\Api\OrderStatsController;
 
 
 
@@ -58,6 +59,8 @@ Route::match(['get', 'post'], '/modbus-info/{token}', [GetTokenController::class
 Route::match(['get', 'post'], '/barcode-info-by-customer/{customerToken}', [GetTokenController::class, 'getBarcodeInfoByCustomer']);
 Route::match(['get', 'post'], '/sensors/{token}', [SensorController::class, 'getByToken']);
 Route::match(['get', 'post'], '/sensors', [SensorController::class, 'getAllSensors']);
+
+Route::match(['get', 'post'], '/order-stats', [OrderStatsController::class, 'getLastOrderStat']);
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();

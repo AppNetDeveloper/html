@@ -218,15 +218,86 @@ class CalculateProductionMonitorOee extends Command
             }
         }
 
-        // Calcular el número de cajas teóricas producidas
-        if ($monitor->time_start_shift) {
-            $timeStartShift = Carbon::createFromTimestamp(strtotime($monitor->time_start_shift));
-            $shiftTimeDifferenceMinutes = Carbon::now()->diffInMinutes($timeStartShift); // Diferencia en minutos, sin decimales
-            $totalCajasTeoricas = $totalTheoreticalProductionPerMinute * $shiftTimeDifferenceMinutes;
-        }else{
-            $totalCajasTeoricas = 0;
+        // Obtener la suma de downtime_count para los sensores de la línea de producción
+        $totalDowntimeCountSensorType0 = Sensor::where('production_line_id', $monitor->production_line_id)
+                                    ->where('sensor_type', 0)
+                                    ->sum('downtime_count');
+        
+        // Inicializar variables de contadores para cada tipo de tiempo
+        $totalGreaterThanMaxTime = 0;
+        $totalBetweenOptimalAndMaxTime = 0;
+        $totalLessThanOrEqualToOptimalTime = 0;
+
+        foreach ($sensors as $sensor) {
+            // Sacamos el campo optimal_production_time y reduced_speed_time_multiplier en dos variables
+            $optimalProductionTime = $sensor->optimal_production_time ?? 30; // Tiempo óptimo por defecto
+            $reducedSpeedTimeMultiplier = $sensor->reduced_speed_time_multiplier ?? 2; // Multiplicador de velocidad reducida por defecto
+            $maxTimeProductionPermited = $optimalProductionTime * $reducedSpeedTimeMultiplier;
+
+            // Obtener todas las líneas de sensor_counts que coincidan con el sensor y la orden
+            $sensorCounts = SensorCount::where('sensor_id', $sensor->id)
+                ->where('unic_code_order', $sensor->unic_code_order)
+                ->get();
+
+            // Iterar sobre los resultados para clasificar el tiempo de producción
+            foreach ($sensorCounts as $sensorCount) {
+                
+                if ($sensorCount->time_11 > $maxTimeProductionPermited) {
+                    // Si el tiempo es mayor al tiempo máximo permitido
+                    $totalGreaterThanMaxTime++;
+                } elseif ($sensorCount->time_11 <= $maxTimeProductionPermited && $sensorCount->time_11 > $optimalProductionTime) {
+                    // Si el tiempo es mayor al tiempo óptimo pero menor o igual al tiempo máximo permitido
+                    $totalBetweenOptimalAndMaxTime++;
+                } elseif ($sensorCount->time_11 <= $optimalProductionTime) {
+                    // Si el tiempo es menor o igual al tiempo óptimo
+                    $totalLessThanOrEqualToOptimalTime++;
+                }
+            }
+        }
+
+        // Al final, tendrás los tres contadores sumados correctamente:
+        $totalCajasConRetrasoMayor = $totalGreaterThanMaxTime;
+        $totalCajasConRetrasoModerado = $totalBetweenOptimalAndMaxTime;
+        $totalCajasEnTiempoOptimo = $totalLessThanOrEqualToOptimalTime;
+
+        // Calcular los valores de segundos por caja
+        $realSecondsPerBox = $totalRealProductionPerMinute > 0 ? number_format(60 / $totalRealProductionPerMinute, 2) : 0;
+        $theoreticalSecondsPerBox = $totalTheoreticalProductionPerMinute > 0 ? number_format(60 / $totalTheoreticalProductionPerMinute, 2) : 0;
+
+        //sacar el orderstats
+        $orderStats = $this->getOrderStatsByProductionLineId($monitor->production_line_id);
+        
+        $totalCajasTeoricas = $this->getTotalBoxForProdLineFromOrder($monitor->time_start_shift, $orderStats->created_at, $totalTheoreticalProductionPerMinute);
+        
+        //OEE monitor
+        $valueMonitorOEE=$this->calcMonitorOEE($totalCajasTeoricas, $totalRealCajas);
+        $jsonMonitorOEE=$this->preparedJsonValue(ceil($valueMonitorOEE), 0);
+        
+        //si orderstats existe y es diferente de valueMonitorOEE lo actualizamos y mandamos el mensaje MQTT
+        if ($orderStats && $orderStats->oee != $valueMonitorOEE || $orderStats->units_made_real != $totalRealCajas || $orderStats->units_made_theoretical != $totalCajasTeoricas) {
+            //guardamos cambio
+            $orderStats->oee = $valueMonitorOEE;
+            $orderStats->units_made_real = $totalRealCajas;
+            $orderStats->units_made_theoretical = $totalCajasTeoricas;
+            $orderStats->units_per_minute_real = $totalRealProductionPerMinute;
+            $orderStats->units_per_minute_theoretical = $totalTheoreticalProductionPerMinute;
+            $orderStats->seconds_per_unit_real=$realSecondsPerBox;
+            $orderStats->seconds_per_unit_theoretical=$theoreticalSecondsPerBox;
+            $orderStats->units_made=$totalRealCajas;
+            $orderStats->units_pending=$orderStats->units - $totalRealCajas;
+            $orderStats->units_delayed= $totalCajasTeoricas - $totalRealCajas;
+            $orderStats->production_stops_time=floor($totalDowntimeCountSensorType0 / 60);
+            $orderStats->fast_time=$totalLessThanOrEqualToOptimalTime;
+            $orderStats->slow_time=$totalBetweenOptimalAndMaxTime;
+            $orderStats->out_time=$totalGreaterThanMaxTime;
+            $orderStats->theoretical_end_time=(($orderStats->units - $totalRealCajas) * $theoreticalSecondsPerBox) * 60;
+            $orderStats->real_end_time=(($orderStats->units - $totalRealCajas) * $realSecondsPerBox) * 60;
+            $orderStats->save();
+            // Publicar mensajes MQTT
+            $this->publishMqttMessage($monitor->topic_oee . '/monitor_oee', $jsonMonitorOEE);
         }
         
+
 
         //----------------
         // Calcular el status basado en la producción real vs teórica
@@ -237,9 +308,7 @@ class CalculateProductionMonitorOee extends Command
             $status = 1; // Real es 80% o más del teórico
         }
 
-        // Calcular los valores de segundos por caja
-        $realSecondsPerBox = $totalRealProductionPerMinute > 0 ? number_format(60 / $totalRealProductionPerMinute, 2) : 0;
-        $theoreticalSecondsPerBox = $totalTheoreticalProductionPerMinute > 0 ? number_format(60 / $totalTheoreticalProductionPerMinute, 2) : 0;
+        
 
         // Inicializar el estado
         $status2 = 0;
@@ -291,6 +360,8 @@ class CalculateProductionMonitorOee extends Command
         $theoreticalMessageMet03 = json_encode([
             'value' => number_format($totalCajasTeoricas, 0)
         ]);
+
+
 
         // Publicar mensajes para número de cajas fabricadas por minuto (real y teórica)
         $mqttTopicReal = $monitor->mqtt_topic . '-met01/real';
@@ -440,12 +511,25 @@ class CalculateProductionMonitorOee extends Command
     public function calcInactiveTimeOrder($monitor) {
         //sacar todo el tiempo de inactividad de la linea de produccion si no es null
         if ($monitor->production_line_id != null) {
-            // Obtenemos el downtime de la línea de producción por production_line_id y sumamos los valores
-             $downTime = Sensor::where('production_line_id', $monitor->production_line_id)->sum('downtime_count');
 
+            $downTimeProductionLine = Sensor::where('production_line_id', $monitor->production_line_id)
+                                ->where('sensor_type', '=', 0)
+                                ->sum('downtime_count');
+
+
+            // Obtenemos el downtime de la línea de producción por production_line_id y sumamos los valores
+             $downTimeSensorStop = Sensor::where('production_line_id', $monitor->production_line_id)
+                                ->where('sensor_type', '!=', 0)
+                                ->sum('downtime_count');
+            
+            $numberSensorStop = Sensor::where('production_line_id', $monitor->production_line_id)
+                                ->where('sensor_type', '!=', 0)
+                                ->sum('count_order_0');                   
+
+            
              // Convertimos el tiempo de inactividad en formato de horas, minutos y segundos (H:i:s)
-             $formattedDownTime = gmdate("H:i:s", $downTime);
-             $this->info("Tiempo de inactividad: " . $formattedDownTime);
+             $formattedDownTimeSensorStop = gmdate("H:i:s", $downTimeSensorStop);
+             $this->info("Tiempo de inactividad: " . $formattedDownTimeSensorStop);
 
              // Sacamos la hora de inicio del turno desde monitor_oee (time_start_shift)
              $time_start_shift = $monitor->time_start_shift;
@@ -460,7 +544,7 @@ class CalculateProductionMonitorOee extends Command
              // Aseguramos que el tiempo total del turno no sea cero para evitar división por cero
              if ($diff > 0) {
                  // Calculamos el porcentaje de inactividad (downtime)
-                 $downtime_percentage = ($downTime / $diff) * 100;
+                 $downtime_percentage = ($downTimeSensorStop / $diff) * 100;
 
                  // Determinamos el status basado en el porcentaje de inactividad
                  if ($downtime_percentage >= 40) {
@@ -471,45 +555,22 @@ class CalculateProductionMonitorOee extends Command
                      $status = 2; // Downtime menor que 20%
                  }
 
-                 $this->info("Downtime: $formattedDownTime, Porcentaje de downtime: $downtime_percentage%, Status: $status");
-
-                 // Creamos el JSON con el downtime acumulado y el status correspondiente
-                 $json = json_encode(['value' => $formattedDownTime, 'status' => $status]);
-
-                 // Obtenemos el valor original del mqtt_topic desde monitor_oee
-                 $mqtt_topicKpi1 = $monitor->mqtt_topic;
-
-                 // Expresión regular para eliminar todo lo que esté entre /sta/ y /metrics/
-                 $pattern = '/\/sta\/.*\/metrics\/.*$/';
-
-                 // Reemplazamos la parte que coincide con la expresión regular por la nueva parte
-                 $mqtt_topic_modified = preg_replace($pattern, '', $mqtt_topicKpi1);
-
-                 // Añadimos la nueva parte que necesitamos
-                 $mqtt_topic_modified .= '/kpi1Value';
-
-                 // Publicar el mensaje MQTT con el tópico modificado
-                // $this->publishMqttMessage($mqtt_topic_modified, $json);
+                 $this->info("Downtime: $formattedDownTimeSensorStop, Porcentaje de downtime: $downtime_percentage%, Status: $status");
 
 
                  //actualizamos en la tabla order_stats por el production_line_id  ultima linea de la tabla
                  //pero ponemos un si el turno ya tiene empezado mas del tiempo de SHIFT_TIME de .env ya no se actualiza
-                $shiftTime = env('SHIFT_TIME', '08:00:00'); // '00:00:00' es el valor por defecto si no se define en el archivo .env
-                list($hours, $minutes, $seconds) = explode(':', $shiftTime);
 
                 // Convertimos el tiempo a segundos
-                $shiftTimeInSeconds = ($hours * 3600) + ($minutes * 60) + $seconds;
+                $shiftTimeInSeconds = $this->shiftTimeToSeconds();
 
-                // Buscamos por production_line_id la última línea de la tabla order_stats
-                $orderStats = OrderStat::where('production_line_id', $monitor->production_line_id)
-                                        ->orderBy('id', 'desc')
-                                        ->first();
+                $orderStats = $this->getOrderStatsByProductionLineId($monitor->production_line_id);
 
                 // Luego, comparas con $diff que ya está en segundos
                 if ($diff <= $shiftTimeInSeconds) {
                      //ahora actualizamos el tiempo de inactividad sumado  que es el valor en order_stats - sensor_stops_time que tenemos que introducir $formattedDownTime
                      // Supongamos que $formattedDownTime está en el formato "00:00:00" (hh:mm:ss) lo traducimos a minutos
-                    list($hours, $minutes, $seconds) = explode(':', $formattedDownTime);
+                    list($hours, $minutes, $seconds) = explode(':', $formattedDownTimeSensorStop);
 
                     // Convertimos todo a minutos
                     $inactiveTimeInMinutes = ($hours * 60) + $minutes + ($seconds / 60);
@@ -519,18 +580,10 @@ class CalculateProductionMonitorOee extends Command
                         if ($orderStats->sensor_stops_time != $inactiveTimeInMinutes) {
                             // Actualizamos el tiempo de inactividad sumado en minutos y si es diferente se actualiza en caso contrario no se actualiza. Ponemos 1 en stop active para poner  que ya se ha contado 
                             $orderStats->sensor_stops_time = $inactiveTimeInMinutes;
-                            if ($orderStats->sensor_stops_active == '0') {
-                                $orderStats->sensor_stops_count = $orderStats->sensor_stops_count + 1;
-                                $orderStats->sensor_stops_active = 1;
-                                $orderStats->save();
-                            }
+                            $orderStats->sensor_stops_count = $numberSensorStop;
                             $orderStats->save();
                             $this->info("El valor de sensor_stops_time ha sido actualizado.");
                         } else {
-                            if ($orderStats->sensor_stops_active == '1') {
-                                $orderStats->sensor_stops_active = 0;
-                                $orderStats->save();
-                            }
                             // Si el valor es el mismo, no hacemos nada
                             $this->info("El valor de sensor_stops_time ya es el mismo que inactiveTimeInMinutes, no se necesita actualización.");
                         }
@@ -644,9 +697,74 @@ class CalculateProductionMonitorOee extends Command
     
     
 
+    private function calcMonitorOEE($totalCajasTeoricas, $totalCajasReales) 
+    {
+        if (!is_numeric($totalCajasTeoricas) || !is_numeric($totalCajasReales)) {
+            return 0; // o manejar el error
+        }
+        if ($totalCajasTeoricas == 0) {
+            return 0;
+        }
+        $oee = ($totalCajasReales / $totalCajasTeoricas) * 100;
+
+        // Si el valor es menor que 100, mostrar con 2 decimales
+        if ($oee < 100) {
+            return number_format($oee, 2); // Máximo 2 decimales
+        }
+
+        // Si el valor es 100 o mayor, mostrar solo el entero
+        return intval($oee); // Solo el entero
+    }
+    
+
+    private function getOrderStatsByProductionLineId($production_line_id)
+    {
+        // Buscamos por production_line_id la última línea de la tabla order_stats
+        $orderStats = OrderStat::where('production_line_id', $production_line_id)
+                                ->orderBy('id', 'desc')
+                                ->first();
+
+        //si el order_stats no existe lo ponemos en 0
+        if (!$orderStats) {
+            return 0;
+        }else{
+            return $orderStats;
+        }  
+    }
     /**
      * Publicar el mensaje MQTT en los servidores
      */
+    private function preparedJsonValue($value, $status)
+    {
+        $realMessage = json_encode([
+            'value' => $value,
+            'status' => $status
+        ]);
+        return $realMessage;
+    }
+
+    private function getTotalBoxForProdLineFromOrder($time_start_shift, $createdAt, $totalTheoreticalProductionPerMinute)   {
+        // Calcular el número de cajas teóricas producidas
+        if ($time_start_shift) {
+            //sacando desde la tabla order_stats la created_at por la production_line_id = $monitor->production_line_id
+            $timeStartOderId = Carbon::createFromTimestamp(strtotime($createdAt));
+            $shiftTimeDifferenceMinutes = Carbon::now()->diffInMinutes($timeStartOderId); // Diferencia en minutos, sin decimales
+            $totalCajasTeoricas = $totalTheoreticalProductionPerMinute * $shiftTimeDifferenceMinutes;
+        }else{
+            $totalCajasTeoricas = 0;
+        }
+        return $totalCajasTeoricas;
+    }
+
+    private function shiftTimeToSeconds() {
+        $shiftTime = env('SHIFT_TIME', '08:00:00'); // '00:00:00' es el valor por defecto si no se define en el archivo .env
+        list($hours, $minutes, $seconds) = explode(':', $shiftTime);
+
+        // Convertimos el tiempo a segundos
+        $shiftTimeInSeconds = ($hours * 3600) + ($minutes * 60) + $seconds;
+        return $shiftTimeInSeconds;
+    }
+
     private function publishMqttMessage($topic, $message)
     {
         try {

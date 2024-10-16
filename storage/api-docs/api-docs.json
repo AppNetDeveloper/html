@@ -867,6 +867,159 @@
                 }
             }
         },
+        "/v1/order-stats": {
+            "get": {
+                "tags": [
+                    "OrderStats"
+                ],
+                "summary": "Obtener la última estadística de orden",
+                "operationId": "7a744fe3121b4011dae39f599011097a",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "query",
+                        "description": "Token de la línea de producción",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Éxito",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "production_line_id": {
+                                            "type": "integer"
+                                        },
+                                        "order_id": {
+                                            "type": "string"
+                                        },
+                                        "units": {
+                                            "type": "integer"
+                                        },
+                                        "box": {
+                                            "type": "integer"
+                                        },
+                                        "units_box": {
+                                            "type": "integer"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Token requerido"
+                    },
+                    "404": {
+                        "description": "Línea de producción no encontrada o sin estadísticas"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "OrderStats"
+                ],
+                "summary": "Crear una nueva estadística de orden",
+                "operationId": "dfa9cb3a8be9146955d2fbb334d22d88",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "production_line_id",
+                                    "order_id",
+                                    "units"
+                                ],
+                                "properties": {
+                                    "production_line_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "order_id": {
+                                        "type": "string",
+                                        "example": "12/4611"
+                                    },
+                                    "units": {
+                                        "type": "integer",
+                                        "example": 1000
+                                    },
+                                    "box": {
+                                        "type": "integer",
+                                        "example": 10
+                                    },
+                                    "units_box": {
+                                        "type": "integer",
+                                        "example": 100
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Creado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "production_line_id": {
+                                            "type": "integer"
+                                        },
+                                        "order_id": {
+                                            "type": "string"
+                                        },
+                                        "units": {
+                                            "type": "integer"
+                                        },
+                                        "box": {
+                                            "type": "integer"
+                                        },
+                                        "units_box": {
+                                            "type": "integer"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos de entrada no válidos"
+                    }
+                }
+            }
+        },
         "/api/sensors/{token}": {
             "get": {
                 "tags": [
@@ -1341,6 +1494,10 @@
         {
             "name": "Modbus",
             "description": "Modbus"
+        },
+        {
+            "name": "OrderStats",
+            "description": "OrderStats"
         },
         {
             "name": "Sensores",

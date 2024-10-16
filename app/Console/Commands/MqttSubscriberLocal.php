@@ -53,13 +53,15 @@ class MqttSubscriberLocal extends Command
     }
     
 
+
     private function initializeMqttClient($server, $port)
     {
+        $this->info("Subscribed en server: {$server} y port: {$port}");
         $connectionSettings = new ConnectionSettings();
         $connectionSettings->setKeepAliveInterval(60);
         $connectionSettings->setUseTls(false);
-        $connectionSettings->setUsername(env('MQTT_USERNAME'));
-        $connectionSettings->setPassword(env('MQTT_PASSWORD'));
+        $connectionSettings->setUsername(env('MQTT_USERNAME',""));
+        $connectionSettings->setPassword(env('MQTT_PASSWORD', ""));
 
         $mqtt = new MqttClient($server, $port, uniqid());
         $mqtt->connect($connectionSettings, true);
