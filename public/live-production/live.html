@@ -30,7 +30,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 15px 30px;
+      padding: 10px 20px;
       background-color: #28293e;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     }
@@ -47,8 +47,8 @@
     }
 
     #orderId {
-      font-size: 2.5vh;
-      color: #ffcc00;
+      font-size: 7vh;
+      color: #ffffff;
       text-align: center;
     }
 
@@ -119,6 +119,14 @@
       word-wrap: break-word;
     }
 
+    .center-name2 {
+      font-size: 1.5vw;
+      font-weight: bold;
+      color: #ffffff;
+      line-height: 1;
+      word-wrap: break-word;
+    }
+
     .unit {
       font-size: 2vw;
       vertical-align: middle;
@@ -159,11 +167,11 @@
   <header class="d-flex justify-content-between align-items-center">
       <img src="logo.png" alt="Logo" class="logo">
       <div class="order-container">
-          <div id="orderId">Orden: 15/4611</div> <!-- Aquí se muestra el order_id en el centro -->
+          <div id="orderId">15/461121</div> <!-- Aquí se muestra el order_id en el centro -->
       </div>
       <div class="time-container">
           <div class="time" id="timeDisplay">22:46:18</div>
-          <div id="scaleName" class="center-name">Línea 2</div> <!-- Aquí se muestra el nombre de la línea -->
+          <div id="scaleName" class="center-name">Nombre Linea Production</div> <!-- Aquí se muestra el nombre de la línea -->
       </div>
   </header>
 
@@ -171,68 +179,81 @@
     <div class="box">
         <div class="box-content">
             <div class="info-box">
-                <p>Unidades a fabricar (Total de unidades planificadas para la orden):</p>
-                <p class="display-number" id="unitsDisplay">0</p>
+              <p class="center-name2">Cajas Pedido</p>
+              <p class="display-number" id="boxDisplay">0</p>
             </div>
             <div class="info-box">
-                <p>Unidades fabricadas (Unidades ya producidas en esta orden):</p>
-                <p class="display-number" id="unitsMadeDisplay">0</p>
-            </div>
-            <div class="info-box">
-                <p>Unidades pendientes (Unidades que quedan por producir):</p>
-                <p class="display-number" id="unitsPendingDisplay">0</p>
-            </div>
-            <div class="info-box">
-                <p>N&#250;mero de cajas (Cajas planificadas para la orden):</p>
-                <p class="display-number" id="boxDisplay">0</p>
-            </div>
-            <div class="info-box">
-                <p>Unidades por caja (Cantidad de unidades contenidas en cada caja):</p>
+                <p class="center-name2">Uds. / Caja</p>
                 <p class="display-number" id="unitsBoxDisplay">0</p>
             </div>
             <div class="info-box">
-                <p>Unidades fabricadas te&#243;ricas (Unidades que deber&#237;an haberse producido):</p>
-                <p class="display-number" id="unitsMadeTheoreticalDisplay">0</p>
+                <p class="center-name2">Uds. a Fabricar</p>
+                <p class="display-number" id="unitsDisplay">0</p>
             </div>
+            <div class="info-box">
+              <p class="center-name2">Uds. Fabricadas</p>
+              <p class="display-number" id="unitsMadeDisplay">0</p>
+            </div>
+            <div class="info-box">
+              <p class="center-name2">Uds. Pendientes</p>
+              <p class="display-number" id="unitsPendingDisplay">0</p>
+          </div>
+          <div class="info-box">
+              <p class="center-name2">Fabricadas en Tiempo de Ciclo</p>
+              <p class="display-number" id="slowTimeDisplay">0 <span class="unit">UDS</span></p>
+          </div>
         </div>
     </div>
 
     <div class="box">
         <div class="box-content">
             <div class="info-box">
-                <p>Tiempo de parada por sensores (Duraci&#243;n total de las paradas debidas a fallos en los sensores):</p>
+                <p class="center-name2">Paradas Informadas por Sensores</p>
                 <p class="display-number" id="sensorStopsTimeDisplay">0 <span class="unit">seg</span></p>
             </div>
             <div class="info-box">
-                <p>Tiempo de parada de producci&#243;n (Duraci&#243;n total de las paradas de la producci&#243;n en minutos):</p>
+                <p class="center-name2">Paradas NO Identificadas</p>
                 <p class="display-number" id="productionStopsTimeDisplay">0 <span class="unit">min</span></p>
             </div>
             <div class="info-box">
-                <p>OEE (Eficiencia general del equipo, porcentaje de eficiencia operativa):</p>
+                <p class="center-name2">Efectividad OEE</p>
                 <p class="display-number" id="oeeDisplay">0.00 <span class="unit">%</span></p>
             </div>
             <div class="info-box">
-                <p>Tiempo lento (Tiempo en el que la producci&#243;n fue m&#225;s lenta de lo esperado, en segundos):</p>
-                <p class="display-number" id="slowTimeDisplay">0 <span class="unit">seg</span></p>
+              <p class="center-name2">Tiempo Teórico Hasta Finalización</p>
+              <p class="display-number" id="unitsMadeTheoreticalDisplay">0</p>
             </div>
             <div class="info-box">
-                <p>Tiempo r&#225;pido (Tiempo en el que la producci&#243;n fue &#243;ptima, en segundos):</p>
-                <p class="display-number" id="fastTimeDisplay">0 <span class="unit">seg</span></p>
+                <p class="center-name2">Tiempo Estimado Hasta Finalización</p>
+                <p class="display-number" id="fastTimeDisplay">0</p>
             </div>
             <div class="info-box">
-                <p>Tiempo fuera de rango (Tiempo en el que la producci&#243;n fue m&#225;s r&#225;pida o lenta de lo permitido, en segundos):</p>
-                <p class="display-number" id="outTimeDisplay">0 <span class="unit">seg</span></p>
+                <p class="center-name2">Total Tiempo Perdido</p>
+                <p class="display-number" id="outTimeDisplay">0</p>
             </div>
         </div>
     </div>
   </main>
 
   <script>
-    const apiUrl = '/api/order-stats?token=ZGr59v2OfP0xF0qPBGRH';
+    // Obtén el token de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (!token) {
+      console.error("Token no proporcionado en la URL");
+    }
+
+    const apiUrl = `/api/order-stats?token=${token}`;
 
     let lastValues = {};
 
     async function updateOrderStats() {
+        if (!token) {
+            console.error("No se puede actualizar OrderStats sin un token.");
+            return;
+        }
+
         try {
             const response = await fetch(apiUrl);
             if (!response.ok) {
@@ -241,8 +262,9 @@
             const data = await response.json();
             console.log("Datos recibidos:", data);
 
-            const formatNumber = (num, decimals = 0) => num.toLocaleString('es-ES', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-
+            const formatNumber = (num) => {
+              return Math.trunc(num).toString();
+            };
             // Compara si los valores han cambiado y aplica el efecto de zoom
             const applyZoomEffect = (id, newValue) => {
                 if (lastValues[id] !== newValue) {
@@ -259,13 +281,14 @@
             applyZoomEffect('unitsPendingDisplay', data.units_pending);
             applyZoomEffect('boxDisplay', data.box);
             applyZoomEffect('unitsBoxDisplay', data.units_box);
-            applyZoomEffect('unitsMadeTheoreticalDisplay', data.units_made_theoretical);
+            applyZoomEffect('unitsMadeTheoreticalDisplay', data.theoretical_end_time);
             applyZoomEffect('sensorStopsTimeDisplay', data.sensor_stops_time);
             applyZoomEffect('productionStopsTimeDisplay', data.production_stops_time);
             applyZoomEffect('oeeDisplay', parseFloat(data.oee).toFixed(2));
             applyZoomEffect('slowTimeDisplay', data.slow_time);
-            applyZoomEffect('fastTimeDisplay', data.fast_time);
-            applyZoomEffect('outTimeDisplay', data.out_time);
+            applyZoomEffect('fastTimeDisplay', data.real_end_time);
+            
+
 
             // Actualizar valores en la interfaz
             document.getElementById('unitsDisplay').innerHTML = formatNumber(data.units);
@@ -273,16 +296,33 @@
             document.getElementById('unitsPendingDisplay').innerHTML = formatNumber(data.units_pending);
             document.getElementById('boxDisplay').innerHTML = formatNumber(data.box);
             document.getElementById('unitsBoxDisplay').innerHTML = formatNumber(data.units_box);
-            document.getElementById('unitsMadeTheoreticalDisplay').innerHTML = formatNumber(data.units_made_theoretical);
-            document.getElementById('sensorStopsTimeDisplay').innerHTML = formatNumber(data.sensor_stops_time) + ' <span class="unit">seg</span>';
-            document.getElementById('productionStopsTimeDisplay').innerHTML = formatNumber(data.production_stops_time) + ' <span class="unit">min</span>';
-            document.getElementById('oeeDisplay').innerHTML = formatNumber(parseFloat(data.oee), 2) + ' <span class="unit">%</span>';
-            document.getElementById('slowTimeDisplay').innerHTML = formatNumber(data.slow_time) + ' <span class="unit">seg</span>';
-            document.getElementById('fastTimeDisplay').innerHTML = formatNumber(data.fast_time) + ' <span class="unit">seg</span>';
-            document.getElementById('outTimeDisplay').innerHTML = formatNumber(data.out_time) + ' <span class="unit">seg</span>';
+            document.getElementById('unitsMadeTheoreticalDisplay').innerHTML = formatNumberToTime(parseFloat(data.theoretical_end_time), 0);
+            document.getElementById('sensorStopsTimeDisplay').innerHTML = formatNumberToTime(data.sensor_stops_time);
+            document.getElementById('productionStopsTimeDisplay').innerHTML = formatNumberToTime(data.production_stops_time);
+            document.getElementById('oeeDisplay').innerHTML = formatNumber(parseFloat(data.oee), 0) + ' <span class="unit">%</span>';
+            document.getElementById('slowTimeDisplay').innerHTML = formatNumber(data.slow_time);
+            document.getElementById('fastTimeDisplay').innerHTML = formatNumberToTime(parseFloat(data.real_end_time), 0);
+
+            function formatNumberToTime(minutes) {
+                // Redondear minutos eliminando los decimales
+                minutes = Math.floor(minutes);
+                
+                let hours = Math.floor(minutes / 60);
+                let mins = minutes % 60;
+
+                // Asegurarse de que los valores tengan siempre 2 dígitos
+                hours = hours < 10 ? '0' + hours : hours;
+                mins = mins < 10 ? '0' + mins : mins;
+
+                return hours + ':' + mins;
+            }
+            //Calculo ultimo campo
+            var tiempo = ((parseFloat(data.units_made_theoretical) - parseFloat(data.units_made_real)) * parseFloat(data.seconds_per_unit_theoretical)) / 60;
+            applyZoomEffect('outTimeDisplay', tiempo);
+            document.getElementById('outTimeDisplay').innerHTML = formatNumberToTime(parseFloat(tiempo), 0) ;
 
             // Actualizar el ID de la orden
-            document.getElementById('orderId').innerHTML = 'Orden: ' + data.order_id;
+            document.getElementById('orderId').innerHTML = data.order_id;
 
             // Mostrar el nombre de la línea de producción basado en el JSON
             document.getElementById('scaleName').innerHTML = data.production_line_name;
@@ -299,7 +339,7 @@
         timeElement.textContent = now.toLocaleTimeString('es-ES', options);
     }
 
-    setInterval(updateOrderStats, 5000); // Actualiza cada 5 segundos
+    setInterval(updateOrderStats, 1000); // Actualiza cada 5 segundos
     setInterval(updateTime, 1000); // Actualiza el tiempo cada segundo
 
     updateOrderStats();

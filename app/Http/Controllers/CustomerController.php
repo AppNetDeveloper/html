@@ -28,6 +28,7 @@ class CustomerController extends Controller
                 $deleteUrl = route('customers.destroy', $customer->id);
                 $csrfToken = csrf_token();
                 $liveViewUrl = url('/live-weight/index.html?token=' . $customer->token);
+                $liveViewUrlProd = url('/live-production/index.html?token=' . $customer->token);
 
                 return "<a href='$editUrl' class='btn btn-sm btn-primary'>Editar</a>
                         <a href='$productionLinesUrl' class='btn btn-sm btn-info'>Lineas produccion</a>
@@ -37,6 +38,7 @@ class CustomerController extends Controller
                         <button type='submit' class='btn btn-sm btn-danger' onclick='return confirm(\"¿Estás seguro?\")'>Eliminar</button>
                     </form>
                      <a href='{$liveViewUrl}' class='btn btn-sm btn-primary'>Live weight</a>
+                     <a href='{$liveViewUrlProd}' class='btn btn-sm btn-primary'>Live productiont</a>
                      <a href='/live-sensor/' class='btn btn-sm btn-primary'>Live sensors</a>";
             })
             ->rawColumns(['action']) // Asegúrate de marcar la columna 'action' como raw (HTML)

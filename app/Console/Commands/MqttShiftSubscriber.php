@@ -155,7 +155,11 @@ class MqttShiftSubscriber extends Command
             } else {
                 $this->warn("Event missing in the message.");
             }
-    
+            // Guardar los cambios en el sensor
+            $sensor->save();
+
+            // si el shift_type se ha puesto Turno Programado y event es start se resetea los contadores
+            if ($data['shift_type'] == 'Turno Programado' && $data['event'] == 'start') {
             // Reseteo de contadores del sensor
             $this->resetSensorCounters($sensor);
             
@@ -164,13 +168,16 @@ class MqttShiftSubscriber extends Command
 
             $this->changeOrderStatus($sensor->production_line_id);
 
-            // Guardar los cambios en el sensor
-            $sensor->save();
+            
             $this->info("Sensor ID {$sensor->id} updated with shift_type, event, and counters reset.");
 
              //mandar mqtt a 0
              $this->info("Intento enviar mqtt a 0 para el Sensor ID {$sensor->id} .");
              $this->sendMqttTo0($sensor);
+            }else{
+                $this->info("Sensor ID {$sensor->id} updated with shift_type and event. No need to reset counters.");
+            }
+            
     
         } else {
             $this->error("Sensor not found for topic: {$baseTopic}");
@@ -192,6 +199,12 @@ class MqttShiftSubscriber extends Command
 
         // Guardar los cambios en el sensor
         $sensor->save();
+
+    }
+
+    private function resetModbusCounters($sensor)
+    {
+        $productionLineId = $sensor->production_line_id; 
 
     }
 

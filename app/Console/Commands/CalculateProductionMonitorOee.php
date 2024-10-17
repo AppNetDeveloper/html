@@ -218,6 +218,7 @@ class CalculateProductionMonitorOee extends Command
             }
         }
 
+        
         // Obtener la suma de downtime_count para los sensores de la línea de producción
         $totalDowntimeCountSensorType0 = Sensor::where('production_line_id', $monitor->production_line_id)
                                     ->where('sensor_type', 0)
@@ -236,8 +237,8 @@ class CalculateProductionMonitorOee extends Command
 
             // Obtener todas las líneas de sensor_counts que coincidan con el sensor y la orden
             $sensorCounts = SensorCount::where('sensor_id', $sensor->id)
-                ->where('unic_code_order', $sensor->unic_code_order)
-                ->get();
+                                    ->where('unic_code_order', $sensor->unic_code_order)
+                                    ->get();
 
             // Iterar sobre los resultados para clasificar el tiempo de producción
             foreach ($sensorCounts as $sensorCount) {
@@ -272,9 +273,16 @@ class CalculateProductionMonitorOee extends Command
         //OEE monitor
         $valueMonitorOEE=$this->calcMonitorOEE($totalCajasTeoricas, $totalRealCajas);
         $jsonMonitorOEE=$this->preparedJsonValue(ceil($valueMonitorOEE), 0);
+
+        //Calcular diferencia entre inicio turno y ahorra
+
+        $diff = $this-> calcDiffInSecondsFromTwoDates($monitor->time_start_shift,Carbon::now());
+
+        // Convertimos el tiempo a segundos
+        $shiftTimeInSeconds = $this->shiftTimeToSeconds();
         
         //si orderstats existe y es diferente de valueMonitorOEE lo actualizamos y mandamos el mensaje MQTT
-        if ($orderStats && $orderStats->oee != $valueMonitorOEE || $orderStats->units_made_real != $totalRealCajas || $orderStats->units_made_theoretical != $totalCajasTeoricas) {
+        if ($orderStats && $diff > 0 && $diff < $shiftTimeInSeconds || $orderStats && $diff > 0 && $orderStats->units_made_real != $totalRealCajas) {
             //guardamos cambio
             $orderStats->oee = $valueMonitorOEE;
             $orderStats->units_made_real = $totalRealCajas;
@@ -290,8 +298,8 @@ class CalculateProductionMonitorOee extends Command
             $orderStats->fast_time=$totalLessThanOrEqualToOptimalTime;
             $orderStats->slow_time=$totalBetweenOptimalAndMaxTime;
             $orderStats->out_time=$totalGreaterThanMaxTime;
-            $orderStats->theoretical_end_time=(($orderStats->units - $totalRealCajas) * $theoreticalSecondsPerBox) * 60;
-            $orderStats->real_end_time=(($orderStats->units - $totalRealCajas) * $realSecondsPerBox) * 60;
+            $orderStats->theoretical_end_time=(($orderStats->units - $totalRealCajas) * $theoreticalSecondsPerBox) / 60;
+            $orderStats->real_end_time=(($orderStats->units - $totalRealCajas) * $realSecondsPerBox) / 60;
             $orderStats->save();
             // Publicar mensajes MQTT
             $this->publishMqttMessage($monitor->topic_oee . '/monitor_oee', $jsonMonitorOEE);
@@ -460,14 +468,9 @@ class CalculateProductionMonitorOee extends Command
              $formattedDownTime = gmdate("H:i:s", $downTime);
              $this->info("Tiempo de inactividad: " . $formattedDownTime);
 
-             // Sacamos la hora de inicio del turno desde monitor_oee (time_start_shift)
-             $time_start_shift = $monitor->time_start_shift;
-
-             // Obtenemos la hora actual
-             $now = Carbon::now();
 
              // Calculamos la diferencia en segundos entre la hora actual y el inicio del turno
-             $diff = $now->diffInSeconds(Carbon::parse($time_start_shift));
+             $diff = $this-> calcDiffInSecondsFromTwoDates($monitor->time_start_shift,Carbon::now());
 
              // Aseguramos que el tiempo total del turno no sea cero para evitar división por cero
              if ($diff > 0) {
@@ -531,15 +534,9 @@ class CalculateProductionMonitorOee extends Command
              $formattedDownTimeSensorStop = gmdate("H:i:s", $downTimeSensorStop);
              $this->info("Tiempo de inactividad: " . $formattedDownTimeSensorStop);
 
-             // Sacamos la hora de inicio del turno desde monitor_oee (time_start_shift)
-             $time_start_shift = $monitor->time_start_shift;
-
-             // Obtenemos la hora actual
-             $now = Carbon::now();
-
              // Calculamos la diferencia en segundos entre la hora actual y el inicio del turno
-             $diff = $now->diffInSeconds(Carbon::parse($time_start_shift));
-
+             $diff = $this-> calcDiffInSecondsFromTwoDates($monitor->time_start_shift,Carbon::now());
+            
             
              // Aseguramos que el tiempo total del turno no sea cero para evitar división por cero
              if ($diff > 0) {
@@ -763,6 +760,11 @@ class CalculateProductionMonitorOee extends Command
         // Convertimos el tiempo a segundos
         $shiftTimeInSeconds = ($hours * 3600) + ($minutes * 60) + $seconds;
         return $shiftTimeInSeconds;
+    }
+
+    private function calcDiffInSecondsFromTwoDates($time1, $time2) {
+        $diff = $time2->diffInSeconds(Carbon::parse($time1));
+        return $diff;
     }
 
     private function publishMqttMessage($topic, $message)

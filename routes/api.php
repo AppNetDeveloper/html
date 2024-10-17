@@ -62,6 +62,8 @@ Route::match(['get', 'post'], '/sensors', [SensorController::class, 'getAllSenso
 
 Route::match(['get', 'post'], '/order-stats', [OrderStatsController::class, 'getLastOrderStat']);
 
+Route::match(['get', 'post'], '/order-stats-all', [OrderStatsController::class, 'getOrderStatsBetweenDates']);
+
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });

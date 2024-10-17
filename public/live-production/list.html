@@ -56,6 +56,18 @@
       background-color: #fff;
       color: #000;
     }
+    .card {
+      background-color: #3a3f47;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      margin-top: 20px;
+      overflow-x: auto; /* Añadir desplazamiento horizontal para contenido grande */
+    }
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto; /* Añadir desplazamiento horizontal */
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -128,7 +140,7 @@
 
     <div class="form-row">
       <div class="form-group">
-        <label for="modbusSelect">Modbus</label>
+        <label for="modbusSelect">Línea de Producción</label>
         <select id="modbusSelect" class="form-control">
           <!-- Las opciones se insertarán aquí mediante JavaScript -->
         </select>
@@ -136,12 +148,12 @@
 
       <div class="form-group">
         <label for="startDate">Fecha de Inicio</label>
-        <input type="datetime-local" id="startDate" class="form-control" value="<?php echo date('Y-m-d\TH:i'); ?>">
+        <input type="datetime-local" id="startDate" class="form-control">
       </div>
 
       <div class="form-group">
         <label for="endDate">Fecha de Fin</label>
-        <input type="datetime-local" id="endDate" class="form-control" value="<?php echo date('Y-m-d\TH:i'); ?>">
+        <input type="datetime-local" id="endDate" class="form-control">
       </div>
 
       <div class="form-group">
@@ -150,22 +162,43 @@
       </div>
     </div>
 
-    <div class="table-container">
-      <table id="controlWeightTable" class="display">
-        <thead>
-          <tr>
-            <th>Último Peso</th>
-            <th>Última Dimensión</th>
-            <th>Último Número de Cajas</th>
-            <th>Último Código de Barras</th>
-            <th>Último Código de Barras Final</th>
-            <th>Fecha y Hora</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Los datos se insertarán aquí mediante JavaScript -->
-        </tbody>
-      </table>
+    <div class="card">
+      <div class="table-responsive">
+        <table id="controlWeightTable" class="display">
+          <thead>
+            <tr>
+              <th>Orden</th>
+              <th>Línea</th>
+              <th>Cajas</th>
+              <th>UDS Caja</th>
+              <th>Pendientes</th>
+              <th>Inicio</th>
+              <th>Finalizado</th>
+              <th>Tiempo Rápido</th>
+              <th>Tiempo Fuera de Rango</th>
+              <th>Tiempo de Paradas de Producción</th>
+              <th>Tiempo Real de Finalización</th>
+              <th>Segundos por Unidad Real</th>
+              <th>Segundos por Unidad Teórica</th>
+              <th>Contador de Paradas de Sensores</th>
+              <th>Tiempo de Paradas de Sensores</th>
+              <th>Tiempo Lento</th>
+              <th>Tiempo Teórico de Finalización</th>
+              <th>Unidades</th>
+              <th>Unidades Atrasadas</th>
+              <th>Unidades Fabricadas</th>
+              <th>Unidades Fabricadas Real</th>
+              <th>Unidades Fabricadas Teórico</th>
+              <th>Unidades por Minuto Real</th>
+              <th>Unidades por Minuto Teórico</th>
+              <th>OEE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Los datos se insertarán aquí mediante JavaScript -->
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <a href="#" id="btn-back" class="btn-back">Volver</a>
@@ -178,43 +211,41 @@
   <script src="https://cdn.datatables.net/buttons/1.7.1/js/buttons.html5.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/1.7.1/js/buttons.print.min.js"></script>
   <script>
-    const clientToken = getTokenFromUrl(); // Obtener el token del cliente
-    const modbusUrl = `/api/modbuses?token=${clientToken}`;
+    const clientToken = getTokenFromUrl(); // Obtener el token del cliente para las autorizaciones generales
+    const apiUrl = `/api/order-stats-all`;
 
     function getTokenFromUrl() {
       const urlParams = new URLSearchParams(window.location.search);
       return urlParams.get('token');
     }
 
-    async function fetchModbuses() {
+    async function fetchOrderStats() {
       try {
-        const response = await fetch(modbusUrl);
-        if (!response.ok) {
-          throw new Error(`Error HTTP: ${response.status}`);
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const selectedToken = document.getElementById('modbusSelect').value;
+
+        if (!selectedToken || !startDate || !endDate) {
+          alert('Por favor, complete todos los campos.');
+          return;
         }
 
-        const data = await response.json();
-        console.log("Datos recibidos:", data);
+        // Construir la URL con el token del cliente
+        const requestUrl = `${apiUrl}?token=${clientToken}`;
 
-        const selectElement = document.getElementById('modbusSelect');
-        selectElement.innerHTML = '';
-
-        data.forEach(modbus => {
-          const option = document.createElement('option');
-          option.value = modbus.token; // Usar el token como valor
-          option.textContent = modbus.name;
-          selectElement.appendChild(option);
+        // Realizar la solicitud POST al endpoint
+        const response = await fetch(requestUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            token: selectedToken,
+            start_date: startDate,
+            end_date: endDate
+          })
         });
 
-      } catch (error) {
-        console.error("Error al obtener o procesar datos de la API:", error);
-      }
-    }
-
-    async function fetchControlWeights(modbusToken, startDate, endDate) {
-      try {
-        const url = `/api/control-weights/${modbusToken}/all/?token=${clientToken}&start_date=${startDate}&end_date=${endDate}`;
-        const response = await fetch(url);
         if (!response.ok) {
           throw new Error(`Error HTTP: ${response.status}`);
         }
@@ -227,14 +258,14 @@
           $('#controlWeightTable').DataTable().destroy();
         }
 
-        // Volver a inicializar el DataTable
+        // Volver a inicializar el DataTable con los nuevos campos
         const table = $('#controlWeightTable').DataTable({
           dom: 'Bfrtip',
           buttons: [
             {
               extend: 'excelHtml5',
               text: 'Exportar a Excel',
-              title: 'ControlWeights',
+              title: 'OrderStats',
               className: 'btn btn-success'
             },
             {
@@ -243,22 +274,41 @@
               className: 'btn btn-primary'
             }
           ],
-          order: [[5, 'desc']], // Ordenar por la columna de fecha y hora (índice 5)
+          order: [[5, 'desc']], // Ordenar por la columna de fecha de inicio (índice 5)
           paging: true,
           pageLength: 10, // Número de líneas por página
           lengthChange: true, // Mostrar la selección de cuántas líneas por página
           searching: true // Habilitar búsqueda
         });
 
-        // Insertar nuevos datos
-        data.forEach(weight => {
+        // Insertar nuevos datos con todos los campos recibidos
+        data.forEach(stat => {
           table.row.add([
-            weight.last_control_weight || 'N/A',
-            weight.last_dimension || 'N/A',
-            weight.last_box_number || 'N/A',
-            weight.last_barcoder || 'N/A',
-            weight.last_final_barcoder || 'N/A',
-            weight.created_at || 'N/A'
+            stat.order_id || 'N/A',
+            stat.production_line_name || 'N/A',
+            stat.box || 'N/A',
+            stat.units_box || 'N/A',
+            stat.units_pending || 'N/A',
+            stat.created_at || 'N/A',
+            stat.updated_at || 'N/A',
+            stat.fast_time || 'N/A',
+            stat.out_time || 'N/A',
+            stat.production_stops_time || 'N/A',
+            stat.real_end_time || 'N/A',
+            stat.seconds_per_unit_real || 'N/A',
+            stat.seconds_per_unit_theoretical || 'N/A',
+            stat.sensor_stops_count || 'N/A',
+            stat.sensor_stops_time || 'N/A',
+            stat.slow_time || 'N/A',
+            stat.theoretical_end_time || 'N/A',
+            stat.units || 'N/A',
+            stat.units_delayed || 'N/A',
+            stat.units_made || 'N/A',
+            stat.units_made_real || 'N/A',
+            stat.units_made_theoretical || 'N/A',
+            stat.units_per_minute_real || 'N/A',
+            stat.units_per_minute_theoretical || 'N/A',
+            stat.oee || 'N/A'
           ]).draw();
         });
 
@@ -267,19 +317,33 @@
       }
     }
 
-    document.getElementById('fetchData').addEventListener('click', () => {
-      const modbusToken = document.getElementById('modbusSelect').value;
-      const startDate = document.getElementById('startDate').value;
-      const endDate = document.getElementById('endDate').value;
+    document.getElementById('fetchData').addEventListener('click', fetchOrderStats);
 
-      if (modbusToken && startDate && endDate) {
-        fetchControlWeights(modbusToken, startDate, endDate);
-      } else {
-        alert('Por favor, complete todos los campos.');
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Cargar líneas de producción disponibles (Modbus)
+      const modbusUrl = `/api/production-lines/${clientToken}`;
+      try {
+        const response = await fetch(modbusUrl);
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Modbus disponibles:", data);
+
+        const selectElement = document.getElementById('modbusSelect');
+        selectElement.innerHTML = '';
+
+        data.forEach(modbus => {
+          const option = document.createElement('option');
+          option.value = modbus.token; // Asignar el token al valor del select
+          option.textContent = modbus.name; // Mostrar el nombre de la línea
+          selectElement.appendChild(option);
+        });
+      } catch (error) {
+        console.error("Error al obtener datos de Modbus:", error);
       }
     });
-
-    document.addEventListener('DOMContentLoaded', fetchModbuses);
   </script>
 </body>
 </html>

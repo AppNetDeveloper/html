@@ -90,7 +90,7 @@
       <!-- Los botones se generarán aquí -->
     </div>
 
-    <a href="/live-weight/list.html?token=" id="btn-statistics" class="btn-statistics">Estadísticas</a>
+    <a href="/live-production/list.html?token=" id="btn-statistics" class="btn-statistics">Estadísticas</a>
   </div>
 
   <script>
@@ -101,7 +101,7 @@
     }
 
     const token = getTokenFromUrl();
-    const apiUrl = `/api/modbuses?token=${token}`;
+    const apiUrl = `/api/production-lines/${token}`;
 
     async function updateButtons() {
       try {
@@ -115,7 +115,7 @@
 
         // Actualizar el enlace del botón de estadísticas con el token
         const statisticsButton = document.getElementById('btn-statistics');
-        statisticsButton.href = `/live-weight/list.html?token=${token}`;
+        statisticsButton.href = `/live-production/list.html?token=${token}`;
 
         // Generar botones dinámicamente
         const buttonsContainer = document.getElementById('buttons-container');
@@ -123,7 +123,7 @@
 
         data.forEach(modbus => {
           const button = document.createElement('a');
-          button.href = `/live-weight/live.html?token=${modbus.token}`;
+          button.href = `/live-production/live.html?token=${modbus.token}`;
           button.className = 'btn-card';
           button.textContent = modbus.name;
           buttonsContainer.appendChild(button);

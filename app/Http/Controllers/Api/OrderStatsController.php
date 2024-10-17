@@ -5,14 +5,16 @@ namespace App\Http\Controllers\Api;
 use Illuminate\Http\Request;
 use App\Models\ProductionLine;
 use App\Models\OrderStat;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Controller;
+//anadir carbon
+use Carbon\Carbon;
+
 
 class OrderStatsController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/v1/order-stats",
+     *     path="/order-stats",
      *     summary="Obtener la última estadística de orden",
      *     tags={"OrderStats"},
      *     @OA\Parameter(
@@ -33,7 +35,8 @@ class OrderStatsController extends Controller
      *             @OA\Property(property="box", type="integer"),
      *             @OA\Property(property="units_box", type="integer"),
      *             @OA\Property(property="created_at", type="string", format="date-time"),
-     *             @OA\Property(property="updated_at", type="string", format="date-time")
+     *             @OA\Property(property="updated_at", type="string", format="date-time"),
+     *             @OA\Property(property="production_line_name", type="string")
      *         )
      *     ),
      *     @OA\Response(
@@ -47,7 +50,7 @@ class OrderStatsController extends Controller
      * )
      *
      * @OA\Post(
-     *     path="/v1/order-stats",
+     *     path="/order-stats",
      *     summary="Crear una nueva estadística de orden",
      *     tags={"OrderStats"},
      *     @OA\RequestBody(
@@ -128,8 +131,108 @@ class OrderStatsController extends Controller
         if (!$lastOrderStat) {
             return response()->json(['error' => 'No order stats found for the production line'], 404);
         }
-
-        // Devuelve la última línea encontrada en formato JSON.
-        return response()->json($lastOrderStat, 200);
+        
+        // Combina los datos de OrderStat con el nombre de la línea de producción en un solo JSON
+        $response = $lastOrderStat->toArray();  // Convierte los datos de OrderStat a un array
+        $response['production_line_name'] = $productionLine->name;  // Añade el nombre de la línea de producción al mismo array
+    
+        // Devuelve el array combinado en formato JSON
+        return response()->json($response, 200);
     }
+    /**
+     * @OA\Get(
+     *     path="/order-stats-all",
+     *     summary="Obtener estadísticas de pedidos entre fechas",
+     *     tags={"OrderStats"},
+     *     @OA\Parameter(
+     *         name="token",
+     *         in="query",
+     *         description="Token de la línea de producción",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="start_date",
+     *         in="query",
+     *         description="Fecha de inicio (YYYY-MM-DD)",
+     *         required=true,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="end_date",
+     *         in="query",
+     *         description="Fecha de fin (YYYY-MM-DD)",
+     *         required=true,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Lista de estadísticas de pedidos entre las fechas especificadas",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/OrderStat")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Token requerido o fechas inválidas"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="No se encontraron estadísticas de pedidos para las fechas especificadas"
+     *     )
+     * )
+     */
+    public function getOrderStatsBetweenDates(Request $request)
+    {
+        // Obtiene el token de la línea de producción desde la solicitud.
+        $token = $request->input('token');
+    
+        if (!$token) {
+            return response()->json(['error' => 'Token is required'], 400);
+        }
+    
+        // Encuentra la línea de producción por el token.
+        $productionLine = ProductionLine::where('token', $token)->first();
+    
+        if (!$productionLine) {
+            return response()->json(['error' => 'Production line not found'], 404);
+        }
+    
+        // Validar los datos de entrada y establecer fechas predeterminadas si no existen
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+    
+        if (!$startDate || !$endDate) {
+            $today = now()->format('Y-m-d');
+            $startDate = $today . ' 00:00:00';
+            $endDate = $today . ' 23:59:59';
+        } else {
+            // Formatear las fechas en caso de que no estén en el formato correcto
+            $startDate = Carbon::parse($startDate)->format('Y-m-d H:i:s');
+            $endDate = Carbon::parse($endDate)->format('Y-m-d H:i:s');
+        }
+    
+        $productionLineId = $productionLine->id;
+    
+        // Consultar las estadísticas de pedidos entre las fechas especificadas
+        $orderStats = OrderStat::where('production_line_id', $productionLineId)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->orderBy('created_at', 'desc')
+            ->get();
+    
+        if ($orderStats->isEmpty()) {
+            return response()->json(['error' => 'No order stats found for the specified dates'], 404);
+        }
+    
+        $productionLineName = $productionLine->name;
+        $response = $orderStats->map(function ($orderStat) use ($productionLineName) {
+            $orderStatArray = $orderStat->toArray();
+            $orderStatArray['production_line_name'] = $productionLineName;
+            return $orderStatArray;
+        });
+    
+        return response()->json($response, 200);
+    }
+    
 }
