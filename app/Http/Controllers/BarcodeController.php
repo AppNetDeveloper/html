@@ -56,13 +56,6 @@ public function store(Request $request, $production_line_id)
         'ope_id' => 'nullable|string|max:255',
         'order_notice' => 'nullable|json',
         'last_barcode' => 'nullable|string|max:255',
-        'ip_zerotier' => 'nullable|string|max:255',
-        'user_ssh' => 'nullable|string|max:255',
-        'port_ssh' => 'nullable|string|max:255',
-        'user_ssh_password' => 'nullable|string|max:255',
-        'ip_barcoder' => 'nullable|string|max:255',
-        'port_barcoder' => 'nullable|string|max:255',
-        'conexion_type' => 'nullable|string|max:255',
         'iniciar_model' => 'nullable|string|max:255', // Validación del nuevo campo
         'sended' => 'nullable|integer', // Validación del nuevo campo
     ]);
@@ -109,13 +102,6 @@ public function store(Request $request, $production_line_id)
             'ope_id' => 'nullable|string|max:255',
             'order_notice' => 'nullable|json',
             'last_barcode' => 'nullable|string|max:255',
-            'ip_zerotier' => 'nullable|string|max:255',
-            'user_ssh' => 'nullable|string|max:255',
-            'port_ssh' => 'nullable|string|max:255',
-            'user_ssh_password' => 'nullable|string|max:255',
-            'ip_barcoder' => 'nullable|string|max:255',
-            'port_barcoder' => 'nullable|string|max:255',
-            'conexion_type' => 'nullable|string|max:255',
             'iniciar_model' => 'nullable|string|max:255', // Validación del nuevo campo
             'sended' => 'nullable|integer', // Validación del nuevo campo
         ]);

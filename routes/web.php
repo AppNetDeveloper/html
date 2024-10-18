@@ -19,7 +19,7 @@ use App\Http\Controllers\BarcodeController;
 use App\Http\Controllers\PrinterController;
 use App\Http\Controllers\ModbusController;
 use Arcanedev\LogViewer\Facades\LogViewer;
-
+use App\Http\Controllers\MonitorOeeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -138,8 +138,7 @@ Route::get('modbuses/{id}/edit', [ModbusController::class, 'edit'])->name('modbu
 Route::put('modbuses/{id}', [ModbusController::class, 'update'])->name('modbuses.update');
 
 // Ruta para eliminar el Modbus
-Route::delete('modbuses/{id}', [ModbusController::class, 'destroy'])->name('modbuses.destroy');
-
+Route::resource('oee', MonitorOeeController::class);
 
 
 

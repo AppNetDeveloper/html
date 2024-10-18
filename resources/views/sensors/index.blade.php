@@ -38,17 +38,31 @@
             <!-- Fin del card -->
 
            <!-- Card para Smart Sensors -->
-<div class="col-md-4">
-    <div class="card">
-        <img src="/necesarios/sensors.webp" class="card-img-top" alt="Smart Sensors">
-        <div class="card-body">
-            <h5 class="card-title">Sensorica</h5>
-            <p class="card-text">Administrar listado de Sensorica.</p>
-            <a href="{{ route('smartsensors.index', ['production_line_id' => request()->route('id')]) }}" class="btn btn-primary">Ver más</a>
-        </div>
-    </div>
-</div>
-<!-- Fin del card -->
+            <div class="col-md-4">
+                <div class="card">
+                    <img src="/necesarios/sensors.webp" class="card-img-top" alt="Smart Sensors">
+                    <div class="card-body">
+                        <h5 class="card-title">Sensorica</h5>
+                        <p class="card-text">Administrar listado de Sensorica.</p>
+                        <a href="{{ route('smartsensors.index', ['production_line_id' => request()->route('id')]) }}" class="btn btn-primary">Ver más</a>
+                    </div>
+                </div>
+            </div>
+            <!-- Fin del card -->
+
+            
+            <!-- Card para Monitor OEE -->
+            <div class="col-md-4">
+                <div class="card">
+                    <img src="/necesarios/oee.webp" class="card-img-top" alt="Monitor OEE">
+                    <div class="card-body">
+                        <h5 class="card-title">Monitor OEE</h5>
+                        <p class="card-text">Administrar listado de Monitor OEE.</p>
+                        <a href="{{ route('oee.index', ['production_line_id' => request()->route('id')]) }}" class="btn btn-primary">Ver más</a>
+                    </div>
+                </div>
+            </div>
+            <!-- Fin del card -->
 
 
         </div>
