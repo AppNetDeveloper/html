@@ -102,28 +102,25 @@ class Sensor extends Model
     protected static function boot()
     {
         parent::boot();
-
+    
+        // Generar un token único antes de crear el registro
+        static::creating(function ($sensor) {
+            $sensor->token = Str::uuid(); // O Str::random(32) para un token aleatorio de 32 caracteres
+        });
+    
         // Evento 'updating' para detectar cambios
         static::updating(function ($sensor) {
-            if ($sensor->isDirty([
-                'mqtt_topic_sensor', 
-                'mqtt_topic_1',
-            ])) {
+            if ($sensor->isDirty(['mqtt_topic_sensor', 'mqtt_topic_1'])) {
                 self::restartSupervisor();
             }
         });
-
-        static::created(function ($sensor) {
-            
-             // Generar un token único antes de crear el registro
-             $sensor->token = Str::uuid(); // O Str::random(32) para un token aleatorio de 32 caracteres
-             self::restartSupervisor();
-        });
-
+    
+        // Evento 'deleted' para reiniciar supervisor
         static::deleted(function ($sensor) {
             self::restartSupervisor();
         });
     }
+    
     public function generateUniqueCode()
     {
         // Obtener el id de la línea de producción

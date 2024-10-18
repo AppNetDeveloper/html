@@ -47,52 +47,51 @@ class BarcodeController extends Controller
 }
 
 
-    public function store(Request $request, $production_line_id)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'mqtt_topic_barcodes' => 'required|string|max:255',
-            'mqtt_topic_orders' => 'required|string|max:255',
-            'mqtt_topic_finish' => 'required|string|max:255',
-            'mqtt_topic_pause' => 'required|string|max:255',
-            'machine_id' => 'nullable|string|max:255',
-            'ope_id' => 'nullable|string|max:255',
-            'order_notice' => 'nullable|json',
-            'last_barcode' => 'nullable|string|max:255',
-            'ip_zerotier' => 'nullable|string|max:255',
-            'user_ssh' => 'nullable|string|max:255',
-            'port_ssh' => 'nullable|string|max:255',
-            'user_ssh_password' => 'nullable|string|max:255',
-            'ip_barcoder' => 'nullable|string|max:255',
-            'port_barcoder' => 'nullable|string|max:255',
-            'conexion_type' => 'nullable|string|max:255',
-        ]);
+public function store(Request $request, $production_line_id)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'mqtt_topic_barcodes' => 'required|string|max:255',
+        'machine_id' => 'nullable|string|max:255',
+        'ope_id' => 'nullable|string|max:255',
+        'order_notice' => 'nullable|json',
+        'last_barcode' => 'nullable|string|max:255',
+        'ip_zerotier' => 'nullable|string|max:255',
+        'user_ssh' => 'nullable|string|max:255',
+        'port_ssh' => 'nullable|string|max:255',
+        'user_ssh_password' => 'nullable|string|max:255',
+        'ip_barcoder' => 'nullable|string|max:255',
+        'port_barcoder' => 'nullable|string|max:255',
+        'conexion_type' => 'nullable|string|max:255',
+        'iniciar_model' => 'nullable|string|max:255', // Validación del nuevo campo
+        'sended' => 'nullable|integer', // Validación del nuevo campo
+    ]);
 
-        $token = Str::random(20);
+    $token = Str::random(20);
 
-        Barcode::create([
-            'production_line_id' => $production_line_id,
-            'name' => $request->name,
-            'token' => $token,
-            'mqtt_topic_barcodes' => $request->mqtt_topic_barcodes,
-            'mqtt_topic_orders' => $request->mqtt_topic_orders,
-            'mqtt_topic_finish' => $request->mqtt_topic_finish,
-            'mqtt_topic_pause' => $request->mqtt_topic_pause,
-            'machine_id' => $request->machine_id,
-            'ope_id' => $request->ope_id,
-            'order_notice' => $request->order_notice,
-            'last_barcode' => $request->last_barcode,
-            'ip_zerotier' => $request->ip_zerotier,
-            'user_ssh' => $request->user_ssh,
-            'port_ssh' => $request->port_ssh,
-            'user_ssh_password' => $request->user_ssh_password,
-            'ip_barcoder' => $request->ip_barcoder,
-            'port_barcoder' => $request->port_barcoder,
-            'conexion_type' => $request->conexion_type,
-        ]);
+    Barcode::create([
+        'production_line_id' => $production_line_id,
+        'name' => $request->name,
+        'token' => $token,
+        'mqtt_topic_barcodes' => $request->mqtt_topic_barcodes,
+        'machine_id' => $request->machine_id,
+        'ope_id' => $request->ope_id,
+        'order_notice' => $request->order_notice,
+        'last_barcode' => $request->last_barcode,
+        'ip_zerotier' => $request->ip_zerotier,
+        'user_ssh' => $request->user_ssh,
+        'port_ssh' => $request->port_ssh,
+        'user_ssh_password' => $request->user_ssh_password,
+        'ip_barcoder' => $request->ip_barcoder,
+        'port_barcoder' => $request->port_barcoder,
+        'conexion_type' => $request->conexion_type,
+        'iniciar_model' => $request->iniciar_model ?? 'INICIAR', // Asignación del nuevo campo
+        'sended' => $request->sended ?? 0, // Asignación del nuevo campo
+    ]);
 
-        return redirect()->route('barcodes.index', $production_line_id)->with('success', 'Nuevo barcode creado correctamente.');
-    }
+    return redirect()->route('barcodes.index', $production_line_id)->with('success', 'Nuevo barcode creado correctamente.');
+}
+
 
     public function edit($id)
     {
@@ -117,14 +116,32 @@ class BarcodeController extends Controller
             'ip_barcoder' => 'nullable|string|max:255',
             'port_barcoder' => 'nullable|string|max:255',
             'conexion_type' => 'nullable|string|max:255',
+            'iniciar_model' => 'nullable|string|max:255', // Validación del nuevo campo
+            'sended' => 'nullable|integer', // Validación del nuevo campo
         ]);
-
+    
         $barcode = Barcode::findOrFail($id);
-        $barcode->update($request->all());
-
+        $barcode->update([
+            'name' => $request->name,
+            'mqtt_topic_barcodes' => $request->mqtt_topic_barcodes,
+            'machine_id' => $request->machine_id,
+            'ope_id' => $request->ope_id,
+            'order_notice' => $request->order_notice,
+            'last_barcode' => $request->last_barcode,
+            'ip_zerotier' => $request->ip_zerotier,
+            'user_ssh' => $request->user_ssh,
+            'port_ssh' => $request->port_ssh,
+            'user_ssh_password' => $request->user_ssh_password,
+            'ip_barcoder' => $request->ip_barcoder,
+            'port_barcoder' => $request->port_barcoder,
+            'conexion_type' => $request->conexion_type,
+            'iniciar_model' => $request->iniciar_model ?? 'INICIAR', // Asignación del nuevo campo
+            'sended' => $request->sended ?? 0, // Asignación del nuevo campo
+        ]);
+    
         return redirect()->route('barcodes.index', $barcode->production_line_id)->with('success', 'Barcode actualizado correctamente.');
     }
-
+    
     public function destroy($id)
     {
         $barcode = Barcode::findOrFail($id);
