@@ -18,7 +18,7 @@ class CreateMonitorOeeTable extends Migration
 
             // Clave foránea con la tabla 'production_lines' que puede ser nullable
             $table->foreignId('production_line_id')->nullable()->constrained('production_lines')->onDelete('set null');
-
+            $table->string('topic_oee')->nullable(); // Añade la columna como nullable
             // Cambiar sensor_id y modbus_id a booleanos (activo/inactivo) y nulables
             $table->boolean('sensor_active')->nullable()->default(null); // 0: Inactivo, 1: Activo, null: No aplicable
             $table->boolean('modbus_active')->nullable()->default(null); // 0: Inactivo, 1: Activo, null: No aplicable

@@ -38,8 +38,6 @@
                             <input type="text" class="form-control" id="mqtt_topic_barcodes" name="mqtt_topic_barcodes" required>
                         </div>
 
-                        
-
                         <div class="form-group">
                             <label for="machine_id">{{ __('Machine ID') }}</label>
                             <input type="text" class="form-control" id="machine_id" name="machine_id">
@@ -52,7 +50,7 @@
 
                         <div class="form-group">
                             <label for="order_notice">{{ __('Order Notice') }}</label>
-                            <input type="text" class="form-control" id="order_notice" name="order_notice">
+                            <textarea class="form-control" id="order_notice" name="order_notice"></textarea>
                         </div>
 
                         <div class="form-group">
@@ -77,7 +75,7 @@
 
                         <div class="form-group">
                             <label for="user_ssh_password">{{ __('User SSH Password') }}</label>
-                            <input type="text" class="form-control" id="user_ssh_password" name="user_ssh_password">
+                            <input type="password" class="form-control" id="user_ssh_password" name="user_ssh_password">
                         </div>
 
                         <div class="form-group">
@@ -95,6 +93,16 @@
                             <input type="text" class="form-control" id="conexion_type" name="conexion_type">
                         </div>
 
+                        <div class="form-group">
+                            <label for="iniciar_model">{{ __('Iniciar Model') }}</label>
+                            <input type="text" class="form-control" id="iniciar_model" name="iniciar_model" value="INICIAR">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sended">{{ __('Sended') }}</label>
+                            <input type="number" class="form-control" id="sended" name="sended" value="0">
+                        </div>
+
                         <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
                         <a href="{{ route('barcodes.index', ['production_line_id' => $production_line_id]) }}" class="btn btn-secondary">{{ __('Cancel') }}</a>
                     </form>
@@ -103,5 +111,3 @@
         </div>
     </div>
 @endsection
-
-

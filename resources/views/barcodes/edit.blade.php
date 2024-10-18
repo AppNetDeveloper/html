@@ -92,6 +92,16 @@
                             <input type="text" class="form-control" id="conexion_type" name="conexion_type" value="{{ $barcode->conexion_type }}">
                         </div>
 
+                        <div class="form-group">
+                            <label for="iniciar_model">{{ __('Iniciar Model') }}</label>
+                            <input type="text" class="form-control" id="iniciar_model" name="iniciar_model" value="{{ $barcode->iniciar_model }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sended">{{ __('Sended') }}</label>
+                            <input type="number" class="form-control" id="sended" name="sended" value="{{ $barcode->sended }}">
+                        </div>
+
                         <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
                         <a href="{{ route('barcodes.index', ['production_line_id' => $barcode->production_line_id]) }}" class="btn btn-secondary">{{ __('Cancel') }}</a>
                     </form>

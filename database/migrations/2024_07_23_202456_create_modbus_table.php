@@ -13,6 +13,9 @@ return new class extends Migration
             $table->string('name')->nullable();
             $table->unsignedBigInteger('production_line_id');
             $table->foreign('production_line_id')->references('id')->on('production_lines');
+            $table->unsignedBigInteger('barcoder_id')->nullable()->after('id');
+            // Definir la relación foránea con la tabla `barcodes`
+            $table->foreign('barcoder_id')->references('id')->on('barcodes')->onDelete('cascade');
             $table->text('json_api')->nullable(); //identificar el valor de la api
             $table->string('mqtt_topic_modbus')->nullable();    //esto para extrar de mqtt en lugar de api
             $table->string('mqtt_topic')->nullable(); //esto para mandar las info por topico, se adapta en codigo para ser gross control etc

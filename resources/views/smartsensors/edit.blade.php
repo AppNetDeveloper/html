@@ -51,9 +51,8 @@
             <input type="text" name="mqtt_topic_sensor" class="form-control" value="{{ $sensor->mqtt_topic_sensor }}" required>
         </div>
 
-
         <div class="form-group">
-            <label for="mqtt_topic_1">MQTT Topic envio topflow tipo: c/cliente/pli/PLI03/sta/PLI03STA01/mac/PLI03STA01MAC03  Los demas los genera solo</label>
+            <label for="mqtt_topic_1">MQTT Topic Envío</label>
             <input type="text" name="mqtt_topic_1" class="form-control" value="{{ $sensor->mqtt_topic_1 }}" required>
         </div>
 
@@ -130,4 +129,3 @@
     </form>
 </div>
 @endsection
-

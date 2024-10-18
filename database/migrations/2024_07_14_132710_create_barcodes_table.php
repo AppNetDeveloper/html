@@ -24,6 +24,8 @@ class CreateBarcodesTable extends Migration
             $table->json('order_notice')->nullable(); // Almacena datos JSONm esto es el json entero del pedido en curso
             $table->string('last_barcode')->nullable(); // el ultimo barcode leido
             $table->string('ip_zerotier')->nullable();
+            $table->string('iniciar_model')->default('INICIAR')->after('conexion_type');
+            $table->integer('sended')->default(0)->after('iniciar_model');
             $table->string('user_ssh')->nullable();
             $table->string('port_ssh')->nullable();
             $table->string('user_ssh_password')->nullable();
