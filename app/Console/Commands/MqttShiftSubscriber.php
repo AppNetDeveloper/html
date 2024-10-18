@@ -13,6 +13,7 @@ use App\Models\MqttSendServer2;
 use App\Models\MonitorOee;
 use Illuminate\Support\Facades\Log;
 use App\Models\OrderStat;
+use App\Models\Barcode;
 
 class MqttShiftSubscriber extends Command
 {
@@ -79,8 +80,8 @@ class MqttShiftSubscriber extends Command
 
     private function subscribeToAllTopics(MqttClient $mqtt)
     {
-        // Obtener los tópicos desde la tabla sensors
-        $topics = Sensor::pluck('mqtt_topic_1')->toArray();
+        // Obtener los tópicos desde la tabla BArcode
+        $topics = Barcode::pluck('mqtt_topic_barcodes')->toArray();
 
         foreach ($topics as $topic) {
             $topicWithShift = "{$topic}/shift"; // Añadir '/shift' al tópico
@@ -100,8 +101,8 @@ class MqttShiftSubscriber extends Command
 
     private function checkAndSubscribeNewTopics(MqttClient $mqtt)
     {
-        // Obtener tópicos actuales desde sensors
-        $currentTopics = Sensor::pluck('mqtt_topic_1')->toArray();
+        // Obtener tópicos actuales desde Barcode
+        $currentTopics = Barcode::pluck('mqtt_topic_barcodes')->toArray();
 
         // Comparar con los tópicos a los que ya estamos suscritos
         foreach ($currentTopics as $topic) {
@@ -122,65 +123,92 @@ class MqttShiftSubscriber extends Command
     private function processMessage($topic, $message)
     {
         $this->info("Processing message for topic: {$topic}");
-    
+
         // Decodificar el mensaje JSON
         $data = json_decode($message, true);
-    
+
         // Verificar si el JSON es válido
         if (json_last_error() !== JSON_ERROR_NONE) {
             $this->error("Failed to decode JSON: " . json_last_error_msg());
             return;
         }
-    
+
         $this->info("Message decoded: " . json_encode($data));
-    
-        // Buscar el sensor que coincide con el tópico (sin '/shift')
+
+        // Buscar el modbus que coincide con el tópico (sin '/shift')
         $baseTopic = str_replace('/shift', '', $topic);
-        $sensor = Sensor::where('mqtt_topic_1', $baseTopic)->first();
-    
-        if ($sensor) {
-            $this->info("Sensor found for topic: {$baseTopic}");
-    
-            // Verificar si el JSON contiene shift_type y event
-            if (isset($data['shift_type'])) {
-                $sensor->shift_type = $data['shift_type'];
-                $this->info("Shift type set to: {$data['shift_type']}");
-            } else {
-                $this->warn("Shift type missing in the message.");
-            }
-    
-            if (isset($data['event'])) {
-                $sensor->event = $data['event'];
-                $this->info("Event set to: {$data['event']}");
-            } else {
-                $this->warn("Event missing in the message.");
-            }
-            // Guardar los cambios en el sensor
-            $sensor->save();
+        $barcode = Barcode::where('mqtt_topic_barcodes', $baseTopic)->first();
 
-            // si el shift_type se ha puesto Turno Programado y event es start se resetea los contadores
+        if ($barcode) {
+            $this->info("Modbus found for topic: {$baseTopic}");
+
+            // Obtener el production_line_id desde modbus
+            $productionLineId = $barcode->production_line_id;
+
+            // Obtener los sensores asociados a esta línea de producción
+            $sensors = Sensor::where('production_line_id', $productionLineId)->get();
+
+            foreach ($sensors as $sensor) {
+                $this->info("Processing sensor ID {$sensor->id}");
+
+                // Verificar si el JSON contiene shift_type y event
+                if (isset($data['shift_type'])) {
+                    $sensor->shift_type = $data['shift_type'];
+                    $this->info("Shift type set to: {$data['shift_type']}");
+                } else {
+                    $this->warn("Shift type missing in the message.");
+                }
+
+                if (isset($data['event'])) {
+                    $sensor->event = $data['event'];
+                    $this->info("Event set to: {$data['event']}");
+                } else {
+                    $this->warn("Event missing in the message.");
+                }
+
+                // Guardar los cambios en el sensor
+                $sensor->save();
+
+                // Si el shift_type se ha puesto Turno Programado y event es start, se resetean los contadores
+                if ($data['shift_type'] == 'Turno Programado' && $data['event'] == 'start') {
+                    $this->resetSensorCounters($sensor);
+                    
+                    $this->changeOrderStatus($sensor->production_line_id);
+                    $this->sendMqttTo0($sensor);
+                    $this->info("Sensor ID {$sensor->id} updated with shift_type, event, and counters reset.");
+                } else {
+                    $this->info("Sensor ID {$sensor->id} updated with shift_type and event. No need to reset counters.");
+                }
+            }
+
+            // Si el shift_type se ha puesto Turno Programado y event es start, se cambia el ordenStatus
             if ($data['shift_type'] == 'Turno Programado' && $data['event'] == 'start') {
-            // Reseteo de contadores del sensor
-            $this->resetSensorCounters($sensor);
-            
-            // Anadir fecha a Oee con el ultimo cambio de turno por linia
-            $this->changeDataTimeOee($sensor);
-
-            $this->changeOrderStatus($sensor->production_line_id);
-
-            
-            $this->info("Sensor ID {$sensor->id} updated with shift_type, event, and counters reset.");
-
-             //mandar mqtt a 0
-             $this->info("Intento enviar mqtt a 0 para el Sensor ID {$sensor->id} .");
-             $this->sendMqttTo0($sensor);
-            }else{
-                $this->info("Sensor ID {$sensor->id} updated with shift_type and event. No need to reset counters.");
+                $this->changeOrderStatus($productionLineId);
+                $this->info("Cambios en ordeStatus para la linea de produccion: {$productionLineId}");
+                $this->changeDataTimeOee($productionLineId);
+                $this->info("Cambios en OEE para la linea de produccion: {$productionLineId}");
+            } else {
+                $this->info("Cambios NO realizados en ordeStatus y OEE. Para la linea de produccion: {$productionLineId}");
             }
-            
-    
+
+            //Administramos el Modbus
+
+             // Obtener los modbus asociados a esta línea de producción
+             $mosbuses = Modbus::where('production_line_id', $productionLineId)->get();
+
+             foreach ($mosbuses as $modbus) {
+                 $this->info("Processing modbus ID {$modbus->id}");
+                    // Si el shift_type se ha puesto Turno Programado y event es start, se resetean los contadores
+                 if ($data['shift_type'] == 'Turno Programado' && $data['event'] == 'start') {
+                     $this->resetModbusCounters($modbus);
+                     //$this->sendMqttTo0($modbus);
+                     $this->info("Modbus ID {$modbus->id} updated with shift_type, event, and counters reset.");
+                 } else {
+                     $this->info("Modbus ID {$modbus->id} updated with shift_type and event. No need to reset counters.");
+                 }
+             }
         } else {
-            $this->error("Sensor not found for topic: {$baseTopic}");
+            $this->error("Barcoder not found for topic: {$baseTopic}");
         }
     }
 
@@ -202,20 +230,25 @@ class MqttShiftSubscriber extends Command
 
     }
 
-    private function resetModbusCounters($sensor)
+    private function resetModbusCounters($modbus)
     {
-        $productionLineId = $sensor->production_line_id; 
+        $this->info("Resetting modbus counters for sensor ID {$modbus->id}.");
 
+        // Reseteo de los contadores del modbus
+        $modbus->rec_box_shift = 0;
+        $modbus->rec_box = 0;
+        $modbus->downtime_count = 0;
+        $modbus->save();  // Guardar los cambios
     }
 
-    private function changeDataTimeOee($sensor)
+    private function changeDataTimeOee($production_line_id)
     {
         try {
             // Información sobre la actualización de la hora de inicio de OEE
-            $this->info("Actualizando hora de OEE para la línea {$sensor->production_line_id}.");
+            $this->info("Actualizando hora de OEE para la línea {$production_line_id}.");
 
             // Obtener todos los registros de MonitorOee relacionados con la línea de producción
-            $oees = MonitorOee::where('production_line_id', $sensor->production_line_id)->get(); // Cargar los modelos
+            $oees = MonitorOee::where('production_line_id', $production_line_id)->get(); // Cargar los modelos
 
             if ($oees->isNotEmpty()) {
                 foreach ($oees as $oee) {
@@ -223,15 +256,15 @@ class MqttShiftSubscriber extends Command
                     $oee->save();  // Esto disparará el evento 'updating'
                 }
 
-                $this->info("Hora de inicio del turno actualizada para todos los monitores en la línea de producción {$sensor->production_line_id}.");
+                $this->info("Hora de inicio del turno actualizada para todos los monitores en la línea de producción {$production_line_id}.");
             } else {
-                $this->warn("No se encontraron monitores para la línea de producción {$sensor->production_line_id}.");
+                $this->warn("No se encontraron monitores para la línea de producción {$production_line_id}.");
             }
 
 
         } catch (\Exception $e) {
             // Capturar cualquier excepción y mostrar un mensaje de error
-            $this->error("Ocurrió un error al actualizar la hora de OEE para la línea {$sensor->production_line_id}: " . $e->getMessage());
+            $this->error("Ocurrió un error al actualizar la hora de OEE para la línea {$production_line_id}: " . $e->getMessage());
         }
     }
 
