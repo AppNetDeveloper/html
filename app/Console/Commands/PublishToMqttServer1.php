@@ -92,7 +92,7 @@ class PublishToMqttServer1 extends Command
     {
         try {
             $this->initializeMqttClient();
-            Log::info("Successfully reconnected to MQTT Server 1");
+            $this->info("Successfully reconnected to MQTT Server 1");
         } catch (\Exception $e) {
             Log::error("Failed to reconnect to MQTT Server 1: " . $e->getMessage());
         }

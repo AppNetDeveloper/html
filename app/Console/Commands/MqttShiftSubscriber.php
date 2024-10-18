@@ -342,9 +342,9 @@ class MqttShiftSubscriber extends Command
                 'oee' => null,  // Dejar vacío o nulo
             ]);
     
-            Log::info("Nueva entrada creada en order_stats para la línea de producción: {$productionLineId}");
+            $this->info("Nueva entrada creada en order_stats para la línea de producción: {$productionLineId}");
         } else {
-            Log::info("No se creó nueva entrada en order_stats ya que el último registro es reciente para la línea de producción: {$productionLineId}");
+            $this->info("No se creó nueva entrada en order_stats ya que el último registro es reciente para la línea de producción: {$productionLineId}");
         }
     }
     private function publishMqttMessage($topic, $message)

@@ -153,7 +153,7 @@ class ReadSensors extends Command
             return;
         }
 
-        Log::info("Contenido del Sensor ID {$id} JSON: " . print_r($data, true));
+        $this->info("Contenido del Sensor ID {$id} JSON: " . print_r($data, true));
 
         $value = null;
         if (empty($config->json_api)) {
@@ -239,7 +239,7 @@ class ReadSensors extends Command
             default:
             $message = "Valo no permitido: {$config->name} (ID: {$config->id}) // Tópico: {$config->mqtt_topic_sensor} // Valor: {$value}";
             $this->info($message); // Muestra el mensaje en la consola
-            Log::info($message); // Guarda el mensaje en los logs
+            $this->info($message); // Guarda el mensaje en los logs
                 break;
         }
     }
@@ -248,7 +248,7 @@ class ReadSensors extends Command
     {
         $message = "Modelo 0: {$config->name} (ID: {$config->id}) // Tópico: {$config->mqtt_topic_sensor} // Valor: {$value}";
         $this->info($message); // Muestra el mensaje en la consola
-        Log::info($message); // Guarda el mensaje en los logs
+        $this->info($message); // Guarda el mensaje en los logs
     
         // Obtener el registro del barcode asociado
         $barcode = Barcode::find($config->barcoder_id);
@@ -280,7 +280,7 @@ class ReadSensors extends Command
             $config->increment('count_total_0');
             $config->increment('count_order_0');
             $this->info("Contadores incrementados correctamente.");
-            Log::info("Contadores incrementados correctamente.");
+            $this->info("Contadores incrementados correctamente.");
         } catch (\Exception $e) {
             $errorMessage = "Error al incrementar los contadores: " . $e->getMessage();
             $this->error($errorMessage);
@@ -331,7 +331,7 @@ class ReadSensors extends Command
     
             $successMessage = "Registro insertado en sensor_counts correctamente.";
             $this->info($successMessage);
-            Log::info($successMessage);
+            $this->info($successMessage);
         } catch (\Exception $e) {
             $errorMessage = "Error al insertar en sensor_counts: " . $e->getMessage();
             $this->error($errorMessage);
@@ -358,7 +358,7 @@ class ReadSensors extends Command
     {
         $message = "Modelo 1: {$config->name} (ID: {$config->id}) // Tópico: {$config->mqtt_topic_sensor} // Valor: {$value}";
         $this->info($message); // Muestra el mensaje en la consola
-        Log::info($message); // Guarda el mensaje en los logs
+        $this->info($message); // Guarda el mensaje en los logs
 
         // Obtener el registro del barcode asociado
         $barcode = Barcode::find($config->barcoder_id);
@@ -398,7 +398,7 @@ class ReadSensors extends Command
             $config->increment('count_total_1');
             $config->increment('count_order_1');
             $this->info("Contadores incrementados correctamente.");
-            Log::info("Contadores incrementados correctamente.");
+            $this->info("Contadores incrementados correctamente.");
         } catch (\Exception $e) {
             $errorMessage = "Error al incrementar los contadores: " . $e->getMessage();
             $this->error($errorMessage);
@@ -450,7 +450,7 @@ class ReadSensors extends Command
 
             $successMessage = "Registro insertado en sensor_counts correctamente.";
             $this->info($successMessage);
-            Log::info($successMessage);
+            $this->info($successMessage);
         } catch (\Exception $e) {
             $errorMessage = "Error al insertar en sensor_counts: " . $e->getMessage();
             $this->error($errorMessage);
@@ -515,7 +515,7 @@ class ReadSensors extends Command
         $this->publishMqttMessage($config->mqtt_topic_1, $processedMessage);
 
         $this->info("Mensaje MQTT procesado y enviado al tópico {$config->mqtt_topic_1}");
-        //Log::info("Mensaje MQTT procesado y enviado al tópico {$config->mqtt_topic_1}: {$processedMessage}");
+        //$this->info("Mensaje MQTT procesado y enviado al tópico {$config->mqtt_topic_1}: {$processedMessage}");
     }
 
     private function sendMqttValue1($config, $value)
@@ -565,7 +565,7 @@ class ReadSensors extends Command
         $this->publishMqttMessage($config->mqtt_topic_1, $processedMessage);
 
         $this->info("Mensaje MQTT procesado y enviado al tópico {$config->mqtt_topic_1}");
-        //Log::info("Mensaje MQTT procesado y enviado al tópico {$config->mqtt_topic_1}: {$processedMessage}");
+        //$this->info("Mensaje MQTT procesado y enviado al tópico {$config->mqtt_topic_1}: {$processedMessage}");
     }
 
 

@@ -12,13 +12,14 @@
     <div class="row">
         <div class="mb-3">
             <a href="{{ route('barcodes.create', ['production_line_id' => $production_line_id]) }}" class="btn btn-primary">Añadir Nuevo Barcode</a>
+            <a href="{{ route('logs.view') }}" class="btn btn-secondary">Ver Logs</a> <!-- Botón para ver los logs -->
         </div>
         <div class="col-lg-12">
             <div class="card">
                 <div class="card-body">
                     <div class="table-responsive py-5 pb-4 dropdown_2">
                         <div class="container-fluid">
-                            <table class="table table-bordered data-table">
+                            <table class="table table-bordered data-table" id="barcodes-table">
                                 <thead>
                                     <tr>
                                         <th>ID</th>

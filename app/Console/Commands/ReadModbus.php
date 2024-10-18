@@ -151,7 +151,7 @@ class ReadModbus extends Command
             return;
         }
 
-        Log::info("Contenido del line ID {$id} JSON: " . print_r($data, true));
+        $this->info("Contenido del line ID {$id} JSON: " . print_r($data, true));
 
         $value = null;
         if (empty($config->json_api)) {
@@ -173,7 +173,7 @@ class ReadModbus extends Command
             }
         }
 
-        Log::info("Mensaje: {$config->name} (ID: {$config->id}) // topic: {$config->topic} // value: {$value}");
+        $this->info("Mensaje: {$config->name} (ID: {$config->id}) // topic: {$config->topic} // value: {$value}");
         //procesor modelo de sensor
         $this->processModel($config, $value, $data);
     }
@@ -232,14 +232,14 @@ class ReadModbus extends Command
         $mqttTopic2 = $config->mqtt_topic . '2/gross_weight';
        // Obtiene el último valor guardado
         $lastValue = $config->last_value;
-        Log::info("Mi valor:{$lastValue}");
+        $this->info("Mi valor:{$lastValue}");
         // Actualiza el valor en la base de datos si ha cambiado
         if ($updatedValue != $lastValue) {
             $updateResponse = $config->update(['last_value' => $updatedValue]);
 
             // Logea la respuesta de la actualización
             if ($updateResponse) {
-                Log::info("Actualización exitosa. Valor original: {$lastValue}, Valor actualizado: {$updatedValue}");
+                $this->info("Actualización exitosa. Valor original: {$lastValue}, Valor actualizado: {$updatedValue}");
             } else {
                 Log::error("Error en la actualización de last_value. Valor original: {$lastValue}, Valor intentado actualizar: {$updatedValue}");
             }
@@ -250,7 +250,7 @@ class ReadModbus extends Command
                 'time' => date('c')
             ];
 
-            Log::info("Mensaje MQTT: " . json_encode($message));
+            $this->info("Mensaje MQTT: " . json_encode($message));
 
             // Publica el mensaje MQTT
             $this->publishMqttMessage($mqttTopic, $message);
@@ -258,7 +258,7 @@ class ReadModbus extends Command
             $this->publishMqttMessage($mqttTopic2, $message);
         } else {
             // Logea que el valor no ha cambiado y no se envía el mensaje MQTT
-            Log::info("Mismo valor no se manda MQTT: " . json_encode(['value' => $lastValue, 'time' => date('c')]));
+            $this->info("Mismo valor no se manda MQTT: " . json_encode(['value' => $lastValue, 'time' => date('c')]));
         }
         $this->processWeightData($config, $updatedValue, $data);
     }
@@ -267,7 +267,7 @@ class ReadModbus extends Command
     public function processHeightModel($config, $value, $data)
     {
         // Lógica para procesar datos de altura
-        Log::info("Procesando modelo de altura. Valor: {$value}");
+        $this->info("Procesando modelo de altura. Valor: {$value}");
 
         // Obtener valores relevantes de la configuración
         $dimensionDefault = $config->dimension_default;
@@ -281,15 +281,15 @@ class ReadModbus extends Command
         // Calcular el valor actual
         $currentValue = $dimensionDefault - $value + $offsetMeter;
 
-        Log::info("Valor actual calculado: {$currentValue} y dimension maxima anterior : {$dimensionMax}");
+        $this->info("Valor actual calculado: {$currentValue} y dimension maxima anterior : {$dimensionMax}");
 
         // Verificar si el valor actual es mayor que el máximo registrado
         if ($currentValue > $dimensionMax) {
-            Log::info("Actualizando dimension_max: Valor actual {$currentValue} es mayor que dimension_max anterior {$dimensionMax}");
+            $this->info("Actualizando dimension_max: Valor actual {$currentValue} es mayor que dimension_max anterior {$dimensionMax}");
             $config->dimension_max = $currentValue;
             $config->save();
 
-            Log::info("Nuevo dimension_max guardado en modbuses: {$currentValue}");
+            $this->info("Nuevo dimension_max guardado en modbuses: {$currentValue}");
 
             // Actualizar dimension en otros registros de Modbuses donde dimension_id = $config->id
             Modbus::where('dimension_id', $config->id)
@@ -298,10 +298,10 @@ class ReadModbus extends Command
                     ->update(['dimension' => $currentValue]);
 
 
-        Log::info("dimension_max actualizado en otros registros de Modbuses donde dimension_id = {$config->id}");
+        $this->info("dimension_max actualizado en otros registros de Modbuses donde dimension_id = {$config->id}");
 
         } else {
-            Log::info("No se actualiza dimension_max: Valor actual {$currentValue} no es mayor que dimension_max {$dimensionMax}");
+            $this->info("No se actualiza dimension_max: Valor actual {$currentValue} no es mayor que dimension_max {$dimensionMax}");
         }
 
         if (($value + $dimensionOffset) > ($dimensionDefault - $dimensionVariation) && $dimensionMax > ($dimensionOffset + $dimensionVariation)) {
@@ -311,14 +311,14 @@ class ReadModbus extends Command
         $controlHeight->height_value = $dimensionMax;
         $controlHeight->save();
 
-        Log::info("Nuevo registro en control_heights guardado con dimension_max. Valor: {$dimensionMax}");
+        $this->info("Nuevo registro en control_heights guardado con dimension_max. Valor: {$dimensionMax}");
 
         // Reiniciar dimension_max a 0
         $config->dimension_max = 0;
         $config->save();
-        Log::info("dimension_max reiniciado a 0 en modbuses.");
+        $this->info("dimension_max reiniciado a 0 en modbuses.");
 
-            Log::info("Nuevo registro en control_heights guardado con currentValue. Valor: {$currentValue}");
+            $this->info("Nuevo registro en control_heights guardado con currentValue. Valor: {$currentValue}");
         }
 
     }
@@ -326,7 +326,7 @@ class ReadModbus extends Command
     public function lifeTraficMonitor($config, $value)
     {
         // Lógica para procesar datos del sensor
-        Log::info("Monitor de trafico. Valor: {$value}");
+        $this->info("Monitor de trafico. Valor: {$value}");
 
         // Consultar el último valor guardado para este sensor
         $lastRecord = LiveTrafficMonitor::where('modbus_id', $config->id)
@@ -335,7 +335,7 @@ class ReadModbus extends Command
 
         // Comprobar si el nuevo valor es diferente al último valor registrado
         if ($lastRecord && $lastRecord->value == $value) {
-            Log::info("El valor no ha cambiado. No se guarda el nuevo valor.");
+            $this->info("El valor no ha cambiado. No se guarda el nuevo valor.");
             return;
         }
 
@@ -394,7 +394,7 @@ class ReadModbus extends Command
             // Verificar si el JSON tiene el campo 'check' y usarlo para asignar a maxKg
             if (isset($data['check'])) {
                 $maxKg = $data['check'] /10;
-                //Log::info("Se ha obtenido el valor de 'check' desde el JSON: {$maxKg}");
+                //$this->info("Se ha obtenido el valor de 'check' desde el JSON: {$maxKg}");
             } else {
                // Log::warning("No se encontró el campo 'check' en los datos recibidos.");
             }
@@ -436,7 +436,7 @@ class ReadModbus extends Command
             ]);
 
             // Log informativo de los datos guardados
-            Log::info("Datos guardados en control_weight", [
+            $this->info("Datos guardados en control_weight", [
                 'modbus_id' => $controlWeight->modbus_id,
                 'last_control_weight' => $controlWeight->last_control_weight,
                 'last_dimension' => $controlWeight->last_dimension,
@@ -503,7 +503,7 @@ class ReadModbus extends Command
             if (!is_null($config->printer_id) && trim($config->printer_id)) {
                 $this->printLabel($config, $uniqueBarcoder);
             } else {
-                Log::info('No hay configuración para imprimir una etiqueta.');
+                $this->info('No hay configuración para imprimir una etiqueta.');
             }
         }
 
@@ -543,7 +543,7 @@ class ReadModbus extends Command
                     ->content($base64Image)
                     ->send();
 
-                Log::info('Etiqueta impresa correctamente.');
+                $this->info('Etiqueta impresa correctamente.');
             } catch (\Exception $e) {
                 Log::error('Error al imprimir la etiqueta: ' . $e->getMessage());
                 // Opcional: Mostrar mensaje de error al usuario
@@ -563,7 +563,7 @@ class ReadModbus extends Command
 
     private function callExternalApi($apiQueue, $config, $newBoxNumber, $maxKg, $dimensionFinal, $uniqueBarcoder)
     {
-        //Log::info("Llamada a la API externa para el Modbus ID: {$config->id}");
+        //$this->info("Llamada a la API externa para el Modbus ID: {$config->id}");
 
         $dataToSend = [
             'token' => $apiQueue->token_back,
@@ -586,7 +586,7 @@ class ReadModbus extends Command
             }
 
             if ($response->successful()) {
-                Log::info("Respuesta exitosa de la API externa para el Modbus ID: {$config->id}", [
+                $this->info("Respuesta exitosa de la API externa para el Modbus ID: {$config->id}", [
                     'response' => $response->json(),
                 ]);
             } else {
