@@ -29,11 +29,6 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="token">{{ __('Token') }}</label>
-                            <input type="text" class="form-control" id="token" name="token" required>
-                        </div>
-
-                        <div class="form-group">
                             <label for="mqtt_topic_barcodes">{{ __('MQTT Topic Barcodes') }}</label>
                             <input type="text" class="form-control" id="mqtt_topic_barcodes" name="mqtt_topic_barcodes" required>
                         </div>
