@@ -190,6 +190,7 @@
     let animacion;
     let animacionData;
     let materialOptions = []; // Array para almacenar los materiales
+    let isSwalOpen = false; // Estado para verificar si el Swal está abierto
 
     $(document).ready(function() {
       $('.material-select').select2({
@@ -212,7 +213,7 @@
       // Cargar los datos de SCADA cada 0.3 segundos
       setInterval(cargarScadaData, 300);
 
-      // Cargar la animación de Lottie
+      // Cargar la animación de Lottie solo una vez al inicio
       cargarJSON();
 
       // Cargar los materiales de la API
@@ -263,6 +264,7 @@
       }
     }
 
+    // Cargar la animación de Lottie solo una vez
     async function cargarJSON() {
       try {
         const response = await fetch('hoppers_complete.json');  // Asegúrate de que la ruta sea correcta
@@ -277,6 +279,7 @@
       }
     }
 
+    // Solo cargamos la animación una vez para evitar problemas de refresco
     function cargarAnimacion(data) {
       if (animacion) {
         animacion.destroy();  // Si ya existe una animación, la destruimos antes de cargar una nueva
@@ -293,6 +296,7 @@
       });
     }
 
+    // Función para actualizar solo los valores dinámicos de las tolvas
     function actualizarValoresTolvas(modbusLines) {
       modbusLines.forEach((tolva, index) => {
         const tolvaId = `hopper${index + 1}`;
@@ -303,10 +307,13 @@
         $(`#tolvaRelleno_${tolvaId}`).text(`Relleno: ${porcentajeRelleno}%`);
 
         // Llamar a la función para modificar el slider cada vez que se calcule el porcentaje de relleno
-        cerrarYModificarSlider(porcentajeRelleno, tolvaId);
+        if (!isSwalOpen) {  // Evitar modificar el slider si el Swal está abierto
+          cerrarYModificarSlider(porcentajeRelleno, tolvaId);
+        }
       });
     }
 
+    // Función para generar las tarjetas de tolvas
     function generarTarjetasTolvas(modbusLines) {
       const container = document.querySelector('.columna-derecha');
       container.innerHTML = '';  // Limpiar contenido anterior
@@ -342,13 +349,17 @@
       });
     }
 
+    // Función para calcular el porcentaje de relleno
     function calcularPorcentajeRelleno(m3, density, lastKg) {
       const pesoMaximo = m3 * density;  // Calcular el peso máximo que puede soportar la tolva
       const porcentajeRelleno = (lastKg / pesoMaximo) * 100;  // Calcular el porcentaje
       return Math.min(100, porcentajeRelleno.toFixed(2));  // Limitar a 100% como máximo
     }
 
+    // Función para mostrar las opciones del Swal
     function mostrarOpciones(tolvaId) {
+      isSwalOpen = true;  // Establecer que el Swal está abierto
+
       Swal.fire({
         title: 'Opciones de Tolva',
         text: 'Seleccione una acción',
@@ -359,10 +370,14 @@
         },
         html: `
           <button class="btn-vaciar" onclick="cerrarYModificarSlider(0, '${tolvaId}')">VACIAR</button>
-        `
+        `,
+        willClose: () => {
+          isSwalOpen = false;  // Volver a false cuando el Swal se cierre
+        }
       });
     }
 
+    // Función para modificar el slider
     function cerrarYModificarSlider(nuevoValor, tolvaId) {
       Swal.close();
       setTimeout(function() {
@@ -370,6 +385,7 @@
       }, 300);
     }
 
+    // Función para modificar el slider gradualmente
     function modificarSliderGradual(nuevoValor, tolvaId) {
       console.log("Cambiando el valor del slider a:", nuevoValor, "para la tolva:", tolvaId);
 
@@ -388,5 +404,6 @@
       }
     }
   </script>
+
 </body>
 </html>
