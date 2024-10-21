@@ -154,23 +154,26 @@ class StoreQueueController extends Controller
         $value = $request->query('value', $request->input('value'));
         $urlBack = $request->query('url_back', $request->input('url_back'));
         $tokenBack = $request->query('token_back', $request->input('token_back'));
-
+    
         Log::debug("Solicitud recibida: " . $request->method() . " " . $request->fullUrl());
         Log::debug("Parámetros: token=$token, value=$value, url_back=$urlBack, token_back=$tokenBack");
-
+    
         // Validación de datos
         try {
             $request->validate([
                 'token' => 'required|exists:modbuses,token',
                 'value' => 'required|string', // Asumiendo que el valor es una cadena
                 'url_back' => 'required|url', // Validar que sea una URL válida
-                'token_back' => 'required|string', // Validar que sea una cadena
+                'token_back' => 'nullable|string', // Ahora es opcional, puede ser null o vacío
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error("Error de validación: " . $e->getMessage());
             return response()->json(['error' => 'Datos inválidos'], 422);
         }
-
+    
+        // Si token_back es null, asignar una cadena vacía
+        $tokenBack = $tokenBack ?? '';
+    
         // Obtener el Modbus asociado al token
         try {
             $modbus = Modbus::where('token', $token)->firstOrFail();
@@ -179,21 +182,22 @@ class StoreQueueController extends Controller
             Log::error("Modbus no encontrado para el token: $token");
             return response()->json(['error' => 'Token inválido'], 401); // No autorizado
         }
-
+    
         // Crear el registro en api_queue_prints
         try {
             ApiQueuePrint::create([
                 'modbus_id' => $modbus->id,
                 'value' => $value,
                 'url_back' => $urlBack, // Guardar la URL de retorno
-                'token_back' => $tokenBack, // Guardar el token de retorno
+                'token_back' => $tokenBack, // Guardar el token de retorno o una cadena vacía
             ]);
             Log::debug("Valor agregado a la cola de impresión: $value, url_back=$urlBack, token_back=$tokenBack");
         } catch (\Exception $e) {
             Log::error("Error al crear registro en api_queue_prints: " . $e->getMessage());
             return response()->json(['error' => 'Error interno del servidor'], 500);
         }
-
+    
         return response()->json(['message' => 'Valor agregado a la cola de impresión']);
     }
+    
 }

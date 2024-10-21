@@ -23,31 +23,34 @@ class PublishToMqttServer1 extends Command
 
     public function handle()
     {
-        while (true) {
-            try {
-                $mqttEntries = MqttSendServer1::all();
+        if ($this->initializeMqttClient()) { // Inicializar la conexión al inicio
 
-                foreach ($mqttEntries as $entry) {
-                    if ($this->initializeMqttClient()) {
+            while (true) {
+                try {
+                    $mqttEntries = MqttSendServer1::all();
+
+                    foreach ($mqttEntries as $entry) {
                         if ($this->publishToMqtt($entry)) {
                             $entry->delete(); // Elimina la entrada después de publicarla exitosamente
                         }
-                        $this->disconnectMqttClient();
                     }
+
+                    usleep(100000); // Pausa para evitar sobrecarga
+
+                } catch (\Exception $e) {
+                    Log::error("Error in MQTT Server 1 publish loop: " . $e->getMessage());
+                    $this->reconnectClient(); // Intentar reconectar si hay un error
                 }
-
-                usleep(100000);
-
-            } catch (\Exception $e) {
-                Log::error("Error in MQTT Server 1 publish loop: " . $e->getMessage());
             }
+
+            $this->disconnectMqttClient(); // Desconectar al final del proceso
         }
     }
 
     private function initializeMqttClient()
     {
         $connectionSettings = new ConnectionSettings();
-        $connectionSettings->setKeepAliveInterval(60);
+        $connectionSettings->setKeepAliveInterval(60); // Mantener viva la conexión
         $connectionSettings->setUseTls(false);
         $connectionSettings->setTlsSelfSignedAllowed(false);
 
@@ -55,10 +58,10 @@ class PublishToMqttServer1 extends Command
 
         try {
             $this->mqtt->connect($connectionSettings, true);
+            $this->info("Conectado a MQTT Server 1");
             return true;
         } catch (ConnectionException $e) {
-            $this->error("Connection error on MQTT Server 1: " . $e->getMessage());
-            $this->reconnectClient();
+            $this->error("Error de conexión con MQTT Server 1: " . $e->getMessage());
             return false;
         }
     }
@@ -66,12 +69,11 @@ class PublishToMqttServer1 extends Command
     private function publishToMqtt($entry)
     {
         try {
-            $this->mqtt->publish($entry->topic, $entry->json_data, 0);
-            $this->info("Mesaje enviado a MQTT Server 1 topico: " . $entry->topic . " json_data: " . $entry->json_data . " Servidor: " . env('MQTT_SERVER') . " port: " . env('MQTT_PORT'));
+            $this->mqtt->publish($entry->topic, $entry->json_data, 0); // Publicar con QoS 0
+            $this->info("Mensaje enviado a MQTT Server 1 topico: " . $entry->topic . " json_data: " . $entry->json_data);
             return true;
         } catch (DataTransferException $e) {
-            $this->error("Data transfer error on MQTT Server 1: " . $e->getMessage());
-            $this->reconnectClient();
+            $this->error("Error de transferencia de datos en MQTT Server 1: " . $e->getMessage());
             return false;
         }
     }
@@ -81,7 +83,7 @@ class PublishToMqttServer1 extends Command
         if ($this->mqtt) {
             try {
                 $this->mqtt->disconnect();
-                $this->info("Servidor desconectado por petición servidor1");
+                $this->info("Desconectado del servidor MQTT 1");
             } catch (\Exception $e) {
                 $this->error("Error al desconectar el cliente MQTT: " . $e->getMessage());
             }
@@ -91,15 +93,15 @@ class PublishToMqttServer1 extends Command
     private function reconnectClient()
     {
         try {
-            $this->initializeMqttClient();
-            $this->info("Successfully reconnected to MQTT Server 1");
+            $this->initializeMqttClient(); // Intentar reconectar si es necesario
+            $this->info("Reconectado exitosamente a MQTT Server 1");
         } catch (\Exception $e) {
-            Log::error("Failed to reconnect to MQTT Server 1: " . $e->getMessage());
+            Log::error("Fallo al reconectar con MQTT Server 1: " . $e->getMessage());
         }
     }
 
     public function __destruct()
     {
-        $this->disconnectMqttClient();
+        $this->disconnectMqttClient(); // Asegurar la desconexión al finalizar el script
     }
 }
