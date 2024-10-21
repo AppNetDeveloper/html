@@ -39,7 +39,7 @@ class PublishToMqttServer2 extends Command
                 usleep(100000);
 
             } catch (\Exception $e) {
-                Log::error("Error in MQTT Server 2 publish loop: " . $e->getMessage());
+                $this->error("Error in MQTT Server 2 publish loop: " . $e->getMessage());
             }
         }
     }
@@ -55,8 +55,10 @@ class PublishToMqttServer2 extends Command
 
         try {
             $this->mqtt->connect($connectionSettings, true);
+
+            $this->info("Successfully connected to MQTT Server 2");
         } catch (ConnectionException $e) {
-            Log::error("Connection error on MQTT Server 2: " . $e->getMessage());
+            $this->error("Connection error on MQTT Server 2: " . $e->getMessage());
             $this->reconnectClient();
         }
     }
@@ -65,9 +67,10 @@ class PublishToMqttServer2 extends Command
     {
         try {
             $this->mqtt->publish($entry->topic, $entry->json_data, 0);
+            $this->info("Successfully published to MQTT Server 2: " . $entry->topic);
             return true;
         } catch (DataTransferException $e) {
-            Log::error("Data transfer error on MQTT Server 2: " . $e->getMessage());
+            $this->error("Data transfer error on MQTT Server 2: " . $e->getMessage());
             $this->reconnectClient();
             return false;
         }
@@ -79,7 +82,7 @@ class PublishToMqttServer2 extends Command
             $this->initializeMqttClient();
             $this->info("Successfully reconnected to MQTT Server 2");
         } catch (\Exception $e) {
-            Log::error("Failed to reconnect to MQTT Server 2: " . $e->getMessage());
+            $this->error("Failed to reconnect to MQTT Server 2: " . $e->getMessage());
         }
     }
 
