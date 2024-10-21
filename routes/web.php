@@ -23,6 +23,7 @@ use App\Http\Controllers\MonitorOeeController;
 use App\Http\Controllers\LogController;
 
 
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -132,6 +133,8 @@ Route::get('productionlines/{production_line_id}/modbuses/create', [ModbusContro
 
 // Ruta para almacenar el nuevo Modbus
 Route::post('productionlines/{production_line_id}/modbuses', [ModbusController::class, 'store'])->name('modbuses.store');
+
+Route::delete('productionlines/{production_line_id}/modbuses/{modbus}', [ModbusController::class, 'destroy'])->name('modbuses.destroy');
 
 // Ruta para mostrar el formulario de edición
 Route::get('modbuses/{id}/edit', [ModbusController::class, 'edit'])->name('modbuses.edit');

@@ -13,9 +13,11 @@ class Scada extends Model
     protected $table = 'scada';
 
     protected $fillable = [
-        'production_line_id', 
-        'name', 
-        'token'
+        'scada_id', 
+        'modbus_id', 
+        'fillinglevels', 
+        'material_type',
+        'm3'
     ];
 
     // Generar token automáticamente al crear el modelo

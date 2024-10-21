@@ -12,7 +12,8 @@ use App\Http\Controllers\Api\ZerotierIpBarcoderController;
 use App\Http\Controllers\BarcodeController;
 use App\Http\Controllers\Api\SensorController;
 use App\Http\Controllers\Api\OrderStatsController;
-
+use App\Http\Controllers\Api\ScadaController;
+use App\Http\Controllers\Api\ScadaMaterialTypeController;
 
 
 /*
@@ -63,6 +64,12 @@ Route::match(['get', 'post'], '/sensors', [SensorController::class, 'getAllSenso
 Route::match(['get', 'post'], '/order-stats', [OrderStatsController::class, 'getLastOrderStat']);
 
 Route::match(['get', 'post'], '/order-stats-all', [OrderStatsController::class, 'getOrderStatsBetweenDates']);
+
+
+Route::get('scada/{token}', [ScadaController::class, 'getModbusesByScadaToken']);
+
+Route::get('scada-material/{token}', [ScadaMaterialTypeController::class, 'getScadaMaterialByToken']);
+
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();

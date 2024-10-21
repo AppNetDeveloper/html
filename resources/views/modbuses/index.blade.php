@@ -26,11 +26,12 @@
                                     <td>{{ $modbus->last_value }}</td>
                                     <td>
                                         <a href="{{ route('modbuses.edit', $modbus->id) }}" class="btn btn-sm btn-primary">Editar</a>
-                                        <form action="{{ route('modbuses.destroy', $modbus->id) }}" method="POST" style="display:inline;">
+                                        <form action="{{ route('modbuses.destroy', ['production_line_id' => $production_line_id, 'modbus' => $modbus->id]) }}" method="POST" style="display:inline;">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro?')">Eliminar</button>
                                         </form>
+
                                         
                                         <a href="/live-weight/live.html?token={{ $modbus->token }}" class="btn btn-sm btn-primary">Live View</a>
                                     </td>

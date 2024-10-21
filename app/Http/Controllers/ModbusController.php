@@ -86,11 +86,12 @@ class ModbusController extends Controller
         return redirect()->route('modbuses.index', $modbus->production_line_id)->with('success', 'Modbus actualizado correctamente.');
     }
 
-    public function destroy($id)
+    public function destroy($production_line_id, $modbus)
     {
-        $modbus = Modbus::findOrFail($id);
+        // Encuentra el modbus y elimínalo
+        $modbus = Modbus::findOrFail($modbus);
         $modbus->delete();
-
-        return redirect()->route('modbuses.index', $modbus->production_line_id)->with('success', 'Modbus eliminado correctamente.');
+    
+        return redirect()->route('modbuses.index', $production_line_id)->with('success', 'Modbus eliminado con éxito');
     }
 }

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="es">
 <head>
   <title>BOISOLO SCADA</title>
@@ -106,7 +106,7 @@
     }
 
     .card-tolva {
-      background-color: #ffffff; /*  #3b3c55 Nuevo color de fondo más oscuro */
+      background-color: #ffffff;
       color: #000;
       border-radius: 10px;
       padding: 15px;
@@ -182,83 +182,15 @@
         <div id="contenedorAnimacion"></div>
       </div>
       <div class="columna-derecha">
-        <div class="card-tolva">
-          <button class="settings-btn" onclick="mostrarOpciones('hopper1')">
-            <i class="fas fa-cog"></i>
-          </button>
-          <div class="card-title">Tolva 01</div>
-          <div class="card-weight">567 <span>Kg</span></div>
-          <select class="material-select">
-            <option value="arena">Arena</option>
-            <option value="cemento">Cemento</option>
-            <option value="aditivo">Aditivo</option>
-          </select>
-        </div>
-        <div class="card-tolva">
-          <button class="settings-btn" onclick="mostrarOpciones('hopper2')">
-            <i class="fas fa-cog"></i>
-          </button>
-          <div class="card-title">Tolva 02</div>
-          <div class="card-weight">345 <span>Kg</span></div>
-          <select class="material-select">
-            <option value="arena">Arena</option>
-            <option value="cemento">Cemento</option>
-            <option value="aditivo">Aditivo</option>
-          </select>
-        </div>
-        <div class="card-tolva">
-          <button class="settings-btn" onclick="mostrarOpciones('hopper3')">
-            <i class="fas fa-cog"></i>
-          </button>
-          <div class="card-title">Tolva 03</div>
-          <div class="card-weight">412 <span>Kg</span></div>
-          <select class="material-select">
-            <option value="arena">Arena</option>
-            <option value="cemento">Cemento</option>
-            <option value="aditivo">Aditivo</option>
-          </select>
-        </div>
-        <div class="card-tolva">
-          <button class="settings-btn" onclick="mostrarOpciones('hopper4')">
-            <i class="fas fa-cog"></i>
-          </button>
-          <div class="card-title">Tolva 04</div>
-          <div class="card-weight">390 <span>Kg</span></div>
-          <select class="material-select">
-            <option value="arena">Arena</option>
-            <option value="cemento">Cemento</option>
-            <option value="aditivo">Aditivo</option>
-          </select>
-        </div>
-        <div class="card-tolva">
-          <button class="settings-btn" onclick="mostrarOpciones('hopper5')">
-            <i class="fas fa-cog"></i>
-          </button>
-          <div class="card-title">Tolva 05</div>
-          <div class="card-weight">278 <span>Kg</span></div>
-          <select class="material-select">
-            <option value="arena">Arena</option>
-            <option value="cemento">Cemento</option>
-            <option value="aditivo">Aditivo</option>
-          </select>
-        </div>
-        <div class="card-tolva">
-          <button class="settings-btn" onclick="mostrarOpciones('mix')">
-            <i class="fas fa-cog"></i>
-          </button>
-          <div class="card-title">Tolva 06</div>
-          <div class="card-weight">320 <span>Kg</span></div>
-          <select class="material-select">
-            <option value="arena">Arena</option>
-            <option value="cemento">Cemento</option>
-            <option value="aditivo">Aditivo</option>
-          </select>
-        </div>
+        <!-- Aquí se generarán dinámicamente las tarjetas de tolvas -->
       </div>
     </div>
   </main>
-
   <script>
+    let animacion;
+    let animacionData;
+    let materialOptions = []; // Array para almacenar los materiales
+
     $(document).ready(function() {
       $('.material-select').select2({
         placeholder: 'Seleccione un material',
@@ -277,16 +209,66 @@
         document.getElementById('timeDisplay').textContent = formattedTime;
       }, 1000);
 
-      // Cargar animación Lottie
+      // Cargar los datos de SCADA cada 0.3 segundos
+      setInterval(cargarScadaData, 300);
+
+      // Cargar la animación de Lottie
       cargarJSON();
+
+      // Cargar los materiales de la API
+      cargarMateriales();
     });
 
-    let animacion;
-    let animacionData;
+    // Función para cargar los materiales
+    async function cargarMateriales() {
+      try {
+        const response = await fetch('/api/scada-material/2CWYhXCVmViVuvzBHxyzQ0QfP'); // Cambia el token según sea necesario
+        const data = await response.json();
+
+        if (data.error) {
+          console.error("Error al cargar materiales:", data.error);
+          return;
+        }
+
+        // Guardamos los materiales en el array materialOptions
+        materialOptions = data.map(material => ({
+          id: material.name,
+          text: material.name
+        }));
+
+        console.log("Materiales cargados:", materialOptions);
+      } catch (error) {
+        console.error("Error al cargar los materiales:", error);
+      }
+    }
+
+    // Función para cargar los datos de SCADA
+    async function cargarScadaData() {
+      try {
+        const response = await fetch('/api/scada/2CWYhXCVmViVuvzBHxyzQ0QfP');  // URL de la API
+        const data = await response.json();
+
+        // Actualizar el nombre de cliente (scada_name)
+        document.getElementById('scaleName').textContent = data.scada_name;
+
+        // Si las tarjetas no se han generado aún, crearlas.
+        if ($('.card-tolva').length === 0) {
+          generarTarjetasTolvas(data.modbus_lines);
+        } else {
+          // Actualizar los valores dinámicos
+          actualizarValoresTolvas(data.modbus_lines);
+        }
+      } catch (error) {
+        console.error("Error al cargar los datos SCADA:", error);
+      }
+    }
 
     async function cargarJSON() {
       try {
-        const response = await fetch('hoppers_complete.json');
+        const response = await fetch('hoppers_complete.json');  // Asegúrate de que la ruta sea correcta
+        if (!response.ok) {
+          throw new Error(`Error al cargar el JSON de animación: ${response.statusText}`);
+        }
         animacionData = await response.json();
         console.log("JSON de animación cargado exitosamente.");
         cargarAnimacion(animacionData);
@@ -297,7 +279,7 @@
 
     function cargarAnimacion(data) {
       if (animacion) {
-        animacion.destroy();
+        animacion.destroy();  // Si ya existe una animación, la destruimos antes de cargar una nueva
       }
       animacion = lottie.loadAnimation({
         container: document.getElementById('contenedorAnimacion'),
@@ -311,6 +293,61 @@
       });
     }
 
+    function actualizarValoresTolvas(modbusLines) {
+      modbusLines.forEach((tolva, index) => {
+        const tolvaId = `hopper${index + 1}`;
+        const porcentajeRelleno = calcularPorcentajeRelleno(tolva.m3, tolva.density, tolva.last_kg);
+
+        // Actualizar solo los valores dinámicos, no recrear todo el HTML
+        $(`#tolvaWeight_${tolvaId}`).text(`${tolva.last_kg} Kg`);
+        $(`#tolvaRelleno_${tolvaId}`).text(`Relleno: ${porcentajeRelleno}%`);
+
+        // Llamar a la función para modificar el slider cada vez que se calcule el porcentaje de relleno
+        cerrarYModificarSlider(porcentajeRelleno, tolvaId);
+      });
+    }
+
+    function generarTarjetasTolvas(modbusLines) {
+      const container = document.querySelector('.columna-derecha');
+      container.innerHTML = '';  // Limpiar contenido anterior
+
+      modbusLines.forEach((tolva, index) => {
+        const tolvaId = `hopper${index + 1}`;  // Generar el ID dinámico para la tolva (hopper1, hopper2, etc.)
+        
+        const porcentajeRelleno = calcularPorcentajeRelleno(tolva.m3, tolva.density, tolva.last_kg);
+
+        // Crear el HTML de la tarjeta de tolva
+        const cardHtml = `
+          <div class="card-tolva">
+            <button class="settings-btn" onclick="mostrarOpciones('${tolva.fillinglevels}')">
+              <i class="fas fa-cog"></i>
+            </button>
+            <div class="card-title">Tolva ${index + 1}</div>
+            <div id="tolvaWeight_${tolvaId}" class="card-weight">${tolva.last_kg} <span>Kg</span></div>
+            <select class="material-select" id="materialSelect_${tolvaId}"></select>
+            <div id="tolvaRelleno_${tolvaId}" class="card-weight">Relleno: ${porcentajeRelleno}%</div>
+          </div>
+        `;
+
+        // Añadir la tarjeta generada al contenedor
+        container.insertAdjacentHTML('beforeend', cardHtml);
+
+        // Cargar los materiales en el select
+        const selectElement = $(`#materialSelect_${tolvaId}`);
+        selectElement.select2({
+          placeholder: 'Seleccione un material',
+          allowClear: true,
+          data: materialOptions  // Utilizar los materiales obtenidos de la API
+        });
+      });
+    }
+
+    function calcularPorcentajeRelleno(m3, density, lastKg) {
+      const pesoMaximo = m3 * density;  // Calcular el peso máximo que puede soportar la tolva
+      const porcentajeRelleno = (lastKg / pesoMaximo) * 100;  // Calcular el porcentaje
+      return Math.min(100, porcentajeRelleno.toFixed(2));  // Limitar a 100% como máximo
+    }
+
     function mostrarOpciones(tolvaId) {
       Swal.fire({
         title: 'Opciones de Tolva',
@@ -322,11 +359,6 @@
         },
         html: `
           <button class="btn-vaciar" onclick="cerrarYModificarSlider(0, '${tolvaId}')">VACIAR</button>
-          <button class="btn-vaciar" onclick="cerrarYModificarSlider(20, '${tolvaId}')">20</button>
-          <button class="btn-vaciar" onclick="cerrarYModificarSlider(40, '${tolvaId}')">40</button>
-          <button class="btn-vaciar" onclick="cerrarYModificarSlider(60, '${tolvaId}')">60</button>
-          <button class="btn-vaciar" onclick="cerrarYModificarSlider(80, '${tolvaId}')">80</button>
-          <button class="btn-vaciar" onclick="cerrarYModificarSlider(100, '${tolvaId}')">100</button>
         `
       });
     }
@@ -349,7 +381,7 @@
             if (effects[j].nm.startsWith('fillinglevels')) {
               effects[j].ef[0].v.k = nuevoValor;
               console.log("Valor actualizado del slider en el JSON para", tolvaId, ":", nuevoValor);
-              cargarAnimacion(animacionData);
+              cargarAnimacion(animacionData);  // Volvemos a cargar la animación con los nuevos valores
             }
           }
         }
