@@ -74,7 +74,7 @@ class CheckShiftList extends Command
                 }
             }
 
-            // Esperar 60 segundos antes de la próxima verificación
+            // Esperar 0.1 segundos antes de la próxima verificación
             sleep(0.1); // Puedes ajustar el intervalo de espera según tus necesidades
 
             // Verificación de interrupción limpia
