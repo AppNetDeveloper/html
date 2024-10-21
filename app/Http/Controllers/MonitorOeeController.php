@@ -53,7 +53,7 @@ class MonitorOeeController extends Controller
 
         MonitorOee::create($request->all());
 
-        return redirect()->route('monitoroees.index')->with('success', 'Monitor OEE creado exitosamente.');
+        return redirect()->route('oee.index')->with('success', 'Monitor OEE creado exitosamente.');
     }
 
     /**
@@ -84,7 +84,7 @@ class MonitorOeeController extends Controller
         $monitorOee = MonitorOee::findOrFail($id);
         $monitorOee->update($request->all());
 
-        return redirect()->route('monitoroees.index')->with('success', 'Monitor OEE actualizado exitosamente.');
+        return redirect()->route('oee.index')->with('success', 'Monitor OEE editado exitosamente.');
     }
 
     /**
@@ -95,6 +95,6 @@ class MonitorOeeController extends Controller
         $monitorOee = MonitorOee::findOrFail($id);
         $monitorOee->delete();
 
-        return redirect()->route('monitoroees.index')->with('success', 'Monitor OEE eliminado exitosamente.');
+        return redirect()->route('oee.index')->with('success', 'Monitor OEE destruido exitosamente.');
     }
 }

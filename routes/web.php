@@ -141,6 +141,7 @@ Route::put('modbuses/{id}', [ModbusController::class, 'update'])->name('modbuses
 
 // Ruta para eliminar el Modbus
 Route::resource('oee', MonitorOeeController::class);
+
 Route::get('logs', [LogController::class, 'view'])->name('logs.view');
 
 
