@@ -71,6 +71,7 @@ Route::get('scada/{token}', [ScadaController::class, 'getModbusesByScadaToken'])
 Route::get('scada-material/{token}', [ScadaMaterialTypeController::class, 'getScadaMaterialByToken']);
 
 
+
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });

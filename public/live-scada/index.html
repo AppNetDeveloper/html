@@ -11,6 +11,11 @@
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     html, body {
       width: 100%;
@@ -19,13 +24,14 @@
       padding: 0;
       display: flex;
       flex-direction: column;
-      background-color: #1e1e2f;
+      background-color: #ffffff; /* Cambiado a blanco */
       color: #ffffff;
       font-family: 'Roboto', sans-serif;
       box-sizing: border-box;
       overflow: hidden;
-      background: url('/live-weight/9984.jpg') no-repeat center center fixed;
-      background-size: cover;
+      zoom: 0.9; /* Reduce al 80% */
+      
+      
     }
     
     header {
@@ -33,13 +39,13 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 15px 30px;
-      background-color: #28293e;
+      padding: 10px 20px; /* Disminuir estos valores reducirá la altura  del header*/
+      background-color: #343a40;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     }
     
     .logo {
-      max-width: 25%;
+      max-width: 16%;
       height: auto;
     }
     
@@ -72,7 +78,7 @@
     }
     
     .box {
-      background-color: #2e2f47;
+      background-color: #343a40;
       padding: 20px;
       margin-bottom: 20px;
       border-radius: 10px;
@@ -84,19 +90,22 @@
       align-items: flex-start;
     }
 
+
     .animacion-container {
       flex: 1;
-      max-width: 50%;
+      max-width: 80%;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center; /* Añadir esto para centrar horizontalmente */
     }
-
+    
     #contenedorAnimacion {
-      width: 100%;
-      height: 600px;
-      margin-bottom: 20px;
+      width: 180%;
+      height: 1000px;
+      margin: -20px 0 20px 20%; /* Ajusta margin-left con -10% para moverlo a la izquierda */
     }
+    
 
     .columna-derecha {
       display: grid;
@@ -111,10 +120,16 @@
       border-radius: 10px;
       padding: 15px;
       margin: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
       position: relative;
     }
+    
+    .card-tolva:hover {
+      transform: translateY(-5px); /* Le da un efecto de "flotación" al pasar el mouse */
+      box-shadow: 0 15px 25px rgba(0, 0, 0, 0.2), 0 8px 10px rgba(0, 0, 0, 0.1);
+    }
+    
 
     .settings-btn {
       position: absolute;
@@ -134,7 +149,11 @@
 
     .card-title {
       font-size: 1.5em;
-      text-align: center;
+      font-weight: 600; /* para modificar grosor nombre */
+      text-align: left;
+      font-family: 'Roboto';
+      color: #515151;
+
     }
 
     .card-weight {
@@ -144,9 +163,23 @@
       color: #ffcc00;
     }
 
+    .card-grafico {
+      background-color: #ffffff;  /* Fondo blanco */
+      color: #000;
+      border-radius: 10px;
+      padding: 15px;
+      margin: 10px 0;
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.1);
+      width: 100%; /* Ocupa todo el ancho disponible */
+      max-width: 400px; /* Tamaño máximo del gráfico */
+      height: auto; /* La altura será adaptable según el contenido */
+    }
+    
+
     .card-weight span {
-      font-size: 0.5em;
+      font-size: 0.6em;
       color: #000000;
+      font-weight: normal;
     }
 
     .material-select {
@@ -158,12 +191,27 @@
       transition: border-color 0.3s ease, box-shadow 0.3s ease;
       color: #000;
       background-color: #fff;
+      height: 60px; /* Ajuste para hacer el cuadro de selección más alto */
+      font-size: 1.2em;
     }
 
     .material-select:focus {
       border-color: #ffcc00;
       box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
       outline: none;
+    }
+
+    .select2-container--big-select .select2-selection {
+      height: 70px;
+      font-size: 1.2em;
+    }
+
+    .select2-container--big-select .select2-selection__rendered {
+      padding: 10px;
+    }
+
+    .select2-container--big-select .select2-selection__arrow {
+      height: 50px;
     }
   </style>
 </head>
@@ -195,7 +243,10 @@
     $(document).ready(function() {
       $('.material-select').select2({
         placeholder: 'Seleccione un material',
-        allowClear: true
+        allowClear: true,
+        dropdownAutoWidth: true,
+        width: '100%', // Ajuste para mejorar la experiencia táctil
+        dropdownCssClass: 'big-select', containerCssClass: 'big-select' // Añadir clase personalizada para hacer el select más grande
       });
 
       // Actualizar el reloj cada segundo
@@ -250,7 +301,8 @@
         const data = await response.json();
 
         // Actualizar el nombre de cliente (scada_name)
-        document.getElementById('scaleName').textContent = data.scada_name;
+        document.getElementById('scaleName').innerHTML = data.scada_name + "&nbsp;&nbsp;&nbsp;&nbsp;";
+
 
         // Si las tarjetas no se han generado aún, crearlas.
         if ($('.card-tolva').length === 0) {
@@ -303,8 +355,8 @@
         const porcentajeRelleno = calcularPorcentajeRelleno(tolva.m3, tolva.density, tolva.last_kg);
 
         // Actualizar solo los valores dinámicos, no recrear todo el HTML
-        $(`#tolvaWeight_${tolvaId}`).text(`${tolva.last_kg} Kg`);
-        $(`#tolvaRelleno_${tolvaId}`).text(`Relleno: ${porcentajeRelleno}%`);
+        $(`#tolvaWeight_${tolvaId}`).html(`<span style="font-size: 1.2em; font-family: 'Roboto'; font-weight: 800; color: #515151;">${tolva.last_kg} </span> <span style="font-size: 0.6em; color: #8c8c8c;">Kg</span>`);
+        $(`#tolvaRelleno_${tolvaId}`).html(`<span style="font-size: 0.5em; font-family: 'Roboto'; color: #8c8c8c">Vol. Ocupado </span> <span style="font-size: 0.7em; font-family: 'Roboto'; color: #515151;">${porcentajeRelleno} </span><span style="font-size: 0.5em; ffont-family: 'Roboto'; color: #8c8c8c;"> %</span>`);
 
         // Llamar a la función para modificar el slider cada vez que se calcule el porcentaje de relleno
         if (!isSwalOpen) {  // Evitar modificar el slider si el Swal está abierto
@@ -344,6 +396,9 @@
         selectElement.select2({
           placeholder: 'Seleccione un material',
           allowClear: true,
+          dropdownAutoWidth: true,
+          width: '100%',
+          dropdownCssClass: 'big-select',
           data: materialOptions  // Utilizar los materiales obtenidos de la API
         });
       });
@@ -369,13 +424,77 @@
           popup: 'custom-popup-class'
         },
         html: `
-          <button class="btn-vaciar" onclick="cerrarYModificarSlider(0, '${tolvaId}')">VACIAR</button>
+          <button class="btn-vaciar" onclick="confirmarVaciado('${tolvaId}')">VACIAR</button> <button class="btn-vaciar" onclick="descargaManual('${tolvaId}')">Descarga Manual</button>
         `,
         willClose: () => {
           isSwalOpen = false;  // Volver a false cuando el Swal se cierre
         }
       });
     }
+
+    // Nueva función para confirmar el vaciado
+    function confirmarVaciado(tolvaId) {
+      Swal.fire({
+        title: 'Confirmacion de Vaciado',
+        text: 'Esta seguro que desea vaciar la tolva?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Vaciar',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+          popup: 'custom-warning-popup'
+        },
+        html: `
+          <input type="number" id="inputConfirm" step="0.01" placeholder="Ingrese un valor" style="margin-top: 15px; width: 80%;"/>
+        `,
+        preConfirm: () => {
+          const inputValue = document.getElementById('inputConfirm').value;
+          if (!inputValue || isNaN(inputValue) || parseFloat(inputValue) < 0) {
+            Swal.showValidationMessage('Por favor, ingrese un numero valido con hasta 2 decimales.');
+          }
+          return inputValue;
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          isSwalOpen = false;
+        } else {
+          isSwalOpen = false;
+          Swal.close();
+        }
+      });
+    }
+
+        // Nueva función para descarga Manual
+        function descargaManual(tolvaId) {
+          Swal.fire({
+            title: 'Descarga Manual!',
+            text: 'Elije la cantidad en kg',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Descargar',
+            cancelButtonText: 'Cancelar',
+            customClass: {
+              popup: 'custom-warning-popup'
+            },
+            html: `
+              <input type="number" id="inputConfirm" step="0.01" placeholder="Ingrese un valor" style="margin-top: 15px; width: 80%;"/>
+            `,
+            preConfirm: () => {
+              const inputValue = document.getElementById('inputConfirm').value;
+              if (!inputValue || isNaN(inputValue) || parseFloat(inputValue) < 0) {
+                Swal.showValidationMessage('Por favor, ingrese un numero valido con hasta 2 decimales.');
+              }
+              return inputValue;
+            }
+          }).then((result) => {
+            if (result.isConfirmed) {
+              isSwalOpen = false;
+            } else {
+              isSwalOpen = false;
+              Swal.close();
+            }
+          });
+        }
 
     // Función para modificar el slider
     function cerrarYModificarSlider(nuevoValor, tolvaId) {
@@ -407,3 +526,4 @@
 
 </body>
 </html>
+
