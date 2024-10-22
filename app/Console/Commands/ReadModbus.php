@@ -429,6 +429,11 @@ class ReadModbus extends Command
         try {
             $controlWeight = ControlWeight::create([
                 'modbus_id' => $config->id,
+                'last_control_weight' => $maxKg,
+                'last_dimension' => $dimensionFinal,
+                'last_box_number' => $newBoxNumber,
+                'last_box_shift' => $newBoxNumberShift,
+                'last_barcoder' => $uniqueBarcoder,
                 'last_final_barcoder' => null,
             ]);
 
