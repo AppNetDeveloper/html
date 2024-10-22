@@ -371,32 +371,34 @@ class ReadModbus extends Command
     $newBoxNumberUnlimited = intval($config->rec_box_unlimited);    
         // Lógica de control de peso y repeticiones
         if ($value >= $minKg) { // Si el valor actual es mayor o igual al mínimo
-            Log::debug("Valor actual ({$value} kg) es mayor o igual al mínimo ({$minKg} kg)"); // Logging detallado
+            $this->info("Valor actual ({$value} kg) es mayor o igual al mínimo ({$minKg} kg)"); // Logging detallado
 
             if (abs($value - $lastKg) <= $variacionNumber) { // Si la variación está dentro del rango permitido
-                Log::debug("Valor estable dentro del rango de variación.");
+                $this->info("Valor estable dentro del rango de variación.");
                 $lastRep++; // Incrementar el contador de repeticiones
 
                 if ($lastRep >= $repNumber && $value >= $minKg && $value > $maxKg) { // Si se alcanza el número de repeticiones requerido, pero el valor es mas grande que minimo permitido y que el valor es mas grande que maxKG
-                    Log::debug("Número de repeticiones alcanzado. Nuevo máximo: {$value} kg");
+                    $this->info("Número de repeticiones alcanzado. Nuevo máximo: {$value} kg");
                     $maxKg = $value; // Actualizar el valor máximo
                     $lastRep = 0; // Reiniciar el contador de repeticiones
                 }
             } else {
-                Log::debug("Valor fuera del rango de variación. Reiniciando repeticiones. El valor actual es:{$value} kg, el valor minimo: {$minKg} kg");
+                $this->info("Valor fuera del rango de variación. Reiniciando repeticiones. El valor actual es:{$value} kg, el valor minimo: {$minKg} kg");
                 $lastRep = 0; // Reiniciar el contador de repeticiones si la variación está fuera del rango permitido
             }
 
             $lastKg = $value; // Actualizar el último valor con el valor actual
-        } else if ($maxKg > $minKg && $value < $minKg) { // Si el valor es menor que el mínimo y $maxKg no es nulo
-            Log::debug("Valor por debajo del mínimo. Enviando mensaje de control de peso: {$maxKg} kg");
+        } elseif ($maxKg > $minKg && $value < $minKg) { // Si el valor es menor que el mínimo y $maxKg no es nulo
+            $this->info("Valor por debajo del mínimo. Enviando mensaje de control de peso: {$maxKg} kg");
+
+
 
             // Verificar si el JSON tiene el campo 'check' y usarlo para asignar a maxKg
             if (isset($data['check'])) {
                 $maxKg = $data['check'] /10;
-                //$this->info("Se ha obtenido el valor de 'check' desde el JSON: {$maxKg}");
+                $this->info("Se ha obtenido el valor de 'check' desde el JSON: {$maxKg}");
             } else {
-               // Log::warning("No se encontró el campo 'check' en los datos recibidos.");
+                $this->warning("No se encontró el campo 'check' en los datos recibidos.");
             }
 
 
@@ -436,26 +438,10 @@ class ReadModbus extends Command
             ]);
 
             // Log informativo de los datos guardados
-            $this->info("Datos guardados en control_weight", [
-                'modbus_id' => $controlWeight->modbus_id,
-                'last_control_weight' => $controlWeight->last_control_weight,
-                'last_dimension' => $controlWeight->last_dimension,
-                'last_box_number' => $controlWeight->last_box_number,
-                'last_box_shift' => $controlWeight->last_box_shift,
-                'last_barcoder' => $controlWeight->last_barcoder,
-                'last_final_barcoder' => $controlWeight->last_final_barcoder,
-            ]);
+            $this->info("Datos guardados en control_weight");
         } catch (\Exception $e) {
             // Log de errores al intentar guardar los datos
-            Log::error("Error al guardar datos en control_weight", [
-                'error' => $e->getMessage(),
-                'modbus_id' => $config->id,
-                'last_control_weight' => $maxKg,
-                'last_dimension' => $dimensionFinal, //no tenemos medidor por momento
-                'last_box_shift' => $controlWeight->last_box_shift,
-                'last_box_number' => $newBoxNumber,
-                'last_barcoder' => $uniqueBarcoder,
-            ]);
+            $this->info("Error al guardar datos en control_weight");
         }
 
             $totalKgShift=$maxKg + $totalKgShift;
