@@ -302,6 +302,12 @@ class ReadModbus extends Command
 
         } else {
             $this->info("No se actualiza dimension_max: Valor actual {$currentValue} no es mayor que dimension_max {$dimensionMax}, ID: {$config->id}");
+            // Actualizar dimension en otros registros de Modbuses donde dimension_id = $config->id
+            Modbus::where('dimension_id', $config->id)
+                    ->where('dimension', '<', $currentValue) // Solo actualizar si el valor actual es mayor
+                    ->where('max_kg', '!=', 0) // Verifica que max_kg no sea 0
+                    ->update(['dimension' => $currentValue]);
+
         }
 
         if (($value + $dimensionOffset) > ($dimensionDefault - $dimensionVariation) && $dimensionMax > ($dimensionOffset + $dimensionVariation)) {
@@ -395,11 +401,12 @@ class ReadModbus extends Command
 
             // Verificar si el JSON tiene el campo 'check' y usarlo para asignar a maxKg
             if (isset($data['check'])) {
-                $maxKg = $data['check'] /10;
+                $maxKg = $data['check'] / 10;
                 $this->info("Se ha obtenido el valor de 'check' desde el JSON: {$maxKg}");
             } else {
-                $this->warning("No se encontró el campo 'check' en los datos recibidos.");
+                $this->info("No se encontró el campo 'check' en los datos recibidos.El valor actual es:{$value} kg");
             }
+            
 
 
             $messageControl = [
