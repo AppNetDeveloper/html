@@ -429,11 +429,6 @@ class ReadModbus extends Command
         try {
             $controlWeight = ControlWeight::create([
                 'modbus_id' => $config->id,
-                'last_control_weight' => $maxKg,
-                'last_dimension' => $dimensionFinal,
-                'last_box_number' => $newBoxNumber,
-                'last_box_shift' => $newBoxNumberShift,
-                'last_barcoder' => $uniqueBarcoder,
                 'last_final_barcoder' => null,
             ]);
 
@@ -512,7 +507,7 @@ class ReadModbus extends Command
 
         if (!$printer) {
             // Manejo de caso donde la impresora no se encuentra
-            error_log('Impresora no encontrada con el ID: ' . $config->printer_id);
+           // error_log('Impresora no encontrada con el ID: ' . $config->printer_id);
             return; // Salir de la función si no hay impresora
         }
 
@@ -541,7 +536,7 @@ class ReadModbus extends Command
             ]);
 
             if ($response->failed()) {
-                error_log('Error al llamar a la API de Python: ' . $response->body());
+               // error_log('Error al llamar a la API de Python: ' . $response->body());
             }
         }
     }
