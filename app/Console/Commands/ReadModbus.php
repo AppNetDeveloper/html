@@ -281,11 +281,11 @@ class ReadModbus extends Command
         // Calcular el valor actual
         $currentValue = $dimensionDefault - $value + $offsetMeter;
 
-        $this->info("Valor actual calculado: {$currentValue} y dimension maxima anterior : {$dimensionMax}");
+        $this->info("Valor actual calculado: {$currentValue} y dimension maxima anterior : {$dimensionMax}, ID: {$config->id}");
 
         // Verificar si el valor actual es mayor que el máximo registrado
         if ($currentValue > $dimensionMax) {
-            $this->info("Actualizando dimension_max: Valor actual {$currentValue} es mayor que dimension_max anterior {$dimensionMax}");
+            $this->info("Actualizando dimension_max: Valor actual {$currentValue} es mayor que dimension_max anterior {$dimensionMax}, ID: {$config->id}");
             $config->dimension_max = $currentValue;
             $config->save();
 
@@ -301,7 +301,7 @@ class ReadModbus extends Command
         $this->info("dimension_max actualizado en otros registros de Modbuses donde dimension_id = {$config->id}");
 
         } else {
-            $this->info("No se actualiza dimension_max: Valor actual {$currentValue} no es mayor que dimension_max {$dimensionMax}");
+            $this->info("No se actualiza dimension_max: Valor actual {$currentValue} no es mayor que dimension_max {$dimensionMax}, ID: {$config->id}");
         }
 
         if (($value + $dimensionOffset) > ($dimensionDefault - $dimensionVariation) && $dimensionMax > ($dimensionOffset + $dimensionVariation)) {
@@ -311,14 +311,14 @@ class ReadModbus extends Command
         $controlHeight->height_value = $dimensionMax;
         $controlHeight->save();
 
-        $this->info("Nuevo registro en control_heights guardado con dimension_max. Valor: {$dimensionMax}");
+        $this->info("Nuevo registro en control_heights guardado con dimension_max. Valor: {$dimensionMax}, ID: {$config->id}");
 
         // Reiniciar dimension_max a 0
         $config->dimension_max = 0;
         $config->save();
         $this->info("dimension_max reiniciado a 0 en modbuses.");
 
-            $this->info("Nuevo registro en control_heights guardado con currentValue. Valor: {$currentValue}");
+            $this->info("Nuevo registro en control_heights guardado con currentValue. Valor: {$currentValue}, ID: {$config->id}");
         }
 
     }
@@ -438,10 +438,10 @@ class ReadModbus extends Command
             ]);
 
             // Log informativo de los datos guardados
-            $this->info("Datos guardados en control_weight");
+            $this->info("Datos guardados en control_weight,el Modbus ID: {$config->id}");
         } catch (\Exception $e) {
             // Log de errores al intentar guardar los datos
-            $this->info("Error al guardar datos en control_weight");
+            $this->info("Error al guardar datos en control_weight, el Modbus ID: {$config->id}");
         }
 
             $totalKgShift=$maxKg + $totalKgShift;
@@ -480,9 +480,13 @@ class ReadModbus extends Command
                 if ($apiQueue->value == 0) {
                     $apiQueue->used = true;
                     $apiQueue->save();
+                    $this->info("No llamo a la API externa por que el valor es 0, el Modbus ID: {$config->id}");
                 } else {
                     $this->callExternalApi($apiQueue, $config, $newBoxNumber, $maxKg, $dimensionFinal, $uniqueBarcoder);
+                    $this->info("Llamada a la API externa para el Modbus ID: {$config->id}");
                 }
+            }else{
+                $this->info("No hay llamada a la API externa para el Modbus ID: {$config->id}");
             }
 
             //llamar a la impresora local para imprimir si es un bulto anonimo para habilitar bultos anonimos tenemos que anadir una impresora a la modbus si impresora no existe no se imprime, el printer_id tiene que no estar null con 0 o vacio
@@ -504,6 +508,7 @@ class ReadModbus extends Command
             'total_kg_order' => $totalKgOrder,
             'total_kg_shift' => $totalKgShift
         ]);
+        $this->info("Datos actualizados y reseteado a 0, el Modbus ID: {$config->id}");
     }
     private function printLabel($config, $uniqueBarcoder)
     {
