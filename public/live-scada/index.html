@@ -201,18 +201,26 @@
       outline: none;
     }
 
+    /* Cambiar la altura del campo select2 */
     .select2-container--big-select .select2-selection {
-      height: 70px;
-      font-size: 1.2em;
+      height: 60px;  /* Ajusta la altura del campo seleccionable */
+      display: flex;  /* Asegura que el contenido se alinee correctamente */
+      align-items: center;  /* Centra verticalmente el texto */
+      font-size: 1.2em;  /* Aumentar el tamaño de la fuente */
     }
 
+    /* Cambiar la altura del área del texto seleccionado */
     .select2-container--big-select .select2-selection__rendered {
-      padding: 10px;
+      line-height: 60px;  /* Asegura que el texto esté alineado verticalmente */
+      font-family: 'Roboto';  /* Mantener la fuente Roboto */
+      color: #8c8c8c;  /* Mantener el color */
     }
 
+    /* Cambiar el tamaño del ícono de flecha */
     .select2-container--big-select .select2-selection__arrow {
-      height: 50px;
+      height: 60px;  /* Asegura que la flecha esté alineada con la nueva altura */
     }
+
   </style>
 </head>
 <body>
@@ -271,10 +279,25 @@
       cargarMateriales();
     });
 
+    // Función para obtener el valor de un parámetro de la URL
+    function getParameterByName(name, url = window.location.href) {
+      name = name.replace(/[\[\]]/g, '\\$&');
+      const regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+      const results = regex.exec(url);
+      if (!results) return null;
+      if (!results[2]) return '';
+      return decodeURIComponent(results[2].replace(/\+/g, ' '));
+    }
+
+    // Obtener el token desde la URL
+    const token = getParameterByName('token');
+
+
+
     // Función para cargar los materiales
     async function cargarMateriales() {
       try {
-        const response = await fetch('/api/scada-material/2CWYhXCVmViVuvzBHxyzQ0QfP'); // Cambia el token según sea necesario
+        const response = await fetch(`/api/scada-material/${token}`);  // Usar el token extraído de la URL
         const data = await response.json();
 
         if (data.error) {
@@ -294,15 +317,15 @@
       }
     }
 
+
     // Función para cargar los datos de SCADA
     async function cargarScadaData() {
       try {
-        const response = await fetch('/api/scada/2CWYhXCVmViVuvzBHxyzQ0QfP');  // URL de la API
+        const response = await fetch(`/api/scada/${token}`);  // Usar el token extraído de la URL
         const data = await response.json();
 
         // Actualizar el nombre de cliente (scada_name)
         document.getElementById('scaleName').innerHTML = data.scada_name + "&nbsp;&nbsp;&nbsp;&nbsp;";
-
 
         // Si las tarjetas no se han generado aún, crearlas.
         if ($('.card-tolva').length === 0) {
@@ -315,6 +338,7 @@
         console.error("Error al cargar los datos SCADA:", error);
       }
     }
+
 
     // Cargar la animación de Lottie solo una vez
     async function cargarJSON() {
@@ -351,7 +375,7 @@
     // Función para actualizar solo los valores dinámicos de las tolvas
     function actualizarValoresTolvas(modbusLines) {
       modbusLines.forEach((tolva, index) => {
-        const tolvaId = `hopper${index + 1}`;
+        const tolvaId = `${tolva.fillinglevels}`;
         const porcentajeRelleno = calcularPorcentajeRelleno(tolva.m3, tolva.density, tolva.last_kg);
 
         // Actualizar solo los valores dinámicos, no recrear todo el HTML
@@ -365,44 +389,87 @@
       });
     }
 
-    // Función para generar las tarjetas de tolvas
-    function generarTarjetasTolvas(modbusLines) {
-      const container = document.querySelector('.columna-derecha');
-      container.innerHTML = '';  // Limpiar contenido anterior
+// Función para generar las tarjetas de tolvas
+function generarTarjetasTolvas(modbusLines) {
+  const container = document.querySelector('.columna-derecha');
+  container.innerHTML = '';  // Limpiar contenido anterior
 
-      modbusLines.forEach((tolva, index) => {
-        const tolvaId = `hopper${index + 1}`;  // Generar el ID dinámico para la tolva (hopper1, hopper2, etc.)
-        
-        const porcentajeRelleno = calcularPorcentajeRelleno(tolva.m3, tolva.density, tolva.last_kg);
+  modbusLines.forEach((tolva) => {
+    const tolvaId = `${tolva.fillinglevels}`;  // Generar el ID dinámico para la tolva
+    const porcentajeRelleno = calcularPorcentajeRelleno(tolva.m3, tolva.density, tolva.last_kg);
 
-        // Crear el HTML de la tarjeta de tolva
-        const cardHtml = `
-          <div class="card-tolva">
-            <button class="settings-btn" onclick="mostrarOpciones('${tolva.fillinglevels}')">
-              <i class="fas fa-cog"></i>
-            </button>
-            <div class="card-title">Tolva ${index + 1}</div>
-            <div id="tolvaWeight_${tolvaId}" class="card-weight">${tolva.last_kg} <span>Kg</span></div>
-            <select class="material-select" id="materialSelect_${tolvaId}"></select>
-            <div id="tolvaRelleno_${tolvaId}" class="card-weight">Relleno: ${porcentajeRelleno}%</div>
-          </div>
-        `;
+    // Crear el HTML de la tarjeta de tolva con el nombre que viene del JSON
+    const cardHtml = `
+      <div class="card-tolva">
+        <button class="settings-btn" onclick="mostrarOpciones('${tolva.id}')">
+          <i class="fas fa-cog"></i>
+        </button>
+        <div class="card-title">${tolva.name}</div> <!-- Mostrar el nombre desde el JSON -->
+        <div id="tolvaWeight_${tolvaId}" class="card-weight">${tolva.last_kg} <span>Kg</span></div>
+        <select class="material-select" id="materialSelect_${tolvaId}"></select>
+        <div id="tolvaRelleno_${tolvaId}" class="card-weight">Relleno: ${porcentajeRelleno}%</div>
+      </div>
+    `;
 
-        // Añadir la tarjeta generada al contenedor
-        container.insertAdjacentHTML('beforeend', cardHtml);
+    // Añadir la tarjeta generada al contenedor
+    container.insertAdjacentHTML('beforeend', cardHtml);
 
-        // Cargar los materiales en el select
-        const selectElement = $(`#materialSelect_${tolvaId}`);
-        selectElement.select2({
-          placeholder: 'Seleccione un material',
-          allowClear: true,
-          dropdownAutoWidth: true,
-          width: '100%',
-          dropdownCssClass: 'big-select',
-          data: materialOptions  // Utilizar los materiales obtenidos de la API
-        });
-      });
-    }
+    // Variable para controlar si el cambio es manual
+    let isUserChange = false; 
+
+    // Cargar los materiales en el select y establecer el valor seleccionado
+    const selectElement = $(`#materialSelect_${tolvaId}`);
+    selectElement.select2({
+      placeholder: 'Seleccione un material',
+      allowClear: true,
+      dropdownAutoWidth: true,
+      width: '100%',
+      dropdownCssClass: 'big-select',  // Usar la clase big-select para aplicar los estilos
+      data: materialOptions,  // Utilizar los materiales obtenidos de la API
+    
+      // Personalización del estilo de las opciones
+      templateResult: function(data) {
+        if (!data.id) {
+          return data.text;  // Placeholder sin cambios
+        }
+        const $result = $('<span style="font-family: \'Roboto\'; color: #8c8c8c; font-size: 1.9em;">' + data.text + '</span>');
+        return $result;
+      },
+    
+      // Personalización del estilo del texto seleccionado
+      templateSelection: function(data) {
+        if (!data.id) {
+          return data.text;  // Placeholder sin cambios
+        }
+        const $selection = $('<span style="font-family: \'Roboto\'; color: #8c8c8c; font-size: 1.9em;">' + data.text + '</span>');
+        return $selection;
+      }
+    });    
+    
+    // Detectar cuando el usuario selecciona manualmente una opción
+    selectElement.on('select2:select', function (e) {
+      isUserChange = true;  // Marcar que el cambio es manual
+    });
+
+    // Escuchar el evento 'change' para mostrar el alert solo si es un cambio manual
+    selectElement.on('change', function (e) {
+      if (isUserChange) {
+        const selectedOption = selectElement.select2('data')[0];  // Obtener el objeto completo de la opción seleccionada
+        const selectedValue = selectedOption.text;  // Obtener el texto (nombre del material)
+        const selectedId = selectedOption.id;  // Obtener el ID del material
+        alert('Valor cambiado a: ' + selectedValue + ', ID: ' + selectedId);  // Mostrar el alert con el texto y el ID
+        isUserChange = false;  // Reiniciar el indicador después del cambio
+      }
+    });
+
+    // Preseleccionar el material basado en "material_type"
+    selectElement.val(tolva.material_type).trigger('change');  // Preseleccionar el material correspondiente
+    //una vez cargado volvemos a poner true para que funcione el cambio
+    isUserChange = true;  // Marcar que el cambio es manual
+  });
+}
+
+    
 
     // Función para calcular el porcentaje de relleno
     function calcularPorcentajeRelleno(m3, density, lastKg) {
@@ -435,7 +502,7 @@
     // Nueva función para confirmar el vaciado
     function confirmarVaciado(tolvaId) {
       Swal.fire({
-        title: 'Confirmacion de Vaciado',
+        title: 'Confirmacion de Vaciado Tolva ',
         text: 'Esta seguro que desea vaciar la tolva?',
         icon: 'warning',
         showCancelButton: true,

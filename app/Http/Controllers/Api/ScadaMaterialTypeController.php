@@ -27,7 +27,9 @@ class ScadaMaterialTypeController extends Controller
 
         // Crear un array de respuesta con los nombres de los materiales
         $materialNames = $materials->map(function ($material) {
-            return ['name' => $material->name];
+            return ['id' => $material->id,
+            'name' => $material->name
+        ];
         });
 
         // Retornar el resultado en JSON
