@@ -70,6 +70,11 @@ Route::get('scada/{token}', [ScadaController::class, 'getModbusesByScadaToken'])
 
 Route::get('scada-material/{token}', [ScadaMaterialTypeController::class, 'getScadaMaterialByToken']);
 
+Route::put('/modbus/{modbusId}/material', [ScadaController::class, 'updateMaterialForModbus']);
+
+Route::post('/modbus/send', [ModbusController::class, 'sendDosage']);
+
+Route::post('/modbus/zero', [ModbusController::class, 'setZero']);
 
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {

@@ -85,4 +85,33 @@ class ScadaController extends Controller
 
         return response()->json($response, 200);
     }
+
+    /**
+     * Actualiza el material asociado a una línea de Modbus en ScadaList.
+     *
+     * @param Request $request
+     * @param int $modbusId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateMaterialForModbus(Request $request, $modbusId)
+    {
+        // Validar los datos entrantes
+        $validatedData = $request->validate([
+            'material_type_id' => 'required|exists:scada_material_type,id',  // Asegúrate de que el id del material existe
+        ]);
+
+        // Buscar la línea en scada_list usando el modbus_id
+        $scadaList = ScadaList::where('modbus_id', $modbusId)->first();
+
+        if (!$scadaList) {
+            return response()->json(['error' => 'ScadaList not found for the given Modbus ID'], 404);
+        }
+
+        // Actualizar el material_type_id
+        $scadaList->material_type_id = $validatedData['material_type_id'];
+        $scadaList->save();  // Guardar los cambios en la base de datos
+
+        // Devolver una respuesta de éxito
+        return response()->json(['message' => 'Material updated successfully'], 200);
+    }
 }

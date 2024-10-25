@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <title>BOISOLO SCADA</title>
+  <meta charset="UTF-8">
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
@@ -221,6 +222,25 @@
       height: 60px;  /* Asegura que la flecha esté alineada con la nueva altura */
     }
 
+
+      /* Estilos para el botón flotante */
+  #botonRefrescar {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #008CBA; /* Color azul */
+    color: white;
+    padding: 15px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+  }
+
+  #botonRefrescar:hover {
+    background-color: #005f73; /* Azul más oscuro al pasar el ratón */
+  }
+
   </style>
 </head>
 <body>
@@ -293,7 +313,6 @@
     const token = getParameterByName('token');
 
 
-
     // Función para cargar los materiales
     async function cargarMateriales() {
       try {
@@ -307,8 +326,8 @@
 
         // Guardamos los materiales en el array materialOptions
         materialOptions = data.map(material => ({
-          id: material.name,
-          text: material.name
+          id: material.id,  // Usar el id correcto
+          text: material.name  // Usar el nombre como texto
         }));
 
         console.log("Materiales cargados:", materialOptions);
@@ -316,7 +335,6 @@
         console.error("Error al cargar los materiales:", error);
       }
     }
-
 
     // Función para cargar los datos de SCADA
     async function cargarScadaData() {
@@ -338,7 +356,6 @@
         console.error("Error al cargar los datos SCADA:", error);
       }
     }
-
 
     // Cargar la animación de Lottie solo una vez
     async function cargarJSON() {
@@ -376,11 +393,11 @@
     function actualizarValoresTolvas(modbusLines) {
       modbusLines.forEach((tolva, index) => {
         const tolvaId = `${tolva.fillinglevels}`;
-        const porcentajeRelleno = calcularPorcentajeRelleno(tolva.m3, tolva.density, tolva.last_kg);
+        const porcentajeRelleno = calcularPorcentajeRelleno(tolva.m3, tolva.density, tolva.last_value);
 
         // Actualizar solo los valores dinámicos, no recrear todo el HTML
-        $(`#tolvaWeight_${tolvaId}`).html(`<span style="font-size: 1.2em; font-family: 'Roboto'; font-weight: 800; color: #515151;">${tolva.last_kg} </span> <span style="font-size: 0.6em; color: #8c8c8c;">Kg</span>`);
-        $(`#tolvaRelleno_${tolvaId}`).html(`<span style="font-size: 0.5em; font-family: 'Roboto'; color: #8c8c8c">Vol. Ocupado </span> <span style="font-size: 0.7em; font-family: 'Roboto'; color: #515151;">${porcentajeRelleno} </span><span style="font-size: 0.5em; ffont-family: 'Roboto'; color: #8c8c8c;"> %</span>`);
+        $(`#tolvaWeight_${tolvaId}`).html(`<span style="font-size: 1.2em; font-family: 'Roboto'; font-weight: 800; color: #515151;">${tolva.last_value} </span> <span style="font-size: 0.6em; color: #8c8c8c;">Kg</span>`);
+        $(`#tolvaRelleno_${tolvaId}`).html(`<span style="font-size: 0.5em; font-family: 'Roboto'; color: #8c8c8c">Vol. Ocupado </span> <span style="font-size: 0.7em; font-family: 'Roboto'; color: #515151;">${porcentajeRelleno} </span><span style="font-size: 0.5em; font-family: 'Roboto'; color: #8c8c8c;"> %</span>`);
 
         // Llamar a la función para modificar el slider cada vez que se calcule el porcentaje de relleno
         if (!isSwalOpen) {  // Evitar modificar el slider si el Swal está abierto
@@ -389,87 +406,163 @@
       });
     }
 
-// Función para generar las tarjetas de tolvas
-function generarTarjetasTolvas(modbusLines) {
-  const container = document.querySelector('.columna-derecha');
-  container.innerHTML = '';  // Limpiar contenido anterior
+    // Función para generar las tarjetas de tolvas
+    function generarTarjetasTolvas(modbusLines) {
+      const container = document.querySelector('.columna-derecha');
+      container.innerHTML = '';  // Limpiar contenido anterior
 
-  modbusLines.forEach((tolva) => {
-    const tolvaId = `${tolva.fillinglevels}`;  // Generar el ID dinámico para la tolva
-    const porcentajeRelleno = calcularPorcentajeRelleno(tolva.m3, tolva.density, tolva.last_kg);
+      modbusLines.forEach((tolva) => {
+        const tolvaId = `${tolva.fillinglevels}`;  // Generar el ID dinámico para la tolva
+        const porcentajeRelleno = calcularPorcentajeRelleno(tolva.m3, tolva.density, tolva.last_value);
 
-    // Crear el HTML de la tarjeta de tolva con el nombre que viene del JSON
-    const cardHtml = `
-      <div class="card-tolva">
-        <button class="settings-btn" onclick="mostrarOpciones('${tolva.id}')">
-          <i class="fas fa-cog"></i>
-        </button>
-        <div class="card-title">${tolva.name}</div> <!-- Mostrar el nombre desde el JSON -->
-        <div id="tolvaWeight_${tolvaId}" class="card-weight">${tolva.last_kg} <span>Kg</span></div>
-        <select class="material-select" id="materialSelect_${tolvaId}"></select>
-        <div id="tolvaRelleno_${tolvaId}" class="card-weight">Relleno: ${porcentajeRelleno}%</div>
-      </div>
-    `;
+        // Crear el HTML de la tarjeta de tolva con el nombre que viene del JSON
+        const cardHtml = `
+          <div class="card-tolva">
+            <button class="settings-btn" onclick="solicitarContrasena('${tolva.id}', '${tolva.token}', '${tolva.last_value}', '${tolva.name}')">
+              <i class="fas fa-cog"></i>
+            </button>
+            <div class="card-title">${tolva.name}</div> <!-- Mostrar el nombre desde el JSON -->
+            <div id="tolvaWeight_${tolvaId}" class="card-weight">${tolva.last_value} <span>Kg</span></div>
+            <select class="material-select" id="materialSelect_${tolvaId}"></select>
+            <div id="tolvaRelleno_${tolvaId}" class="card-weight">Relleno: ${porcentajeRelleno}%</div>
+          </div>
+        `;
 
-    // Añadir la tarjeta generada al contenedor
-    container.insertAdjacentHTML('beforeend', cardHtml);
+        // Añadir la tarjeta generada al contenedor
+        container.insertAdjacentHTML('beforeend', cardHtml);
 
-    // Variable para controlar si el cambio es manual
-    let isUserChange = false; 
+        // Variable para controlar si el cambio es manual
+        let isUserChange = false; 
 
-    // Cargar los materiales en el select y establecer el valor seleccionado
-    const selectElement = $(`#materialSelect_${tolvaId}`);
-    selectElement.select2({
-      placeholder: 'Seleccione un material',
-      allowClear: true,
-      dropdownAutoWidth: true,
-      width: '100%',
-      dropdownCssClass: 'big-select',  // Usar la clase big-select para aplicar los estilos
-      data: materialOptions,  // Utilizar los materiales obtenidos de la API
-    
-      // Personalización del estilo de las opciones
-      templateResult: function(data) {
-        if (!data.id) {
-          return data.text;  // Placeholder sin cambios
+        // Cargar los materiales en el select y establecer el valor seleccionado
+        const selectElement = $(`#materialSelect_${tolvaId}`);
+        selectElement.select2({
+          placeholder: 'Seleccione un material',
+          allowClear: true,
+          dropdownAutoWidth: true,
+          width: '100%',
+          dropdownCssClass: 'big-select',  // Usar la clase big-select para aplicar los estilos
+          data: materialOptions,  // Utilizar los materiales obtenidos de la API
+          
+          // Personalización del estilo de las opciones
+          templateResult: function(data) {
+            if (!data.id) {
+              return data.text;  // Placeholder sin cambios
+            }
+            const $result = $('<span style="font-family: \'Roboto\'; color: #8c8c8c; font-size: 1.9em;">' + data.text + '</span>');
+            return $result;
+          },
+        
+          // Personalización del estilo del texto seleccionado
+          templateSelection: function(data) {
+            if (!data.id) {
+              return data.text;  // Placeholder sin cambios
+            }
+            const $selection = $('<span style="font-family: \'Roboto\'; color: #8c8c8c; font-size: 1.9em;">' + data.text + '</span>');
+            return $selection;
+          }
+        });    
+        
+        // Detectar cuando el usuario selecciona manualmente una opción
+        selectElement.on('select2:select', function (e) {
+          isUserChange = true;  // Marcar que el cambio es manual
+        });
+
+        // Escuchar el evento 'change' para hacer la llamada API solo si es un cambio manual
+        selectElement.on('change', function (e) {
+          if (isUserChange) {
+            const selectedOption = selectElement.select2('data')[0];  // Obtener el objeto completo de la opción seleccionada
+            const selectedValue = selectedOption.text;  // Obtener el texto (nombre del material)
+            const selectedId = selectedOption.id;  // Obtener el ID del material
+            
+
+            // Realizar la llamada a la API para cambiar el material
+            confirmarCambioMaterial(tolva, selectedId, selectedValue)
+          }
+        });
+
+        // Preseleccionar el material basado en "material_type"
+        const materialOption = materialOptions.find(option => option.text === tolva.material_type);
+        if (materialOption) {
+          selectElement.val(materialOption.id).trigger('change');  // Preseleccionar el material correspondiente
         }
-        const $result = $('<span style="font-family: \'Roboto\'; color: #8c8c8c; font-size: 1.9em;">' + data.text + '</span>');
-        return $result;
-      },
-    
-      // Personalización del estilo del texto seleccionado
-      templateSelection: function(data) {
-        if (!data.id) {
-          return data.text;  // Placeholder sin cambios
+        isUserChange = true;  // Marcar que el cambio es manual después de la preselección
+      });
+    }
+
+    // Confirmación antes de hacer la llamada a la API
+    function confirmarCambioMaterial(tolva, selectedId, selectedValue) {
+      const selectElement = $(`#materialSelect_${tolva.fillinglevels}`);
+      const originalId = selectElement.val();  // Guardamos el ID del material actual antes de hacer el cambio
+      const originalText = selectElement.select2('data')[0].text;  // Guardamos el texto del material actual
+
+      
+      isSwalOpen = true;  // Establecer que el Swal está abierto
+
+      Swal.fire({
+        title: 'Confirmacion',
+        text: 'Estas a punto de cambiar el material! Estas seguro?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Si, cambiar',
+        cancelButtonText: 'Cancelar',
+        allowOutsideClick: false,
+        allowEscapeKey: false
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Si el usuario confirma, hacer la llamada a la API
+          fetch(`/api/modbus/${tolva.id}/material`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              material_type_id: selectedId
+            })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.error) {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Hubo un problema al actualizar el material.',
+                timer: 5000,
+                timerProgressBar: true
+              }).then(() => {
+                isSwalOpen = false;  // Volver a false cuando el Swal se cierre
+              });
+            } else {
+              Swal.fire({
+                icon: 'success',
+                title: 'Exito',
+                text: `Material cambiado a: ${selectedValue}, ID: ${selectedId}`,
+                timer: 5000,
+                timerProgressBar: true
+              }).then(() => {
+                isSwalOpen = false;  // Volver a false cuando el Swal se cierre
+              });
+            }
+          })
+          .catch(error => {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'No se pudo realizar la actualización.',
+              timer: 5000,
+              timerProgressBar: true
+            }).then(() => {
+              isSwalOpen = false;  // Volver a false cuando el Swal se cierre
+            });
+          });
+        } else {
+          //location.reload();
+          isSwalOpen = false;  // Volver a false cuando el Swal se cierre
         }
-        const $selection = $('<span style="font-family: \'Roboto\'; color: #8c8c8c; font-size: 1.9em;">' + data.text + '</span>');
-        return $selection;
-      }
-    });    
-    
-    // Detectar cuando el usuario selecciona manualmente una opción
-    selectElement.on('select2:select', function (e) {
-      isUserChange = true;  // Marcar que el cambio es manual
-    });
-
-    // Escuchar el evento 'change' para mostrar el alert solo si es un cambio manual
-    selectElement.on('change', function (e) {
-      if (isUserChange) {
-        const selectedOption = selectElement.select2('data')[0];  // Obtener el objeto completo de la opción seleccionada
-        const selectedValue = selectedOption.text;  // Obtener el texto (nombre del material)
-        const selectedId = selectedOption.id;  // Obtener el ID del material
-        alert('Valor cambiado a: ' + selectedValue + ', ID: ' + selectedId);  // Mostrar el alert con el texto y el ID
-        isUserChange = false;  // Reiniciar el indicador después del cambio
-      }
-    });
-
-    // Preseleccionar el material basado en "material_type"
-    selectElement.val(tolva.material_type).trigger('change');  // Preseleccionar el material correspondiente
-    //una vez cargado volvemos a poner true para que funcione el cambio
-    isUserChange = true;  // Marcar que el cambio es manual
-  });
-}
-
-    
+      });
+    }
 
     // Función para calcular el porcentaje de relleno
     function calcularPorcentajeRelleno(m3, density, lastKg) {
@@ -478,8 +571,51 @@ function generarTarjetasTolvas(modbusLines) {
       return Math.min(100, porcentajeRelleno.toFixed(2));  // Limitar a 100% como máximo
     }
 
+    function solicitarContrasena(tolvaId, tolvaToken, tolvaLastValue, tolvaName) {
+      isSwalOpen = true;  // Establecer que el Swal está abierto
+      
+      Swal.fire({
+        title: 'Ajustes tolva: ' + tolvaName + ' !',
+        input: 'password',
+        inputLabel: 'Contraseña requerida!',
+        inputPlaceholder: 'Contraseña',
+        inputAttributes: {
+          maxlength: 20,
+          autocapitalize: 'off',
+          autocorrect: 'off'
+        },
+        showCancelButton: true,
+        confirmButtonText: 'Confirmar',
+        showLoaderOnConfirm: true,
+        didOpen: () => {
+          // Focaliza el input de SweetAlert cuando se abre el modal
+          const input = Swal.getInput();
+          if (input) {
+            input.focus();
+            input.click(); // Forzar a que se abra el teclado en pantalla en dispositivos táctiles
+          }
+        },
+        preConfirm: (password) => {
+          if (password === '') {
+            return Promise.resolve();  // Contraseña correcta, continuar
+          } else {
+            Swal.showValidationMessage('Contraseña incorrecta');
+            return Promise.reject();  // Contraseña incorrecta, detener
+          }
+        },
+        willClose: () => {
+          isSwalOpen = false;  // Volver a false cuando el Swal se cierre
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          mostrarOpciones(tolvaId, tolvaToken, tolvaLastValue);  // Llamar a mostrarOpciones si la contraseña es correcta
+        }
+      });
+    }
+    
+    
     // Función para mostrar las opciones del Swal
-    function mostrarOpciones(tolvaId) {
+    function mostrarOpciones(tolvaId, tolvaToken, tolvaLastValue) {
       isSwalOpen = true;  // Establecer que el Swal está abierto
 
       Swal.fire({
@@ -491,7 +627,9 @@ function generarTarjetasTolvas(modbusLines) {
           popup: 'custom-popup-class'
         },
         html: `
-          <button class="btn-vaciar" onclick="confirmarVaciado('${tolvaId}')">VACIAR</button> <button class="btn-vaciar" onclick="descargaManual('${tolvaId}')">Descarga Manual</button>
+          <button class="btn btn-danger btn-lg m-2" onclick="confirmarVaciado('${tolvaId}', '${tolvaToken}', '${tolvaLastValue}')">VACIAR</button> 
+          <button class="btn btn-warning btn-lg m-2" onclick="descargaManual('${tolvaId}', '${tolvaToken}')">Descarga Manual</button>
+          <button class="btn btn-info btn-lg m-2" onclick="zeroManual('${tolvaId}', '${tolvaToken}')">Hacer Zero</button>
         `,
         willClose: () => {
           isSwalOpen = false;  // Volver a false cuando el Swal se cierre
@@ -499,31 +637,132 @@ function generarTarjetasTolvas(modbusLines) {
       });
     }
 
-    // Nueva función para confirmar el vaciado
-    function confirmarVaciado(tolvaId) {
+    // Función para confirmar y hacer "Zero" a la báscula
+    function zeroManual(tolvaId, tolvaToken) {
       Swal.fire({
-        title: 'Confirmacion de Vaciado Tolva ',
-        text: 'Esta seguro que desea vaciar la tolva?',
+        title: 'Confirmación de Zero',
+        text: 'Estás a punto de poner a cero la báscula. ¿Deseas continuar?',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Vaciar',
+        confirmButtonText: '<span style="color: white;">Hacer Zero</span>',
         cancelButtonText: 'Cancelar',
         customClass: {
+          confirmButton: 'btn btn-danger',
+          cancelButton: 'btn btn-secondary',
           popup: 'custom-warning-popup'
-        },
-        html: `
-          <input type="number" id="inputConfirm" step="0.01" placeholder="Ingrese un valor" style="margin-top: 15px; width: 80%;"/>
-        `,
-        preConfirm: () => {
-          const inputValue = document.getElementById('inputConfirm').value;
-          if (!inputValue || isNaN(inputValue) || parseFloat(inputValue) < 0) {
-            Swal.showValidationMessage('Por favor, ingrese un numero valido con hasta 2 decimales.');
-          }
-          return inputValue;
         }
       }).then((result) => {
         if (result.isConfirmed) {
-          isSwalOpen = false;
+          // Si el usuario confirma, realizar la llamada a la API
+          fetch(`/api/modbus/zero`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              id: tolvaId,         // ID de la tolva
+              token: tolvaToken    // Token de la tolva
+            })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.error) {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: `Hubo un problema: ${data.error}`,
+                timer: 5000,
+                timerProgressBar: true
+              });
+            } else {
+              Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: 'La báscula se ha puesto a cero correctamente.',
+                timer: 5000,
+                timerProgressBar: true
+              });
+            }
+          })
+          .catch(error => {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: `No se pudo poner a cero la báscula. Error: ${error.message}`,
+              timer: 5000,
+              timerProgressBar: true
+            });
+          });
+        } else {
+          // Si el usuario cancela la acción
+          Swal.close();
+        }
+      });
+    }
+
+    // Nueva función para confirmar el vaciado
+    function confirmarVaciado(tolvaId, tolvaToken, tolvaLastValue) {
+      Swal.fire({
+        title: 'Confirmación de Vaciado de Tolva',
+        text: '¿Está seguro que desea vaciar la tolva?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: '<span style="color: white;">Vaciar</span>',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+          confirmButton: 'btn btn-danger',
+          cancelButton: 'btn btn-secondary',
+          popup: 'custom-warning-popup'
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Cuando el usuario confirma, enviar el valor de tolvaLastValue a la API
+          fetch(`/api/modbus/send`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              id: tolvaId,         // ID de la tolva
+              token: tolvaToken,        // Token de la tolva
+              value: tolvaLastValue     // Valor que representa el último valor de la tolva
+            })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.error) {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: `Hubo un problema: ${data.error}`,
+                timer: 5000,
+                timerProgressBar: true
+              }).then(() => {
+                isSwalOpen = false;  // Cerrar el modal cuando el error se muestre
+              });
+            } else {
+              Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: 'Tolva vaciada correctamente.',
+                timer: 5000,
+                timerProgressBar: true
+              }).then(() => {
+                isSwalOpen = false;  // Cerrar el modal cuando se confirme el éxito
+              });
+            }
+          })
+          .catch(error => {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: `No se pudo vaciar la tolva. Error: ${error.message}`,
+              timer: 5000,
+              timerProgressBar: true
+            }).then(() => {
+              isSwalOpen = false;  // Cerrar el modal cuando se muestre el error
+            });
+          });
         } else {
           isSwalOpen = false;
           Swal.close();
@@ -531,37 +770,99 @@ function generarTarjetasTolvas(modbusLines) {
       });
     }
 
-        // Nueva función para descarga Manual
-        function descargaManual(tolvaId) {
-          Swal.fire({
-            title: 'Descarga Manual!',
-            text: 'Elije la cantidad en kg',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Descargar',
-            cancelButtonText: 'Cancelar',
-            customClass: {
-              popup: 'custom-warning-popup'
+
+
+    // Nueva función para descarga Manual
+    function descargaManual(tolvaId, tolvaToken) {
+      Swal.fire({
+        title: 'Descarga Manual!',
+        text: 'Elige la cantidad en kg (máximo 1 decimal)',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Descargar',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+          popup: 'custom-warning-popup'
+        },
+        html: `
+          <input type="number" id="inputConfirm" step="0.1" placeholder="Ingrese un valor con 1 decimal" style="margin-top: 15px; width: 80%;"/>
+        `,
+        preConfirm: () => {
+          const inputValue = document.getElementById('inputConfirm').value;
+          const decimalValue = parseFloat(inputValue).toFixed(1);
+
+          if (!inputValue || isNaN(inputValue) || parseFloat(inputValue) < 0 || inputValue.split('.')[1]?.length > 1) {
+            Swal.showValidationMessage('Por favor, ingrese un número válido con hasta 1 decimal.');
+            return false;
+          }
+          return decimalValue;
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          const inputValue = result.value;
+
+          // Quitar el punto decimal y convertir a entero
+          const intValue = parseFloat(inputValue).toFixed(1).replace('.', '');
+
+          // Codificar el token para evitar problemas con caracteres especiales
+          const encodedToken = encodeURIComponent(tolvaToken);
+
+          // Hacer la llamada a la API
+          fetch(`/api/modbus/send`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
             },
-            html: `
-              <input type="number" id="inputConfirm" step="0.01" placeholder="Ingrese un valor" style="margin-top: 15px; width: 80%;"/>
-            `,
-            preConfirm: () => {
-              const inputValue = document.getElementById('inputConfirm').value;
-              if (!inputValue || isNaN(inputValue) || parseFloat(inputValue) < 0) {
-                Swal.showValidationMessage('Por favor, ingrese un numero valido con hasta 2 decimales.');
-              }
-              return inputValue;
-            }
-          }).then((result) => {
-            if (result.isConfirmed) {
-              isSwalOpen = false;
+            body: JSON.stringify({
+              id: tolvaId,      // ID de la tolva
+              token: tolvaToken,    // Token codificado
+              value: intValue        // Valor ingresado en la descarga
+            })
+          })
+          .then(response => response.json()) // Convertir la respuesta a JSON
+          .then(data => {
+            console.log(data);  // Mostrar la respuesta completa en la consola
+
+            if (data.error) {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: `Token : ${tolvaToken} Hubo un problema: ${data.error}`,  // Mostrar el error exacto que devuelve la API
+                timer: 5000,
+                timerProgressBar: true
+              }).then(() => {
+                isSwalOpen = false;  // Volver a false cuando el Swal se cierre
+              });
             } else {
-              isSwalOpen = false;
-              Swal.close();
+              Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: 'Dosificación enviada correctamente.',
+                timer: 5000,
+                timerProgressBar: true
+              }).then(() => {
+                isSwalOpen = false;  // Volver a false cuando el Swal se cierre
+              });
             }
+          })
+          .catch(error => {
+            console.error('Error:', error);  // Mostrar el error en consola
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: `No se pudo realizar la dosificación. Error: ${error.message}`,  // Mostrar el mensaje de error en detalle
+              timer: 5000,
+              timerProgressBar: true
+            }).then(() => {
+              isSwalOpen = false;  // Volver a false cuando el Swal se cierre
+            });
           });
         }
+      });
+    }
+
+
+
 
     // Función para modificar el slider
     function cerrarYModificarSlider(nuevoValor, tolvaId) {
@@ -589,8 +890,9 @@ function generarTarjetasTolvas(modbusLines) {
         }
       }
     }
-  </script>
 
+  </script>
+<button id="botonRefrescar" onclick="location.reload();">⟳</button>
 </body>
 </html>
 
