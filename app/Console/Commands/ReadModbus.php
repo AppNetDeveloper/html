@@ -401,7 +401,7 @@ class ReadModbus extends Command
 
             // Verificar si el JSON tiene el campo 'check' y usarlo para asignar a maxKg
             if (isset($data['check'])) {
-                $maxKg = $data['check'] / 10;
+                $maxKg = $data['check'] / $config->conversion_factor;;
                 $this->info("Se ha obtenido el valor de 'check' desde el JSON: {$maxKg}");
             } else {
                 $this->info("No se encontró el campo 'check' en los datos recibidos.El valor actual es:{$value} kg");
@@ -561,49 +561,113 @@ class ReadModbus extends Command
 
     private function callExternalApi($apiQueue, $config, $newBoxNumber, $maxKg, $dimensionFinal, $uniqueBarcoder)
     {
-        //$this->info("Llamada a la API externa para el Modbus ID: {$config->id}");
-
+        $this->info("Llamada a la API externa para el Modbus ID: {$config->id}");
+    
+        $apiQueue->used = true;
+        $apiQueue->save(); 
+        
         $dataToSend = [
             'token' => $apiQueue->token_back,
             'rec_box' => $newBoxNumber,
             'max_kg' => $maxKg,
             'last_dimension' => $dimensionFinal,
             'last_barcoder' => $uniqueBarcoder,
-            'peso' => $maxKg,
-            'alto' => $dimensionFinal,
-            'used_value' => $apiQueue->value, 
+            'used_value' => $apiQueue->value,
         ];
-
+    
+        $dataToSend2 = [
+            'alto' => (string)$dimensionFinal,
+            'peso' => (string)$maxKg,
+            'used_value' => (string)$apiQueue->value,
+        ];
+    
+        // Construir la cadena URL codificada sin comas
+        $dataToSend3 = http_build_query($dataToSend2, '', '&');
+        
         try {
-            // Intenta POST primero
-            $response = Http::post($apiQueue->url_back, $dataToSend);
-
-            if (!$response->successful() && $response->status() === 405) { 
-                // Si POST falla con 405, intenta PUT
-                $response = Http::put($apiQueue->url_back, $dataToSend);
-            }
-
-            if ($response->successful()) {
-                $this->info("Respuesta exitosa de la API externa para el Modbus ID: {$config->id}", [
-                    'response' => $response->json(),
-                ]);
+            $useMethod = env('EXTERNAL_API_QUEUE_TYPE', 'put');
+            $useModel = env('EXTERNAL_API_QUEUE_MODEL', 'dataToSend');
+            $useCurl = env('USE_CURL', false);
+    
+            if ($useCurl) {
+                // Implementación con cURL
+                $ch = curl_init($apiQueue->url_back);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Equivalente a -k en curl
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($useMethod));
+                curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
+                
+                // Usar dataToSend3 que ya está en formato correcto para x-www-form-urlencoded
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $dataToSend3);
+                
+                $this->info("Enviando datos con cURL a {$apiQueue->url_back}. Datos: " . $dataToSend3);
+                
+                $responseBody = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                
+                if ($responseBody === false) {
+                    throw new \Exception(curl_error($ch));
+                }
+                
+                curl_close($ch);
+                
+                if ($httpCode >= 200 && $httpCode < 300) {
+                    $responseData = json_decode($responseBody, true);
+                    $this->info("Respuesta de la API externa (cURL): " . json_encode($responseData));
+                } else {
+                    $this->error("Error en la respuesta de la API externa (cURL). Código de estado: " . $httpCode . ", Cuerpo: " . $responseBody);
+                }
             } else {
-                Log::error("Error en la respuesta de la API externa para el Modbus ID: {$config->id}", [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
+                // Código existente con Http facade
+                if ($useModel == 'dataToSend3') {
+                    if ($useMethod != 'post') {
+                        $this->info("Enviando datos a {$apiQueue->url_back} con PUT. Datos: " . json_encode($dataToSend3));
+                        $response = Http::withHeaders([
+                            'Content-Type' => 'application/x-www-form-urlencoded',
+                        ])->withBody($dataToSend3, 'application/x-www-form-urlencoded')->put($apiQueue->url_back);
+                    } else {
+                        $this->info("Enviando datos a {$apiQueue->url_back} con POST. Datos: " . json_encode($dataToSend3));
+                        $response = Http::withHeaders([
+                            'Content-Type' => 'application/x-www-form-urlencoded',
+                        ])->withBody($dataToSend3, 'application/x-www-form-urlencoded')->post($apiQueue->url_back);
+                    }
+                } elseif ($useModel == 'dataToSend2') {
+                    if ($useMethod != 'post') {
+                        $this->info("Enviando datos a {$apiQueue->url_back} con PUT. Datos: " . json_encode($dataToSend2));
+                        $response = Http::put($apiQueue->url_back, $dataToSend2);
+                    } else {
+                        $this->info("Enviando datos a {$apiQueue->url_back} con POST. Datos: " . json_encode($dataToSend2));
+                        $response = Http::post($apiQueue->url_back, $dataToSend2);
+                    }
+                } else {
+                    if ($useMethod != 'post') {
+                        $this->info("Enviando datos a {$apiQueue->url_back} con PUT. Datos: " . json_encode($dataToSend));
+                        $response = Http::put($apiQueue->url_back, $dataToSend);
+                    } else {
+                        $this->info("Enviando datos a {$apiQueue->url_back} con POST. Datos: " . json_encode($dataToSend));
+                        $response = Http::post($apiQueue->url_back, $dataToSend);
+                    }
+                }
+    
+                if ($response->successful()) {
+                    $responseData = $response->json();
+                    $this->info("Respuesta de la API externa: " . json_encode($responseData));
+                } else {
+                    $this->error("Error en la respuesta de la API externa. Código de estado: " . $response->status() . ", Cuerpo: " . $response->body());
+                }
             }
         } catch (\Exception $e) {
-            Log::error("Error al llamar a la API externa para el Modbus ID: {$config->id}", [
-                'error' => $e->getMessage(),
-            ]);
+            $this->error("Error al llamar a la API externa para el Modbus ID: {$config->id}. Error: " . $e->getMessage());
         }
-
+    
         $apiQueue->used = true;
-        $apiQueue->save();
-
-    // $apiQueue->delete();
+        if ($apiQueue->save()) {
+            $this->info("Estado 'used' actualizado a true para el Modbus ID: {$config->id}");
+        } else {
+            $this->error("No se pudo actualizar el estado 'used' en la base de datos para el Modbus ID: {$config->id}");
+        }
     }
+    
 
 
 

@@ -35,6 +35,10 @@ echo "SHIFT_TIME=08:00:00" >> .env
 echo "PRODUCTION_MIN_TIME=3" >> .env
 echo "PRODUCTION_MAX_TIME=5" >> .env
 
+echo "EXTERNAL_API_QUEUE_MODEL=dataToSend3" >> .env
+echo "EXTERNAL_API_QUEUE_TYPE=put" >> .env
+echo "USE_CURL=true" >> .env
+
 
 sudo supervisorctl stop all
 rm -rf /etc/supervisor/conf.d/*
