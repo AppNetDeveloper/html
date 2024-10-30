@@ -453,6 +453,9 @@ class ReadModbus extends Command
 
             $totalKgShift=$maxKg + $totalKgShift;
             $totalKgOrder= $maxKg + $totalKgOrder;
+            $finalMaxKg= $maxKg;
+            $finalDimensionFinal= $dimensionFinal;
+
             $maxKg = 0; // Reiniciar el valor máximo
             $lastKg = 0; // Reiniciar el último valor
             $lastRep = 0; // Reiniciar el contador de repeticiones
@@ -489,7 +492,7 @@ class ReadModbus extends Command
                     $apiQueue->save();
                     $this->info("No llamo a la API externa por que el valor es 0, el Modbus ID: {$config->id}");
                 } else {
-                    $this->callExternalApi($apiQueue, $config, $newBoxNumber, $maxKg, $dimensionFinal, $uniqueBarcoder);
+                    $this->callExternalApi($apiQueue, $config, $newBoxNumber, $finalMaxKg, $finalDimensionFinal, $uniqueBarcoder);
                     $this->info("Llamada a la API externa para el Modbus ID: {$config->id}");
                 }
             }else{
