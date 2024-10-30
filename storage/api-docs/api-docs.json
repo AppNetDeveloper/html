@@ -867,99 +867,35 @@
                 }
             }
         },
-        "/v1/order-stats": {
-            "get": {
-                "tags": [
-                    "OrderStats"
-                ],
-                "summary": "Obtener la última estadística de orden",
-                "operationId": "7a744fe3121b4011dae39f599011097a",
-                "parameters": [
-                    {
-                        "name": "token",
-                        "in": "query",
-                        "description": "Token de la línea de producción",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Éxito",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "id": {
-                                            "type": "integer"
-                                        },
-                                        "production_line_id": {
-                                            "type": "integer"
-                                        },
-                                        "order_id": {
-                                            "type": "string"
-                                        },
-                                        "units": {
-                                            "type": "integer"
-                                        },
-                                        "box": {
-                                            "type": "integer"
-                                        },
-                                        "units_box": {
-                                            "type": "integer"
-                                        },
-                                        "created_at": {
-                                            "type": "string",
-                                            "format": "date-time"
-                                        },
-                                        "updated_at": {
-                                            "type": "string",
-                                            "format": "date-time"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Token requerido"
-                    },
-                    "404": {
-                        "description": "Línea de producción no encontrada o sin estadísticas"
-                    }
-                }
-            },
+        "/api/order-stats/last": {
             "post": {
                 "tags": [
                     "OrderStats"
                 ],
-                "summary": "Crear una nueva estadística de orden",
-                "operationId": "dfa9cb3a8be9146955d2fbb334d22d88",
+                "summary": "Obtener la última estadística de un pedido",
+                "description": "Retorna la última estadística de pedidos para una línea de producción usando un token.",
+                "operationId": "ee47f14473643b8ecb7469ddd308a775",
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": [
-                                    "production_line_id",
-                                    "order_id",
-                                    "units"
-                                ],
                                 "properties": {
+                                    "token": {
+                                        "type": "string",
+                                        "example": "some-production-line-token"
+                                    },
                                     "production_line_id": {
                                         "type": "integer",
                                         "example": 1
                                     },
                                     "order_id": {
                                         "type": "string",
-                                        "example": "12/4611"
+                                        "example": "ORD12345"
                                     },
                                     "units": {
                                         "type": "integer",
-                                        "example": 1000
+                                        "example": 100
                                     },
                                     "box": {
                                         "type": "integer",
@@ -967,7 +903,7 @@
                                     },
                                     "units_box": {
                                         "type": "integer",
-                                        "example": 100
+                                        "example": 50
                                     }
                                 },
                                 "type": "object"
@@ -976,37 +912,31 @@
                     }
                 },
                 "responses": {
-                    "201": {
-                        "description": "Creado",
+                    "200": {
+                        "description": "Última estadística de pedido obtenida exitosamente",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "id": {
-                                            "type": "integer"
+                                            "type": "integer",
+                                            "example": 1
                                         },
-                                        "production_line_id": {
-                                            "type": "integer"
+                                        "production_line_name": {
+                                            "type": "string",
+                                            "example": "Linea 1"
                                         },
                                         "order_id": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "ORD12345"
                                         },
                                         "units": {
-                                            "type": "integer"
-                                        },
-                                        "box": {
-                                            "type": "integer"
-                                        },
-                                        "units_box": {
-                                            "type": "integer"
+                                            "type": "integer",
+                                            "example": 100
                                         },
                                         "created_at": {
                                             "type": "string",
-                                            "format": "date-time"
-                                        },
-                                        "updated_at": {
-                                            "type": "string",
-                                            "format": "date-time"
+                                            "example": "2024-10-15 14:35:12"
                                         }
                                     },
                                     "type": "object"
@@ -1015,7 +945,116 @@
                         }
                     },
                     "400": {
-                        "description": "Datos de entrada no válidos"
+                        "description": "Token es requerido",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Token is required"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Línea de producción no encontrada",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Production line not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/order-stats/between-dates": {
+            "post": {
+                "tags": [
+                    "OrderStats"
+                ],
+                "summary": "Obtener estadísticas de pedidos entre fechas",
+                "description": "Obtiene estadísticas de pedidos entre dos fechas dadas para una línea de producción específica, utilizando el token de la línea.",
+                "operationId": "89d56fec7821f1729d93f47db5a82eee",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "token": {
+                                        "type": "string",
+                                        "example": "some-production-line-token"
+                                    },
+                                    "start_date": {
+                                        "type": "string",
+                                        "example": "2024-10-01"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "example": "2024-10-20"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Estadísticas de pedidos entre fechas obtenidas exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "production_line_name": {
+                                            "type": "string",
+                                            "example": "Linea 1"
+                                        },
+                                        "order_id": {
+                                            "type": "string",
+                                            "example": "ORD12345"
+                                        },
+                                        "units": {
+                                            "type": "integer",
+                                            "example": 100
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "example": "2024-10-15 14:35:12"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Línea de producción no encontrada o sin estadísticas",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Production line not found or no order stats found for the specified dates"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1099,52 +1138,114 @@
                 "tags": [
                     "Sensores"
                 ],
-                "summary": "Obtener todos los sensores organizados por línea de producción",
+                "summary": "Obtener todos los sensores",
+                "description": "Obtiene una lista de todos los sensores, agrupados por línea de producción.",
                 "operationId": "87a4f9259e66573c0b9ab249788f09ab",
                 "responses": {
                     "200": {
-                        "description": "Datos de todos los sensores obtenidos correctamente",
+                        "description": "Lista de sensores",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "array",
                                     "items": {
                                         "properties": {
-                                            "production_line_id": {
+                                            "id": {
                                                 "type": "integer",
                                                 "example": 1
                                             },
-                                            "sensors": {
-                                                "type": "array",
-                                                "items": {
-                                                    "properties": {
-                                                        "id": {
-                                                            "type": "integer",
-                                                            "example": 1
-                                                        },
-                                                        "name": {
-                                                            "type": "string",
-                                                            "example": "Sensor 1"
-                                                        },
-                                                        "sensor_type": {
-                                                            "type": "integer",
-                                                            "example": 0
-                                                        },
-                                                        "mqtt_topic_sensor": {
-                                                            "type": "string",
-                                                            "example": "sensor/topic/1"
-                                                        },
-                                                        "value": {
-                                                            "type": "integer",
-                                                            "example": 1
-                                                        }
+                                            "name": {
+                                                "type": "string",
+                                                "example": "Sensor 1"
+                                            },
+                                            "value": {
+                                                "type": "integer",
+                                                "example": 0
+                                            },
+                                            "production_line": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
                                                     },
-                                                    "type": "object"
-                                                }
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Línea 1"
+                                                    }
+                                                },
+                                                "type": "object"
                                             }
                                         },
                                         "type": "object"
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/sensors/insert": {
+            "post": {
+                "tags": [
+                    "Sensores"
+                ],
+                "summary": "Insertar datos del sensor",
+                "description": "Inserta datos en el sensor, verificando si necesita invertir el valor según su configuración.",
+                "operationId": "b588a760b55c4b906e3abed7ad38cca1",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "value": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "sensor": {
+                                        "type": "string",
+                                        "example": "sensor/topic"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Datos procesados correctamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Datos procesados correctamente"
+                                        },
+                                        "sensor": {
+                                            "type": "string",
+                                            "example": "Sensor 1"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Sensor no encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Sensor no encontrado"
+                                        }
+                                    },
+                                    "type": "object"
                                 }
                             }
                         }

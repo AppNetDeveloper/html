@@ -13,74 +13,46 @@ use Carbon\Carbon;
 class OrderStatsController extends Controller
 {
     /**
-     * @OA\Get(
-     *     path="/order-stats",
-     *     summary="Obtener la última estadística de orden",
-     *     tags={"OrderStats"},
-     *     @OA\Parameter(
-     *         name="token",
-     *         in="query",
-     *         description="Token de la línea de producción",
-     *         required=true,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Éxito",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="id", type="integer"),
-     *             @OA\Property(property="production_line_id", type="integer"),
-     *             @OA\Property(property="order_id", type="string"),
-     *             @OA\Property(property="units", type="integer"),
-     *             @OA\Property(property="box", type="integer"),
-     *             @OA\Property(property="units_box", type="integer"),
-     *             @OA\Property(property="created_at", type="string", format="date-time"),
-     *             @OA\Property(property="updated_at", type="string", format="date-time"),
-     *             @OA\Property(property="production_line_name", type="string")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Token requerido"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Línea de producción no encontrada o sin estadísticas"
-     *     )
-     * )
-     *
      * @OA\Post(
-     *     path="/order-stats",
-     *     summary="Crear una nueva estadística de orden",
+     *     path="/api/order-stats/last",
+     *     summary="Obtener la última estadística de un pedido",
+     *     description="Retorna la última estadística de pedidos para una línea de producción usando un token.",
      *     tags={"OrderStats"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"production_line_id", "order_id", "units"},
+     *             @OA\Property(property="token", type="string", example="some-production-line-token"),
      *             @OA\Property(property="production_line_id", type="integer", example=1),
-     *             @OA\Property(property="order_id", type="string", example="12/4611"),
-     *             @OA\Property(property="units", type="integer", example=1000),
+     *             @OA\Property(property="order_id", type="string", example="ORD12345"),
+     *             @OA\Property(property="units", type="integer", example=100),
      *             @OA\Property(property="box", type="integer", example=10),
-     *             @OA\Property(property="units_box", type="integer", example=100)
+     *             @OA\Property(property="units_box", type="integer", example=50)
      *         )
      *     ),
      *     @OA\Response(
-     *         response=201,
-     *         description="Creado",
+     *         response=200,
+     *         description="Última estadística de pedido obtenida exitosamente",
      *         @OA\JsonContent(
-     *             @OA\Property(property="id", type="integer"),
-     *             @OA\Property(property="production_line_id", type="integer"),
-     *             @OA\Property(property="order_id", type="string"),
-     *             @OA\Property(property="units", type="integer"),
-     *             @OA\Property(property="box", type="integer"),
-     *             @OA\Property(property="units_box", type="integer"),
-     *             @OA\Property(property="created_at", type="string", format="date-time"),
-     *             @OA\Property(property="updated_at", type="string", format="date-time")
+     *             @OA\Property(property="id", type="integer", example=1),
+     *             @OA\Property(property="production_line_name", type="string", example="Linea 1"),
+     *             @OA\Property(property="order_id", type="string", example="ORD12345"),
+     *             @OA\Property(property="units", type="integer", example=100),
+     *             @OA\Property(property="created_at", type="string", example="2024-10-15 14:35:12")
      *         )
      *     ),
      *     @OA\Response(
      *         response=400,
-     *         description="Datos de entrada no válidos"
+     *         description="Token es requerido",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="error", type="string", example="Token is required")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Línea de producción no encontrada",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="error", type="string", example="Production line not found")
+     *         )
      *     )
      * )
      */
@@ -140,46 +112,35 @@ class OrderStatsController extends Controller
         return response()->json($response, 200);
     }
     /**
-     * @OA\Get(
-     *     path="/order-stats-all",
+     * @OA\Post(
+     *     path="/api/order-stats/between-dates",
      *     summary="Obtener estadísticas de pedidos entre fechas",
+     *     description="Obtiene estadísticas de pedidos entre dos fechas dadas para una línea de producción específica, utilizando el token de la línea.",
      *     tags={"OrderStats"},
-     *     @OA\Parameter(
-     *         name="token",
-     *         in="query",
-     *         description="Token de la línea de producción",
+     *     @OA\RequestBody(
      *         required=true,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Parameter(
-     *         name="start_date",
-     *         in="query",
-     *         description="Fecha de inicio (YYYY-MM-DD)",
-     *         required=true,
-     *         @OA\Schema(type="string", format="date")
-     *     ),
-     *     @OA\Parameter(
-     *         name="end_date",
-     *         in="query",
-     *         description="Fecha de fin (YYYY-MM-DD)",
-     *         required=true,
-     *         @OA\Schema(type="string", format="date")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Lista de estadísticas de pedidos entre las fechas especificadas",
      *         @OA\JsonContent(
-     *             type="array",
-     *             @OA\Items(ref="#/components/schemas/OrderStat")
+     *             @OA\Property(property="token", type="string", example="some-production-line-token"),
+     *             @OA\Property(property="start_date", type="string", example="2024-10-01"),
+     *             @OA\Property(property="end_date", type="string", example="2024-10-20")
      *         )
      *     ),
      *     @OA\Response(
-     *         response=400,
-     *         description="Token requerido o fechas inválidas"
+     *         response=200,
+     *         description="Estadísticas de pedidos entre fechas obtenidas exitosamente",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="production_line_name", type="string", example="Linea 1"),
+     *             @OA\Property(property="order_id", type="string", example="ORD12345"),
+     *             @OA\Property(property="units", type="integer", example=100),
+     *             @OA\Property(property="created_at", type="string", example="2024-10-15 14:35:12")
+     *         )
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="No se encontraron estadísticas de pedidos para las fechas especificadas"
+     *         description="Línea de producción no encontrada o sin estadísticas",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="error", type="string", example="Production line not found or no order stats found for the specified dates")
+     *         )
      *     )
      * )
      */

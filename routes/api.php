@@ -61,6 +61,8 @@ Route::match(['get', 'post'], '/barcode-info-by-customer/{customerToken}', [GetT
 Route::match(['get', 'post'], '/sensors/{token}', [SensorController::class, 'getByToken']);
 Route::match(['get', 'post'], '/sensors', [SensorController::class, 'getAllSensors']);
 
+Route::post('/sensor-insert', [SensorController::class, 'sensorInsert']);
+
 Route::match(['get', 'post'], '/order-stats', [OrderStatsController::class, 'getLastOrderStat']);
 
 Route::match(['get', 'post'], '/order-stats-all', [OrderStatsController::class, 'getOrderStatsBetweenDates']);
