@@ -291,10 +291,11 @@
 
             const grossWeight = parseFloat(data.gross_weight) || 0;
             const lastControlWeight = parseFloat(data.last_control_weight) || 0;
+            const boxType = data.box_type || "Cajas"; // Definir el tipo de caja con el valor predeterminado "Cajas"
 
             document.getElementById('scaleName').innerHTML = data.name + '&nbsp;'|| "Nombre de la Báscula";
 
-            // Detect changes in live data and apply zoom effect
+            // Detectar cambios en datos en vivo y aplicar efecto de zoom
             if (grossWeight !== liveWeight) {
                 document.getElementById('weightDisplay').classList.add('zoom');
                 setTimeout(() => {
@@ -318,9 +319,9 @@
 
             document.getElementById('weightDisplay').innerHTML = grossWeight.toFixed(1) + '<b class="unit"> Kg</b>';
             document.getElementById('dimensionDisplay').innerHTML = data.dimension + '<b class="unit"> mm</b>';
-            document.getElementById('boxNumberDisplay').innerHTML = data.box_number + '<b class="unit"> Cajas</b>';
+            document.getElementById('boxNumberDisplay').innerHTML = data.box_number + `<b class="unit"> ${boxType}</b>`;
 
-            // Detect changes in last data and apply zoom effect with color change to red
+            // Detectar cambios en datos anteriores y aplicar efecto de zoom con cambio de color a rojo
             if (lastControlWeight !== lastWeight) {
                 document.getElementById('lastWeightDisplay').classList.add('zoom-red');
                 setTimeout(() => {
@@ -344,7 +345,7 @@
 
             document.getElementById('lastWeightDisplay').innerHTML = lastControlWeight.toFixed(1) + '<b class="unit"> Kg</b>';
             document.getElementById('lastDimensionDisplay').innerHTML = data.last_dimension + '<b class="unit"> mm</b>';
-            document.getElementById('lastBoxNumberDisplay').innerHTML = data.last_box_number + '<b class="unit"> Cajas</b>';
+            document.getElementById('lastBoxNumberDisplay').innerHTML = data.last_box_number + `<b class="unit"> ${boxType}</b>`;
 
             JsBarcode("#lastBarcode", data.last_barcoder.toString(), {
                 format: "CODE128",
@@ -353,12 +354,11 @@
                 height: 80
             });
 
-            // Update last known values
+            // Actualizar valores conocidos
             lastWeight = lastControlWeight;
             lastDimension = data.last_dimension;
             lastBoxNumber = data.last_box_number;
 
-            // Update live known values
             liveWeight = grossWeight;
             liveDimension = data.dimension;
             liveBoxNumber = data.box_number;

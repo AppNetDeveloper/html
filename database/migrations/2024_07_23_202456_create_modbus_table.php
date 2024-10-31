@@ -50,6 +50,7 @@ return new class extends Migration
             $table->integer('downtime_count')->default(0);  // Nuevo campo para contar inactividad
             $table->integer('optimal_production_time')->nullable(); // Tiempo óptimo de producción de una caja
             $table->integer('reduced_speed_time_multiplier')->nullable(); // Multiplicador para velocidad reducida
+            $table->string('box_type')->nullable();  // Tipo de cajas bultos cajas etc
             $table->timestamps();
         });
     }

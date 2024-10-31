@@ -46,6 +46,7 @@ class Modbus extends Model
         'downtime_count',  // Nuevo campo para contar inactividad
         'optimal_production_time', // Tiempo óptimo de producción de una caja
         'reduced_speed_time_multiplier', // Multiplicador para velocidad reducida
+        'box_type', // nombre de cada cada que pasa tipo caja bulto etc
     ];
 
     public $timestamps = true; // Habilitar el manejo automático de timestamps
