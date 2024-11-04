@@ -25,9 +25,10 @@
             <label for="sensor_type">Tipo de Sensor</label>
             <select name="sensor_type" class="form-control" required>
                 <option value="0" {{ $sensor->sensor_type == 0 ? 'selected' : '' }}>Conteo</option>
-                <option value="1" {{ $sensor->sensor_type == 1 ? 'selected' : '' }}>Consumibles</option>
-                <option value="2" {{ $sensor->sensor_type == 2 ? 'selected' : '' }}>Materia Prima</option>
-                <option value="3" {{ $sensor->sensor_type == 3 ? 'selected' : '' }}>Avería en Proceso</option>
+                <option value="1" {{ $sensor->sensor_type == 1 ? 'selected' : '' }}>Consumibles Tipo mallas</option>
+                <option value="2" {{ $sensor->sensor_type == 2 ? 'selected' : '' }}>Otros COnsumibles Tipo pegatinas tinta</option>
+                <option value="3" {{ $sensor->sensor_type == 3 ? 'selected' : '' }}>Materia prima Tipo vuelca Palot</option>
+                <option value="4" {{ $sensor->sensor_type == 4 ? 'selected' : '' }}>Avería en Proceso</option>
             </select>
         </div>
 

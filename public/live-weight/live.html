@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  <meta charset="UTF-8">
   <title>BOISOLO Autoconto</title>
+  <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+  <!-- JsBarcode Library -->
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
   <style>
     html, body {
@@ -13,62 +15,38 @@
       padding: 0;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      background-color: #1e1e2f;
-      color: #ffffff;
+      background-color: #ffffff; /* Cambiamos el fondo a blanco */
+      color: #000000; /* Cambiamos el color del texto a negro para mejor legibilidad */
       font-family: 'Roboto', sans-serif;
       box-sizing: border-box;
       overflow: hidden;
-
-      background: url('/live-weight/9984.jpg') no-repeat center center fixed;
-      background-size: cover;
-      
     }
     
-    header {
+    /* Header modificado */
+    .header-container {
       width: 100%;
+      background-color: #343a40; /* Color gris oscuro */
+      color: white;
+      padding: 10px 30px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 10px;
-      background-color: #28293e;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     }
-    
-    .logo {
-      max-width: 25%;
-      height: auto;
+    .header-left img {
+      max-height: 50px;
+      width: auto;
     }
-
-    .order-container {
-      display: flex;
-      flex-grow: 1;
-      justify-content: center;
-    }
-
-    #orderId {
-      font-size: 7vh;
-      color: #ffffff;
+    .header-center {
       text-align: center;
+      font-size: 1.3rem;
     }
-    
-    .time-container {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      margin-left: auto;
+    .header-right {
+      font-size: 1.5rem;
     }
-
-    .time {
-      font-size: 4vh;
-      margin-right: 20px;
-    }
-
-    #scaleName {
-      font-size: 2.5vh;
-      color: #ffcc00;
-      text-align: right;
+    .header-right small {
+      display: block;
+      font-size: 1rem;
+      color: #ffc107;
     }
     
     main {
@@ -82,13 +60,13 @@
     }
     
     .box {
-      background-color: #2e2f47;
+      background-color: #f8f9fa; /* Color gris claro */
       padding: 20px;
       margin-bottom: 20px;
       border-radius: 10px;
       width: 98%;
       max-width: 2400px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -108,14 +86,14 @@
       text-align: center;
       padding: 15px;
       border-radius: 8px;
-      background-color: #3b3c55;
-      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+      background-color: #e9ecef; /* Color gris claro */
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
     }
 
     .weight-display, .dimension-display, .boxNumberDisplay, .lastBoxNumberDisplay {
       font-size: 5vw;
       font-weight: bold;
-      color: #ffcc00;
+      color: #343a40; /* Color gris oscuro */
       line-height: 1;
       word-wrap: break-word;
     }
@@ -125,13 +103,13 @@
       font-weight: bold;
       line-height: 1;
       word-wrap: break-word;
-      color: #ffcc00;
+      color: #343a40; /* Color gris oscuro */
     }
 
     .unit {
       font-size: 40%;
       vertical-align: baseline;
-      color: #ffffff;
+      color: #6c757d; /* Color gris medio */
     }
 
     #lastBarcode {
@@ -142,17 +120,17 @@
     .info-box img {
       width: 8vh;
       margin-bottom: 10px;
-      filter: brightness(0) invert(1);
+      filter: brightness(0); /* Mantener el color original de la imagen */
     }
     
     .info-box p {
       font-size: 2.5vh;
-      color: #ffffff;
+      color: #343a40; /* Color gris oscuro */
     }
     
     .barcode p {
       font-size: 2vh;
-      color: #ffffff;
+      color: #343a40; /* Color gris oscuro */
     }
 
     @media (max-width: 768px) {
@@ -192,7 +170,7 @@
     @keyframes zoomEffectRed {
       0% {
         transform: scale(1);
-        color: #ffcc00;
+        color: #343a40; /* Color gris oscuro */
       }
       50% {
         transform: scale(1.2);
@@ -200,7 +178,7 @@
       }
       100% {
         transform: scale(1);
-        color: #ffcc00;
+        color: #343a40; /* Color gris oscuro */
       }
     }
 
@@ -210,57 +188,67 @@
   </style>
 </head>
 <body>
-  <header class="d-flex justify-content-between align-items-center">
-      <img src="logo.png" alt="Logo" class="logo">
-      <div class="order-container">
-          <div id="orderId">15/4611</div> <!-- Aquí se muestra el order_id en el centro -->
-      </div>
-      <div class="time-container">
-          <div class="time" id="timeDisplay">02:33:21</div>
-          <div id="scaleName" class="center-name">BÁSCULA FLEJADORA</div>
-      </div>
+  <!-- Header modificado -->
+  <header class="header-container">
+    <div class="header-left">
+      <img src="logo.png" alt="Logo de Autoconto">
+    </div>
+    <div class="header-center">
+      <div id="orderId">15/4611</div>
+      <div id="created-at" style="font-size: 1rem;">Iniciada ...</div>
+    </div>
+    <div class="header-right">
+      <div id="timeDisplay">--:--:--</div>
+      <small id="scaleName">BÁSCULA FLEJADORA</small>
+    </div>
   </header>
 
   <main>
     <div class="box">
-        <div class="box-content">
-            <div class="info-box">
-                <img src="bascula.png" alt="Weight">
-                <p class="weight-display" id="weightDisplay">0.0 <b class="unit">Kg</b></p>
-            </div>
-            <div class="info-box">
-                <img src="medida.png" alt="Dimensions">
-                <p class="dimension-display" id="dimensionDisplay">0 <b class="unit">mm</b></p>
-            </div>
-            <div class="info-box">
-                <img src="recuento.png" alt="Pallets">
-                <p id="boxNumberDisplay">1120 <b class="unit">BOX</b></p>
-            </div>
+      <div class="box-content">
+        <div class="info-box">
+          <img src="bascula.png" alt="Weight">
+          <p class="weight-display" id="weightDisplay">0.0 <b class="unit">Kg</b></p>
         </div>
+        <div class="info-box">
+          <img src="medida.png" alt="Dimensions">
+          <p class="dimension-display" id="dimensionDisplay">0 <b class="unit">mm</b></p>
+        </div>
+        <div class="info-box">
+          <img src="recuento.png" alt="Pallets">
+          <p id="boxNumberDisplay">1120 <b class="unit">Cajas</b></p>
+        </div>
+      </div>
     </div>
 
     <div class="box">
-        <div class="box-content">
-            <div class="info-box">
-                <img src="bascula.png" alt="Weight">
-                <p class="weight-display" id="lastWeightDisplay">44.0 <b class="unit">Kg</b></p>
-            </div>
-            <div class="info-box">
-                <img src="medida.png" alt="Dimensions">
-                <p class="dimension-display" id="lastDimensionDisplay">0 <b class="unit">mm</b></p>
-            </div>
-            <div class="info-box">
-                <img src="recuento.png" alt="Pallets">
-                <p id="lastBoxNumberDisplay">1119 <b class="unit">Bultos</b></p>
-            </div>
+      <div class="box-content">
+        <div class="info-box">
+          <img src="bascula.png" alt="Weight">
+          <p class="weight-display" id="lastWeightDisplay">44.0 <b class="unit">Kg</b></p>
         </div>
-        <div class="barcode" id="barcode">
-            <center><p>&Uacute;ltimo C&oacute;digo de Barras: SIN LECTURA</p></center>
-            <svg id="lastBarcode"></svg>
+        <div class="info-box">
+          <img src="medida.png" alt="Dimensions">
+          <p class="dimension-display" id="lastDimensionDisplay">0 <b class="unit">mm</b></p>
         </div>
+        <div class="info-box">
+          <img src="recuento.png" alt="Pallets">
+          <p id="lastBoxNumberDisplay">1119 <b class="unit">Cajas</b></p>
+        </div>
+      </div>
+      <div class="barcode" id="barcode">
+        <center><p>Último Código de Barras: SIN LECTURA</p></center>
+        <svg id="lastBarcode"></svg>
+      </div>
     </div>
   </main>
 
+  <!-- Scripts -->
+  <!-- Bootstrap JS -->
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <!-- JsBarcode Library -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+  <!-- JavaScript -->
   <script>
     let lastWeight = null;
     let lastDimension = null;
@@ -271,17 +259,18 @@
     let liveBoxNumber = null;
 
     function getTokenFromUrl() {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get('token');
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('token');
     }
 
     const token = getTokenFromUrl();
     const apiUrl = `/api/control-weight/${token}`;
 
     async function updateData() {
-        try {
-            const response = await fetch(apiUrl);
+      try {
+        const response = await fetch(apiUrl);
 
+<<<<<<< HEAD
             if (!response.ok) {
                 throw new Error(`Error HTTP: ${response.status}`);
             }
@@ -365,20 +354,124 @@
 
         } catch (error) {
             console.error("Error al obtener o procesar datos de la API:", error);
+=======
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+>>>>>>> 9ed764fc (main)
         }
+
+        const data = await response.json();
+        console.log("Datos recibidos:", data);
+
+        const grossWeight = parseFloat(data.gross_weight) || 0;
+        const lastControlWeight = parseFloat(data.last_control_weight) || 0;
+
+        document.getElementById('scaleName').innerHTML = data.name || "Nombre de la Báscula";
+        document.getElementById('orderId').textContent = data.order_id || "Nº de Orden";
+
+        // Actualizar fecha de inicio
+        if (data.created_at) {
+          const createdAt = new Date(data.created_at);
+          const formattedDate = createdAt.toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' });
+          const formattedTime = createdAt.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+          document.getElementById('created-at').textContent = `Iniciada ${formattedDate} ${formattedTime}`;
+        } else {
+          document.getElementById('created-at').textContent = "Iniciada ...";
+        }
+
+        // Detectar cambios en los datos en vivo y aplicar efecto de zoom
+        if (grossWeight !== liveWeight) {
+          const weightDisplay = document.getElementById('weightDisplay');
+          weightDisplay.classList.add('zoom');
+          setTimeout(() => {
+            weightDisplay.classList.remove('zoom');
+          }, 2000);
+        }
+
+        if (data.dimension !== liveDimension) {
+          const dimensionDisplay = document.getElementById('dimensionDisplay');
+          dimensionDisplay.classList.add('zoom');
+          setTimeout(() => {
+            dimensionDisplay.classList.remove('zoom');
+          }, 2000);
+        }
+
+        if (data.box_number !== liveBoxNumber) {
+          const boxNumberDisplay = document.getElementById('boxNumberDisplay');
+          boxNumberDisplay.classList.add('zoom');
+          setTimeout(() => {
+            boxNumberDisplay.classList.remove('zoom');
+          }, 2000);
+        }
+
+        document.getElementById('weightDisplay').innerHTML = grossWeight.toFixed(1) + ' <b class="unit">Kg</b>';
+        document.getElementById('dimensionDisplay').innerHTML = data.dimension + ' <b class="unit">mm</b>';
+        document.getElementById('boxNumberDisplay').innerHTML = data.box_number + ' <b class="unit">Cajas</b>';
+
+        // Detectar cambios en los últimos datos y aplicar efecto de zoom con color rojo
+        if (lastControlWeight !== lastWeight) {
+          const lastWeightDisplay = document.getElementById('lastWeightDisplay');
+          lastWeightDisplay.classList.add('zoom-red');
+          setTimeout(() => {
+            lastWeightDisplay.classList.remove('zoom-red');
+          }, 2000);
+        }
+
+        if (data.last_dimension !== lastDimension) {
+          const lastDimensionDisplay = document.getElementById('lastDimensionDisplay');
+          lastDimensionDisplay.classList.add('zoom-red');
+          setTimeout(() => {
+            lastDimensionDisplay.classList.remove('zoom-red');
+          }, 2000);
+        }
+
+        if (data.last_box_number !== lastBoxNumber) {
+          const lastBoxNumberDisplay = document.getElementById('lastBoxNumberDisplay');
+          lastBoxNumberDisplay.classList.add('zoom-red');
+          setTimeout(() => {
+            lastBoxNumberDisplay.classList.remove('zoom-red');
+          }, 2000);
+        }
+
+        document.getElementById('lastWeightDisplay').innerHTML = lastControlWeight.toFixed(1) + ' <b class="unit">Kg</b>';
+        document.getElementById('lastDimensionDisplay').innerHTML = data.last_dimension + ' <b class="unit">mm</b>';
+        document.getElementById('lastBoxNumberDisplay').innerHTML = data.last_box_number + ' <b class="unit">Cajas</b>';
+
+        // Generar código de barras
+        JsBarcode("#lastBarcode", data.last_barcoder.toString(), {
+          format: "CODE128",
+          displayValue: true,
+          fontSize: 20,
+          height: 80
+        });
+
+        // Actualizar valores anteriores
+        lastWeight = lastControlWeight;
+        lastDimension = data.last_dimension;
+        lastBoxNumber = data.last_box_number;
+
+        // Actualizar valores en vivo
+        liveWeight = grossWeight;
+        liveDimension = data.dimension;
+        liveBoxNumber = data.box_number;
+
+      } catch (error) {
+        console.error("Error al obtener o procesar datos de la API:", error);
+      }
     }
 
     function updateTime() {
-        const timeElement = document.getElementById('timeDisplay');
-        const now = new Date();
-        const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-        timeElement.textContent = now.toLocaleTimeString('es-ES', options);
+      const timeElement = document.getElementById('timeDisplay');
+      const now = new Date();
+      const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+      timeElement.textContent = now.toLocaleTimeString('es-ES', options);
     }
 
     setInterval(updateData, 300);
     setInterval(updateTime, 1000);
 
     updateData();
+    updateTime();
   </script>
 </body>
 </html>

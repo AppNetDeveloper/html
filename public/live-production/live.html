@@ -2,347 +2,556 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>BOISOLO Autoconto - Order Stats</title>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Autoconto</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      background-color: #1e1e2f;
-      color: #ffffff;
-      font-family: 'Roboto', sans-serif;
-      box-sizing: border-box;
-      overflow: hidden;
-      background: url('/live-weight/9984.jpg') no-repeat center center fixed;
-      background-size: cover;
+    .card-custom {
+      background-color: #f8f9fa;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
     }
-    
-    header {
-      width: 100%;
+    .card-header-custom {
+      background-color: #343a40;
+      color: #fff;
+      padding: 15px;
+      font-size: 1.2rem;
+      border-radius: 12px 12px 0 0;
+    }
+    .progress-bar-label {
+      position: absolute;
+      right: 10px;
+      color: white;
+      font-weight: bold;
+    }
+    .progress {
+      position: relative;
+      height: 25px;
+      margin-bottom: 20px;
+    }
+    .small-card {
+      background-color: #343a40;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      color: white;
+    }
+    .small-card-white {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      color: #333;
+    }
+    .small-card .metric, .small-card-white .metric {
+      font-size: 2rem;
+      color: #f39c12;
+    }
+    .small-card .metric-label, .small-card-white .metric-label {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 5px;
+    }
+    .metric-red {
+      color: #e74c3c;
+    }
+    .metric-yellow {
+      color: #f39c12;
+    }
+    .header-container {
+      background-color: #343a40;
+      color: white;
+      padding: 10px 30px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 20px;
-      background-color: #28293e;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     }
-    
+    .header-left img {
+      max-height: 50px; /* Limita la altura máxima para que se ajuste al header */
+      width: auto; /* Mantiene la proporción de la imagen */
+    }
+    .header-center {
+      text-align: center;
+      font-size: 1.3rem;
+    }
+    .header-right {
+      font-size: 1.5rem;
+    }
+    .header-right small {
+      display: block;
+      font-size: 1rem;
+      color: #ffc107;
+    }
     .logo {
-      max-width: 25%;
-      height: auto;
+      font-size: 2rem;
+      font-weight: bold;
+      color: #f39c12;
     }
-
-    .order-container {
-      display: flex;
-      flex-grow: 1;
-      justify-content: center;
+    .small-text {
+      font-size: 1rem;
+      color: #888;
     }
-
-    #orderId {
-      font-size: 7vh;
-      color: #ffffff;
-      text-align: center;
-    }
-
-    .time-container {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      margin-left: auto;
-    }
-
-    .time {
-      font-size: 4vh;
-      margin-right: 20px;
-    }
-
-    #scaleName {
-      font-size: 2.5vh;
-      color: #ffcc00;
-      text-align: right;
-    }
-    
-    main {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-      height: 100%;
+    .oee-box {
+      background-color: #343a40;
+      color: white;
       padding: 20px;
-      overflow-y: auto;
-    }
-    
-    .box {
-      background-color: #2e2f47;
-      padding: 20px;
-      margin-bottom: 20px;
       border-radius: 10px;
-      width: 98%;
-      max-width: 2400px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .box-content {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-      width: 100%;
-    }
-    
-    .info-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
       text-align: center;
-      padding: 15px;
-      border-radius: 8px;
-      background-color: #3b3c55;
-      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
-    }
-
-    .display-number {
-      font-size: 5vw;
+      font-size: 1.2rem;
       font-weight: bold;
-      color: #ffcc00;
-      line-height: 1;
-      word-wrap: break-word;
     }
-
-    .center-name2 {
-      font-size: 1.5vw;
-      font-weight: bold;
-      color: #ffffff;
-      line-height: 1;
-      word-wrap: break-word;
+    .oee-percentage {
+      font-size: 2rem;
+      color: #f39c12;
     }
-
-    .unit {
-      font-size: 2vw;
-      vertical-align: middle;
-      color: #ffffff;
-    }
-
-    /* Añadimos el efecto de zoom */
-    @keyframes zoomEffect {
-      0% {
-        transform: scale(1);
-      }
-      50% {
-        transform: scale(1.2);
-      }
-      100% {
-        transform: scale(1);
-      }
-    }
-
-    .zoom {
-      animation: zoomEffect 2s;
-    }
-
-    @media (max-width: 768px) {
-      .box-content {
-        grid-template-columns: 1fr;
-      }
-      .display-number {
-        font-size: 20vw;
-      }
-      .info-box p {
-        font-size: 2vh;
-      }
+    .progress-container {
+      max-width: 100%;
     }
   </style>
 </head>
 <body>
-  <header class="d-flex justify-content-between align-items-center">
-      <img src="logo.png" alt="Logo" class="logo">
-      <div class="order-container">
-          <div id="orderId">15/461121</div> <!-- Aquí se muestra el order_id en el centro -->
-      </div>
-      <div class="time-container">
-          <div class="time" id="timeDisplay">22:46:18</div>
-          <div id="scaleName" class="center-name">Nombre Linea Production</div> <!-- Aquí se muestra el nombre de la línea -->
-      </div>
+
+  <!-- Header -->
+  <header class="header-container">
+    <div class="header-left">
+      <img src="logo.png" alt="Logo de Autoconto">
+    </div>
+    <div class="header-center">
+      <div id="order-id">Cargando...</div>
+      <div id="created-at" style="font-size: 1rem;">Iniciada ...</div>
+    </div>
+    <div class="header-right">
+      <div id="clock">--:--:--</div>
+      <small id="production-line-name">Cargando...</small>
+    </div>
   </header>
 
-  <main>
-    <div class="box">
-        <div class="box-content">
-            <div class="info-box">
-              <p class="center-name2">Cajas Pedido</p>
-              <p class="display-number" id="boxDisplay">0</p>
+  <!-- Contenedor Principal -->
+  <div class="container-fluid mt-4">
+    <div class="row">
+      <!-- Card 1 (Grande) que contiene 6 cards pequeños en 2 filas de 3 cards -->
+      <div class="col-lg-6 mb-4">
+        <div class="card card-custom">
+          <div class="card-body">
+            <div class="row">
+              <!-- Fila 1 -->
+              <div class="col-md-4">
+                <div class="small-card">
+                  <div class="metric" id="units-made-real">--</div>
+                  <div class="metric-label">Uds Fabricadas</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="small-card">
+                  <div class="metric" id="units-pending">--</div>
+                  <div class="metric-label">Uds Pendientes</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="small-card">
+                  <div class="metric" id="units-delayed">--</div>
+                  <div class="metric-label">Uds Atrasadas</div>
+                </div>
+              </div>
             </div>
-            <div class="info-box">
-                <p class="center-name2">Uds. / Caja</p>
-                <p class="display-number" id="unitsBoxDisplay">0</p>
+            <div class="row">
+              <!-- Fila 2 -->
+              <div class="col-md-4">
+                <div class="small-card">
+                  <div class="metric" id="sensor-stops-time">--:--</div>
+                  <div class="metric-label">Paradas Sensores</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="small-card">
+                  <div class="metric" id="slow-time">--:--</div>
+                  <div class="metric-label">Tiempo Lento</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="small-card">
+                  <div class="metric metric-red" id="unidentified-time">--:--</div>
+                  <div class="metric-label">No Identificadas</div>
+                </div>
+              </div>
             </div>
-            <div class="info-box">
-                <p class="center-name2">Uds. a Fabricar</p>
-                <p class="display-number" id="unitsDisplay">0</p>
-            </div>
-            <div class="info-box">
-              <p class="center-name2">Uds. Fabricadas</p>
-              <p class="display-number" id="unitsMadeDisplay">0</p>
-            </div>
-            <div class="info-box">
-              <p class="center-name2">Uds. Pendientes</p>
-              <p class="display-number" id="unitsPendingDisplay">0</p>
-          </div>
-          <div class="info-box">
-              <p class="center-name2">Fabricadas en Tiempo de Ciclo</p>
-              <p class="display-number" id="slowTimeDisplay">0 <span class="unit">UDS</span></p>
           </div>
         </div>
-    </div>
+      </div>
 
-    <div class="box">
-        <div class="box-content">
-            <div class="info-box">
-                <p class="center-name2">Paradas Informadas por Sensores</p>
-                <p class="display-number" id="sensorStopsTimeDisplay">0 <span class="unit">seg</span></p>
+      <!-- Card 2 (Grande) que contiene métricas de Producción y Ciclo -->
+      <div class="col-lg-6 mb-4">
+        <div class="card card-custom">
+          <div class="card-body">
+            <div class="row">
+              <!-- Fila 1 -->
+              <div class="col-md-4">
+                <div class="small-card-white">
+                  <div class="metric" id="box">--</div>
+                  <div class="metric-label">Cajas Pedido</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="small-card-white">
+                  <div class="metric" id="units-box">--</div>
+                  <div class="metric-label">Uds Caja</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="small-card-white">
+                  <div class="metric" id="units">--</div>
+                  <div class="metric-label">Uds a Fabricar</div>
+                </div>
+              </div>
+              <!-- Fila 2 -->
+              <div class="col-md-4">
+                <div class="small-card-white">
+                  <div class="metric" id="production-time">--:--:--</div>
+                  <div class="metric-label">Tiempo en Producción</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="small-card-white">
+                  <div class="metric" id="theoretical-end-time">--:--:--</div>
+                  <div class="metric-label">Tiempo Teórico Fin</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="small-card-white">
+                  <div class="metric" id="real-end-time">--:--:--</div>
+                  <div class="metric-label">Tiempo Estimado Fin</div>
+                </div>
+              </div>
             </div>
-            <div class="info-box">
-                <p class="center-name2">Paradas NO Identificadas</p>
-                <p class="display-number" id="productionStopsTimeDisplay">0 <span class="unit">min</span></p>
+            <div class="row">
+              <!-- Fila 3 (nueva fila agregada) -->
+              <div class="col-md-4">
+                <div class="small-card-white">
+                  <div class="metric" id="number-of-shifts">--</div>
+                  <div class="metric-label">Nº de Turnos</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="small-card-white">
+                  <div class="metric" id="theoretical-cycle-time">--</div>
+                  <div class="metric-label">Tiempo de Ciclo Teórico</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="small-card-white">
+                  <div class="metric" id="real-cycle-time">--</div>
+                  <div class="metric-label">Tiempo de Ciclo Real</div>
+                </div>
+              </div>
             </div>
-            <div class="info-box">
-                <p class="center-name2">Efectividad OEE</p>
-                <p class="display-number" id="oeeDisplay">0.00 <span class="unit">%</span></p>
-            </div>
-            <div class="info-box">
-              <p class="center-name2">Tiempo Teórico Hasta Finalización</p>
-              <p class="display-number" id="unitsMadeTheoreticalDisplay">0</p>
-            </div>
-            <div class="info-box">
-                <p class="center-name2">Tiempo Estimado Hasta Finalización</p>
-                <p class="display-number" id="fastTimeDisplay">0</p>
-            </div>
-            <div class="info-box">
-                <p class="center-name2">Total Tiempo Perdido</p>
-                <p class="display-number" id="outTimeDisplay">0</p>
-            </div>
+          </div>
         </div>
+      </div>
+
+      <!-- Parte Inferior: Eficiencia y Disponibilidad -->
+      <div class="col-lg-6 mb-4">
+        <div class="card card-custom">
+          <div class="card-body d-flex">
+            <div class="col-9">
+              <div class="text-center mt-4">
+                <div class="metric-label">Disponibilidad</div>
+                <div class="progress" style="height: 25px;">
+                  <div id="availability-progress-bar" class="progress-bar" style="background-color: gray;"></div>
+                  <div id="availability-progress-bar-stop" class="progress-bar bg-danger"></div>
+                  <span id="availability-progress-bar-label" class="progress-bar-label">--:--:--</span>
+                </div>
+              </div>
+              <div class="text-center mt-4">
+                <div class="metric-label">Rendimiento</div>
+                <div class="progress" id="performance-progress-container" style="height: 25px;">
+                  <div id="performance-progress-bar" class="progress-bar" style="background-color: gray;"></div>
+                  <div id="performance-progress-bar-slow" class="progress-bar bg-warning"></div>
+                  <span id="performance-progress-bar-label" class="progress-bar-label">--:--:--</span>
+                </div>
+              </div>
+              <div class="text-center mt-4">
+                <div class="metric-label">Calidad</div>
+                <div class="progress" id="quality-progress-container" style="height: 25px;">
+                  <div id="quality-progress-bar" class="progress-bar" style="background-color: gray;"></div>
+                  <div id="quality-progress-bar-defects" class="progress-bar bg-success"></div>
+                  <span id="quality-progress-bar-label" class="progress-bar-label">--:--:--</span>
+                </div>
+              </div>
+            </div>
+            <!-- OEE Box -->
+            <div class="col-3 d-flex align-items-center justify-content-center">
+              <div class="oee-box">
+                EFECTIVIDAD / OEE
+                <div class="oee-percentage" id="oee-percentage">--%</div>
+                <div class="small-text">ORDEN ACTUAL</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Turnos y Producción -->
+      <div class="col-lg-6 mb-4">
+        <div class="card card-custom">
+          <div class="card-body">
+            <div class="row">
+              <!-- Card de Gráfico y Estadísticas -->
+              <div class="col-lg-8 mb-4">
+                <div class="card card-custom">
+                  <div class="card-header-custom">Turno Actual</div>
+                  <div class="card-body">
+                    <div class="grafico-container">
+                      <!-- Imagen o gráfico ficticio -->
+                      <img src="grafico.png" alt="Gráfico de flujo" style="width: 100%; max-width: 100%; height: auto;">
+                    </div>
+                  </div>
+                </div>
+              </div>
+        
+              <!-- Cards de Pesaje a la derecha -->
+              <div class="col-lg-4 mb-4">
+                <div class="col-md-10">
+                  <div class="small-card">
+                    <div class="metric">27</div>
+                    <div class="metric-label">Cajas Finalizadas</div>
+                  </div>
+                </div>
+                <div class="col-md-10">
+                  <div class="small-card">
+                    <div class="metric">732 kg</div>
+                    <div class="metric-label">Peso Acumulado</div>
+                  </div>
+                </div>
+                <div class="pesaje-card">
+                  <div class="pesaje-label">Pesaje</div>
+                  <div style="background-color: #28a745; width: 50px; height: 50px; margin: auto;"></div> <!-- Ícono cuadrado -->
+                </div>                
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
     </div>
-  </main>
+  </div>
 
-  <script>
-    // Obtén el token de la URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
-    if (!token) {
-      console.error("Token no proporcionado en la URL");
-    }
+<!-- Asegúrate de que este script esté dentro de tu archivo HTML, justo antes del cierre de la etiqueta </body> -->
+<script>
+  function updateClock() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
 
-    const apiUrl = `/api/order-stats?token=${token}`;
+  function formatTime(seconds) {
+    const hrs = Math.floor(seconds / 3600).toString().padStart(2, '0');
+    const mins = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+    const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
+    return `${hrs}:${mins}:${secs}`;
+  }
 
-    let lastValues = {};
-
-    async function updateOrderStats() {
+  async function fetchProductionData() {
+    try {
+        // Obtén el token de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
         if (!token) {
-            console.error("No se puede actualizar OrderStats sin un token.");
-            return;
+            throw new Error('Token no encontrado en la URL');
         }
+        
+        // Usamos comillas invertidas para la interpolación de variables
+        const response = await fetch(`/api/order-stats?token=${token}`);
+      const data = await response.json();
 
-        try {
-            const response = await fetch(apiUrl);
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
-            const data = await response.json();
-            console.log("Datos recibidos:", data);
+      document.getElementById("production-line-name").textContent = data.production_line_name;
+      document.getElementById("order-id").textContent = data.order_id;
 
-            const formatNumber = (num) => {
-              return Math.trunc(num).toString();
-            };
-            // Compara si los valores han cambiado y aplica el efecto de zoom
-            const applyZoomEffect = (id, newValue) => {
-                if (lastValues[id] !== newValue) {
-                    document.getElementById(id).classList.add('zoom');
-                    setTimeout(() => {
-                        document.getElementById(id).classList.remove('zoom');
-                    }, 2000);
-                    lastValues[id] = newValue; // Actualiza el valor guardado
-                }
-            };
+      const createdAt = new Date(data.created_at);
+      const updatedAt = new Date(data.updated_at);
+      const formattedDate = createdAt.toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      const formattedTime = createdAt.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      document.getElementById("created-at").textContent = `Iniciada ${formattedDate} ${formattedTime}`;
 
-            applyZoomEffect('unitsDisplay', data.units);
-            applyZoomEffect('unitsMadeDisplay', data.units_made_real);
-            applyZoomEffect('unitsPendingDisplay', data.units_pending);
-            applyZoomEffect('boxDisplay', data.box);
-            applyZoomEffect('unitsBoxDisplay', data.units_box);
-            applyZoomEffect('unitsMadeTheoreticalDisplay', data.theoretical_end_time);
-            applyZoomEffect('sensorStopsTimeDisplay', data.sensor_stops_time);
-            applyZoomEffect('productionStopsTimeDisplay', data.production_stops_time);
-            applyZoomEffect('oeeDisplay', parseFloat(data.oee).toFixed(2));
-            applyZoomEffect('slowTimeDisplay', data.slow_time);
-            applyZoomEffect('fastTimeDisplay', data.real_end_time);
-            
+      document.getElementById("units-made-real").textContent = data.units_made_real;
+      document.getElementById("units-pending").textContent = data.units_pending;
+      document.getElementById("units-delayed").textContent = data.units_made;
 
+      // Actualizar los campos de Cajas Pedido, Uds Caja y Uds a Fabricar
+      document.getElementById("box").textContent = data.box;
+      document.getElementById("units-box").textContent = data.units_box;
+      document.getElementById("units").textContent = data.units;
 
-            // Actualizar valores en la interfaz
-            document.getElementById('unitsDisplay').innerHTML = formatNumber(data.units);
-            document.getElementById('unitsMadeDisplay').innerHTML = formatNumber(data.units_made_real);
-            document.getElementById('unitsPendingDisplay').innerHTML = formatNumber(data.units_pending);
-            document.getElementById('boxDisplay').innerHTML = formatNumber(data.box);
-            document.getElementById('unitsBoxDisplay').innerHTML = formatNumber(data.units_box);
-            document.getElementById('unitsMadeTheoreticalDisplay').innerHTML = formatNumberToTime(parseFloat(data.theoretical_end_time), 0);
-            document.getElementById('sensorStopsTimeDisplay').innerHTML = formatNumberToTime(data.sensor_stops_time);
-            document.getElementById('productionStopsTimeDisplay').innerHTML = formatNumberToTime(data.production_stops_time);
-            document.getElementById('oeeDisplay').innerHTML = formatNumber(parseFloat(data.oee), 0) + ' <span class="unit">%</span>';
-            document.getElementById('slowTimeDisplay').innerHTML = formatNumber(data.slow_time);
-            document.getElementById('fastTimeDisplay').innerHTML = formatNumberToTime(parseFloat(data.real_end_time), 0);
+      // Actualizar los nuevos campos
+      document.getElementById("number-of-shifts").textContent = 2; // Valor fijo
+      document.getElementById("theoretical-cycle-time").textContent = data.seconds_per_unit_theoretical;
+      document.getElementById("real-cycle-time").textContent = data.seconds_per_unit_real;
 
-            function formatNumberToTime(minutes) {
-                // Redondear minutos eliminando los decimales
-                minutes = Math.floor(minutes);
-                
-                let hours = Math.floor(minutes / 60);
-                let mins = minutes % 60;
+      const sensorStopsTimeInSeconds = data.sensor_stops_time * 60;
+      const sensorStopsTimeFormatted = formatTime(sensorStopsTimeInSeconds);
+      document.getElementById("sensor-stops-time").textContent = sensorStopsTimeFormatted;
 
-                // Asegurarse de que los valores tengan siempre 2 dígitos
-                hours = hours < 10 ? '0' + hours : hours;
-                mins = mins < 10 ? '0' + mins : mins;
+      const slowTimeInUnits = data.slow_time;
+      const slowTimeInSeconds = slowTimeInUnits * data.seconds_per_unit_real - slowTimeInUnits * data.seconds_per_unit_theoretical;
+      document.getElementById("slow-time").textContent = formatTime(slowTimeInSeconds);
 
-                return hours + ':' + mins;
-            }
-            //Calculo ultimo campo
-            var tiempo = ((parseFloat(data.units_made_theoretical) - parseFloat(data.units_made_real)) * parseFloat(data.seconds_per_unit_theoretical)) / 60;
-            applyZoomEffect('outTimeDisplay', tiempo);
-            document.getElementById('outTimeDisplay').innerHTML = formatNumberToTime(parseFloat(tiempo), 0) ;
+      const unidentifiedTimeDifference = (data.units_made_theoretical - data.units_made_real) * data.seconds_per_unit_theoretical;
+      document.getElementById("unidentified-time").textContent = formatTime(unidentifiedTimeDifference);
 
-            // Actualizar el ID de la orden
-            document.getElementById('orderId').innerHTML = data.order_id;
+      // Calcular Tiempo en Producción usando updatedAt
+      const timeDifferenceInSeconds = Math.floor((updatedAt - createdAt) / 1000);
+      const productionTime = formatTime(timeDifferenceInSeconds);
+      document.getElementById("production-time").textContent = productionTime;
 
-            // Mostrar el nombre de la línea de producción basado en el JSON
-            document.getElementById('scaleName').innerHTML = data.production_line_name;
+      // Calcular Tiempo Teórico Fin
+      const theoreticalEndTimeInSeconds = data.theoretical_end_time * 60;
+      const theoreticalEndTimeFormatted = formatTime(theoreticalEndTimeInSeconds);
+      document.getElementById("theoretical-end-time").textContent = theoreticalEndTimeFormatted;
 
-        } catch (error) {
-            console.error("Error al obtener o procesar datos de la API:", error);
-        }
+      // Calcular Tiempo Estimado Fin
+      const realEndTimeInSeconds = data.real_end_time * 60;
+      const realEndTimeFormatted = formatTime(realEndTimeInSeconds);
+      document.getElementById("real-end-time").textContent = realEndTimeFormatted;
+
+      // Actualizar OEE con valor entero redondeado
+      document.getElementById("oee-percentage").textContent = Math.round(data.oee) + "%";
+
+      // Calcular Disponibilidad
+      // Tiempo total de paradas (Paradas Sensores + No Identificadas)
+      const totalStopTimeInSeconds = sensorStopsTimeInSeconds + unidentifiedTimeDifference;
+
+      // Evitar división por cero
+      let availabilityPercentage = 0;
+      let stopPercentage = 0;
+      if (timeDifferenceInSeconds > 0) {
+        availabilityPercentage = ((timeDifferenceInSeconds - totalStopTimeInSeconds) / timeDifferenceInSeconds) * 100;
+        stopPercentage = (totalStopTimeInSeconds / timeDifferenceInSeconds) * 100;
+      }
+
+      // Asegurarse de que las sumas den 100%
+      availabilityPercentage = availabilityPercentage.toFixed(2);
+      stopPercentage = stopPercentage.toFixed(2);
+
+      // Actualizar las barras de progreso de Disponibilidad
+      document.getElementById('availability-progress-bar').style.width = availabilityPercentage + '%';
+      document.getElementById('availability-progress-bar-stop').style.width = stopPercentage + '%';
+
+      // Actualizar la etiqueta con el tiempo total de paradas
+      const totalStopTimeFormatted = formatTime(totalStopTimeInSeconds);
+      document.getElementById('availability-progress-bar-label').textContent = totalStopTimeFormatted;
+
+      // Calcular Rendimiento
+      // Tiempo sin paradas (la longitud total de la barra de Rendimiento)
+      const timeWithoutStopsInSeconds = timeDifferenceInSeconds - totalStopTimeInSeconds;
+
+      // Ajustar el ancho de la barra de Rendimiento para que coincida con la parte gris de Disponibilidad
+      const availabilityBarWidth = availabilityPercentage; // En porcentaje
+      document.getElementById('performance-progress-container').style.width = availabilityBarWidth + '%';
+      // Alineamos a la izquierda
+      document.getElementById('performance-progress-container').style.margin = '0';
+
+      // Evitar división por cero
+      let performancePercentage = 0;
+      let slowPercentage = 0;
+      if (timeWithoutStopsInSeconds > 0) {
+        performancePercentage = ((timeWithoutStopsInSeconds - slowTimeInSeconds) / timeWithoutStopsInSeconds) * 100;
+        slowPercentage = (slowTimeInSeconds / timeWithoutStopsInSeconds) * 100;
+      }
+
+      // Asegurarse de que las sumas den 100%
+      performancePercentage = performancePercentage.toFixed(2);
+      slowPercentage = slowPercentage.toFixed(2);
+
+      // Actualizar las barras de progreso de Rendimiento
+      document.getElementById('performance-progress-bar').style.width = performancePercentage + '%';
+      document.getElementById('performance-progress-bar-slow').style.width = slowPercentage + '%';
+
+      // Actualizar la etiqueta con el tiempo lento
+      const slowTimeFormatted = formatTime(slowTimeInSeconds);
+      document.getElementById('performance-progress-bar-label').textContent = slowTimeFormatted;
+
+      // Calcular Calidad
+      // Tiempo productivo a velocidad teórica (longitud de la parte gris de Rendimiento)
+      const timeAtTheoreticalSpeedInSeconds = timeWithoutStopsInSeconds - slowTimeInSeconds;
+
+      // Ajustar el ancho de la barra de Calidad para que coincida con la parte gris de Rendimiento
+      const calidadBarWidth = (availabilityPercentage * performancePercentage) / 100; // Porcentaje total
+      document.getElementById('quality-progress-container').style.width = calidadBarWidth + '%';
+      // Alineamos a la izquierda
+      document.getElementById('quality-progress-container').style.margin = '0';
+
+      // En esta barra, el verde representa Paradas Sensores
+      // Calculamos el porcentaje que representa el tiempo de Paradas Sensores dentro del tiempo a velocidad teórica
+      let qualityPercentage = 0;
+      let sensorStopsPercentage = 0;
+      if (timeAtTheoreticalSpeedInSeconds > 0) {
+        qualityPercentage = ((timeAtTheoreticalSpeedInSeconds - sensorStopsTimeInSeconds) / timeAtTheoreticalSpeedInSeconds) * 100;
+        sensorStopsPercentage = (sensorStopsTimeInSeconds / timeAtTheoreticalSpeedInSeconds) * 100;
+      }
+
+      // Asegurarse de que las sumas den 100%
+      qualityPercentage = qualityPercentage.toFixed(2);
+      sensorStopsPercentage = sensorStopsPercentage.toFixed(2);
+
+      // Actualizar las barras de progreso de Calidad
+      document.getElementById('quality-progress-bar').style.width = qualityPercentage + '%';
+      document.getElementById('quality-progress-bar-defects').style.width = sensorStopsPercentage + '%';
+
+      // Actualizar la etiqueta con el tiempo de Paradas Sensores
+      document.getElementById('quality-progress-bar-label').textContent = sensorStopsTimeFormatted;
+
+    } catch (error) {
+      console.error("Error al obtener los datos:", error);
+      document.getElementById("production-line-name").textContent = "Error al cargar";
+      document.getElementById("order-id").textContent = "Error al cargar";
+      document.getElementById("created-at").textContent = "Error al cargar";
+      document.getElementById("units-made-real").textContent = "--";
+      document.getElementById("units-pending").textContent = "--";
+      document.getElementById("units-delayed").textContent = "--";
+      document.getElementById("box").textContent = "--";
+      document.getElementById("units-box").textContent = "--";
+      document.getElementById("units").textContent = "--";
+      document.getElementById("number-of-shifts").textContent = "--";
+      document.getElementById("theoretical-cycle-time").textContent = "--";
+      document.getElementById("real-cycle-time").textContent = "--";
+      document.getElementById("sensor-stops-time").textContent = "--:--";
+      document.getElementById("slow-time").textContent = "--:--";
+      document.getElementById("unidentified-time").textContent = "--:--";
+      document.getElementById("production-time").textContent = "--:--:--";
+      document.getElementById("theoretical-end-time").textContent = "--:--:--";
+      document.getElementById("real-end-time").textContent = "--:--:--";
+      document.getElementById("oee-percentage").textContent = "--%";
+      document.getElementById('availability-progress-bar').style.width = '0%';
+      document.getElementById('availability-progress-bar-stop').style.width = '0%';
+      document.getElementById('availability-progress-bar-label').textContent = '--:--:--';
+
+      document.getElementById('performance-progress-bar').style.width = '0%';
+      document.getElementById('performance-progress-bar-slow').style.width = '0%';
+      document.getElementById('performance-progress-container').style.width = '0%';
+      document.getElementById('performance-progress-bar-label').textContent = '--:--:--';
+
+      document.getElementById('quality-progress-bar').style.width = '0%';
+      document.getElementById('quality-progress-bar-defects').style.width = '0%';
+      document.getElementById('quality-progress-container').style.width = '0%';
+      document.getElementById('quality-progress-bar-label').textContent = '--:--:--';
     }
+  }
 
-    function updateTime() {
-        const timeElement = document.getElementById('timeDisplay');
-        const now = new Date();
-        const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-        timeElement.textContent = now.toLocaleTimeString('es-ES', options);
-    }
+  setInterval(fetchProductionData, 1000); // Actualiza cada segundo
+  fetchProductionData();
+</script>
 
-    setInterval(updateOrderStats, 1000); // Actualiza cada 5 segundos
-    setInterval(updateTime, 1000); // Actualiza el tiempo cada segundo
-
-    updateOrderStats();
-  </script>
 </body>
 </html>

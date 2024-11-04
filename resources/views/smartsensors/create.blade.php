@@ -24,9 +24,10 @@
             <label for="sensor_type">Tipo de Sensor</label>
             <select name="sensor_type" class="form-control" required>
                 <option value="0">Conteo</option>
-                <option value="1">Consumibles</option>
-                <option value="2">Materia Prima</option>
-                <option value="3">Avería en Proceso</option>
+                <option value="1">Consumibles Tipo mallas Papel etc</option>
+                <option value="2">Consumibles Tipo pegatinas tinta</option>
+                <option value="3">Materia prima Tipo vuelca Palot deposito </option>
+                <option value="4">Avería en Proceso</option>
             </select>
         </div>
 

@@ -77,7 +77,7 @@ class CalculateOptimalProductionTime extends Command
                         // Si optimalProductionTime es inferior a PRODUCTION_MIN_TIM ponemos su valor minimo si es mayor a PRODUCTION_MAX_TIM ponemos su valor maxima
                         $minTime = env("PRODUCTION_MIN_TIME", 3);
                         $maxTime = env("PRODUCTION_MAX_TIME", 10);
-
+                        
                         // Asegurarse de que optimalProductionTime esté dentro del rango
                         if ($optimalProductionTime < $minTime) {
                             $optimalProductionTime = $minTime;

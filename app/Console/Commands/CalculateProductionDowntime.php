@@ -58,6 +58,10 @@ class CalculateProductionDowntime extends Command
                     $this->handleType1DowntimeLogic($sensor);
                 } elseif ($sensor->sensor_type == 2) {
                     $this->handleType2DowntimeLogic($sensor);
+                } elseif ($sensor->sensor_type == 3) {
+                    $this->handleType3DowntimeLogic($sensor);
+                } elseif ($sensor->sensor_type == 4) {
+                    $this->handleType4DowntimeLogic($sensor);
                 }
             }
 
@@ -128,6 +132,58 @@ class CalculateProductionDowntime extends Command
     }
 
     private function handleType2DowntimeLogic($sensor)
+    {
+        // Buscar el último registro en sensor_counts con el sensor_id
+        $sensorCount = SensorCount::where('sensor_id', $sensor->id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if ($sensorCount && $sensorCount->value == 0) {
+            // El valor es 0, lo que significa que el sensor está en inactividad
+            $lastEventTime = Carbon::parse($sensorCount->created_at);
+            $now = Carbon::now();
+            $timeDifference = $now->diffInSeconds($lastEventTime);
+
+            // Se amplía la inactividad, mandamos mensaje con status=0
+            $this->info("Sensor {$sensor->name} is in downtime.");
+            $this->incrementDowntime($sensor, $timeDifference);  // Ajuste para no restar $maxTime aquí
+            $this->sendMqttMessage($sensor, 0, $sensor->sensor_type); // status 0 para ampliado, tipo según el sensor
+        } else {
+            // El valor no es 0, lo que significa que el sensor está estable
+            $this->info("Sensor {$sensor->name} is stable.");
+            $this->closeDowntime($sensor);
+            $this->sendMqttMessage($sensor, 2, $sensor->sensor_type); // status 2 para estable
+        }
+
+    }
+
+    private function handleType3DowntimeLogic($sensor)
+    {
+        // Buscar el último registro en sensor_counts con el sensor_id
+        $sensorCount = SensorCount::where('sensor_id', $sensor->id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if ($sensorCount && $sensorCount->value == 0) {
+            // El valor es 0, lo que significa que el sensor está en inactividad
+            $lastEventTime = Carbon::parse($sensorCount->created_at);
+            $now = Carbon::now();
+            $timeDifference = $now->diffInSeconds($lastEventTime);
+
+            // Se amplía la inactividad, mandamos mensaje con status=0
+            $this->info("Sensor {$sensor->name} is in downtime.");
+            $this->incrementDowntime($sensor, $timeDifference);  // Ajuste para no restar $maxTime aquí
+            $this->sendMqttMessage($sensor, 0, $sensor->sensor_type); // status 0 para ampliado, tipo según el sensor
+        } else {
+            // El valor no es 0, lo que significa que el sensor está estable
+            $this->info("Sensor {$sensor->name} is stable.");
+            $this->closeDowntime($sensor);
+            $this->sendMqttMessage($sensor, 2, $sensor->sensor_type); // status 2 para estable
+        }
+
+    }
+
+    private function handleType4DowntimeLogic($sensor)
     {
         // Buscar el último registro en sensor_counts con el sensor_id
         $sensorCount = SensorCount::where('sensor_id', $sensor->id)
