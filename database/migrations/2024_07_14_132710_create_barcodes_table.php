@@ -40,7 +40,7 @@ class CreateBarcodesTableAndAddRelations extends Migration
 
         // Agregar la columna `barcoder_id` en `modbuses` y la clave foránea
         Schema::table('modbuses', function (Blueprint $table) {
-            $table->unsignedBigInteger('barcoder_id')->nullable()->after('id');
+            $table->unsignedBigInteger('barcoder_id')->nullable();
             $table->foreign('barcoder_id')->references('id')->on('barcodes')->onDelete('cascade');
         });
     }
