@@ -26,7 +26,8 @@ class Kernel extends ConsoleKernel
         Commands\CalculateOptimalProductionTime::class,
         Commands\CalculateProductionDowntime::class,
         Commands\CalculateProductionMonitorOee::class,
-        Commands\CheckShiftList::class
+        Commands\CheckShiftList::class,
+        Commands\ConnectWhatsApp::class,
     ];
 
     /**
