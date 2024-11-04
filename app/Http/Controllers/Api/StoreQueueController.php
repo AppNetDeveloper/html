@@ -197,7 +197,7 @@ class StoreQueueController extends Controller
             return response()->json(['error' => 'Error interno del servidor'], 500);
         }
     
-        return response()->json(['message' => 'Valor agregado a la cola de impresión']);
+        return response()->json(['message' => 'Valor agregado a la cola de impresion']);
     }
     
 }

@@ -428,7 +428,7 @@ class ReadModbus extends Command
             $newBoxNumberShift++; //por turno
             $newBoxNumberUnlimited++; //indefinido
             // Generar un número de barcoder único
-            $uniqueBarcoder = uniqid('bar_', true);
+            $uniqueBarcoder = uniqid('', true);
 
                 
 

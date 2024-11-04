@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <!-- JsBarcode Library -->
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+  <!-- QRCode.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     html, body {
       width: 100%;
@@ -15,8 +17,8 @@
       padding: 0;
       display: flex;
       flex-direction: column;
-      background-color: #ffffff; /* Cambiamos el fondo a blanco */
-      color: #000000; /* Cambiamos el color del texto a negro para mejor legibilidad */
+      background-color: #ffffff; /* Fondo blanco */
+      color: #000000; /* Texto negro */
       font-family: 'Roboto', sans-serif;
       box-sizing: border-box;
       overflow: hidden;
@@ -33,7 +35,7 @@
       align-items: center;
     }
     .header-left img {
-      max-height: 50px;
+      max-height: 60px;
       width: auto;
     }
     .header-center {
@@ -42,11 +44,17 @@
     }
     .header-right {
       font-size: 1.5rem;
+      text-align: right;
+      margin: 0;
+      padding: 0;
     }
     .header-right small {
       display: block;
-      font-size: 1rem;
+      font-size: 1.3rem;
       color: #ffc107;
+      text-align: right;
+      margin: 0;
+      padding: 0;
     }
     
     main {
@@ -71,7 +79,7 @@
       flex-direction: column;
       align-items: center;
     }
-
+    
     .box-content {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -89,7 +97,7 @@
       background-color: #e9ecef; /* Color gris claro */
       box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
     }
-
+    
     .weight-display, .dimension-display, .boxNumberDisplay, .lastBoxNumberDisplay {
       font-size: 5vw;
       font-weight: bold;
@@ -97,7 +105,7 @@
       line-height: 1;
       word-wrap: break-word;
     }
-
+    
     #weightDisplay, #dimensionDisplay, #lastWeightDisplay, #lastDimensionDisplay, #boxNumberDisplay, #lastBoxNumberDisplay {
       font-size: 5vw;
       font-weight: bold;
@@ -105,16 +113,11 @@
       word-wrap: break-word;
       color: #343a40; /* Color gris oscuro */
     }
-
+    
     .unit {
       font-size: 40%;
       vertical-align: baseline;
       color: #6c757d; /* Color gris medio */
-    }
-
-    #lastBarcode {
-      margin-top: 10px;
-      width: 100%;
     }
     
     .info-box img {
@@ -132,25 +135,96 @@
       font-size: 2vh;
       color: #343a40; /* Color gris oscuro */
     }
-
+    
+    /* Estilos para la sección inferior */
+    .bottom-row {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+    
+    .barcode-container {
+      display: flex;
+      align-items: center;
+    }
+    
+    .barcode-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .barcode-container p {
+      font-size: 1.2rem;
+      color: #343a40;
+      margin-bottom: 5px; /* Ajusta el margen según sea necesario */
+      text-align: center;
+    }
+    
+    #lastBarcode {
+      width: 100%; /* Ajusta el ancho según sea necesario */
+      height: auto;
+      margin-top: 5px; /* Ajusta el margen según sea necesario */
+    }
+    
+    
+    .qr-rfid-container {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 30px;
+      margin-left: auto; /* Empuja este contenedor hacia la derecha */
+    }
+    
+    .qr-rfid-container div {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .qr-rfid-container p {
+      font-size: 1.2rem;
+      color: #343a40;
+      margin-bottom: 5px;
+    }
+    
+    .rfid-logo, .qr-code {
+      width: 100px;
+      height: 100px;
+    }
+    
     @media (max-width: 768px) {
       .box-content {
         grid-template-columns: 1fr;
       }
-
+    
       .weight-display, .dimension-display {
         font-size: 20vw;
       }
-
+    
       .info-box img {
         width: 12vh;
       }
-
+    
       .info-box p {
         font-size: 2vh;
       }
+    
+      /* Aseguramos que en móviles los elementos se apilen */
+      .bottom-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    
+      .qr-rfid-container {
+        margin-left: 0;
+        margin-top: 20px;
+        justify-content: flex-start;
+      }
     }
-
+    
     @keyframes zoomEffect {
       0% {
         transform: scale(1);
@@ -162,11 +236,11 @@
         transform: scale(1);
       }
     }
-
+    
     .zoom {
       animation: zoomEffect 2s;
     }
-
+    
     @keyframes zoomEffectRed {
       0% {
         transform: scale(1);
@@ -181,10 +255,11 @@
         color: #343a40; /* Color gris oscuro */
       }
     }
-
+    
     .zoom-red {
       animation: zoomEffectRed 2s;
     }
+    
   </style>
 </head>
 <body>
@@ -236,10 +311,24 @@
           <p id="lastBoxNumberDisplay">1119 <b class="unit">Cajas</b></p>
         </div>
       </div>
-      <div class="barcode" id="barcode">
-        <center><p>Último Código de Barras: SIN LECTURA</p></center>
-        <svg id="lastBarcode"></svg>
-      </div>
+      <div class="bottom-row">
+        <div class="barcode-container">
+          <div class="barcode-section">
+            <p>Código de Barras del Último <b id="boxTypeModel">Cajas</b></p>
+            <svg id="lastBarcode"></svg>
+          </div>
+        </div>
+        <div class="qr-rfid-container">
+          <div class="rfid-section">
+            <p>RFID Code</p>
+            <img src="rfid-logo.png" alt="RFID Code" class="rfid-logo">
+          </div>
+          <div class="qr-section">
+            <p>QR Code</p>
+            <div id="qrCode" class="qr-code"></div>
+          </div>
+        </div>
+      </div>  
     </div>
   </main>
 
@@ -265,6 +354,9 @@
 
     const token = getTokenFromUrl();
     const apiUrl = `/api/control-weight/${token}`;
+
+    var qrCodeElement = document.getElementById("qrCode");
+    var qrCodeInstance = null;
 
     async function updateData() {
       try {
@@ -318,9 +410,9 @@
           }, 2000);
         }
 
-        document.getElementById('weightDisplay').innerHTML = grossWeight.toFixed(1) + ' <b class="unit">Kg</b>';
+        document.getElementById('weightDisplay').innerHTML = grossWeight.toFixed(2) + ' <b class="unit">Kg</b>';
         document.getElementById('dimensionDisplay').innerHTML = data.dimension + ' <b class="unit">mm</b>';
-        document.getElementById('boxNumberDisplay').innerHTML = data.box_number + ' <b class="unit">Cajas</b>';
+        document.getElementById('boxNumberDisplay').innerHTML = data.box_number  + ' <b class="unit">'+ data.box_type +'</b>';
 
         // Detectar cambios en los últimos datos y aplicar efecto de zoom con color rojo
         if (lastControlWeight !== lastWeight) {
@@ -347,9 +439,10 @@
           }, 2000);
         }
 
-        document.getElementById('lastWeightDisplay').innerHTML = lastControlWeight.toFixed(1) + ' <b class="unit">Kg</b>';
+        document.getElementById('lastWeightDisplay').innerHTML = lastControlWeight.toFixed(2) + ' <b class="unit">Kg</b>';
         document.getElementById('lastDimensionDisplay').innerHTML = data.last_dimension + ' <b class="unit">mm</b>';
-        document.getElementById('lastBoxNumberDisplay').innerHTML = data.last_box_number + ' <b class="unit">Cajas</b>';
+        document.getElementById('lastBoxNumberDisplay').innerHTML = data.last_box_number + ' <b class="unit">'+ data.box_type +'</b>';
+        document.getElementById('boxTypeModel').innerHTML =data.box_type;
 
         // Generar código de barras
         JsBarcode("#lastBarcode", data.last_barcoder.toString(), {
@@ -358,6 +451,18 @@
           fontSize: 20,
           height: 80
         });
+
+          // Generar o actualizar el código QR
+        if (qrCodeInstance === null) {
+          qrCodeInstance = new QRCode(qrCodeElement, {
+            text: data.last_barcoder.toString(),
+            width: 100,
+            height: 100
+          });
+        } else {
+          qrCodeInstance.clear();
+          qrCodeInstance.makeCode(data.last_barcoder.toString());
+        }
 
         // Actualizar valores anteriores
         lastWeight = lastControlWeight;
