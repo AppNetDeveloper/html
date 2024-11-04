@@ -13,44 +13,48 @@ return new class extends Migration
             $table->string('name')->nullable();
             $table->unsignedBigInteger('production_line_id');
             $table->foreign('production_line_id')->references('id')->on('production_lines');
-            $table->unsignedBigInteger('barcoder_id')->nullable()->after('id');
-            // Definir la relación foránea con la tabla `barcodes`
+            
+            // Define barcoder_id sin 'after'
+            $table->unsignedBigInteger('barcoder_id')->nullable();
+
+            // Define la clave foránea de `barcoder_id` después de crear la columna
             $table->foreign('barcoder_id')->references('id')->on('barcodes')->onDelete('cascade');
-            $table->text('json_api')->nullable(); //identificar el valor de la api
-            $table->string('mqtt_topic_modbus')->nullable();    //esto para extrar de mqtt en lugar de api
-            $table->string('mqtt_topic')->nullable(); //esto para mandar las info por topico, se adapta en codigo para ser gross control etc
-            $table->string('token')->nullable();    //token para el api
-            $table->string('dimension_id')->nullable(); //el id del modbus que se esta usando en linia de pesaje para medir altura
-            $table->string('dimension')->nullable(); //la dimension del bulto si tiene un medidor de altura anadido
-            $table->string('max_kg')->nullable();   //maximo kg que se han recivido de una linea entre los 0 y 0 para resetear
-            $table->string('rep_number')->nullable(); //numero de repeticion que se ha recivido de una linea entre los 0 y 0    para poner el valor como max
-            $table->string('tara')->nullable()->default('0'); //el peso del palet o para hacer un 0 por software
-            $table->string('tara_calibrate')->nullable()->default('0'); //tara para hacer o automatico
-            $table->string('calibration_type')->nullable()->default('0'); //tara maxima para hacer o automatico
-            $table->string('conversion_factor')->nullable()->default('10'); //conversion_factor es si la bascula va en gramos o kg si se parte a 10 o 100
-            $table->string('total_kg_order')->nullable()->default('0'); //total kg por order
-            $table->string('total_kg_shift')->nullable()->default('0'); //total kg por turno
-            $table->string('min_kg')->nullable(); //minimo kg que activan el contador
-            $table->string('last_kg')->nullable(); //ultimo kg que se ha recivido de una linea mayor de min_kg
-            $table->string('last_rep')->nullable(); //numero de repeticion que se ha recivido en un valor estable de last_kg
-            $table->string('rec_box')->nullable(); //numero de cajas que se han hecho es un recuento por order notice
-            $table->string('rec_box_shift')->nullable(); //numero de cajas que se han hecho es un recuento por shift
-            $table->string('rec_box_unlimited')->nullable(); //numero de cajas que se han realizado sin resetear nunca
-            $table->string('last_value')->nullable(); //el ultimo valor de la modbus
-            $table->string('variacion_number')->nullable(); // variaciones que es permitido entre cada lectura para ponerse estable.
-            $table->string('model_name')->nullable(); //con esto identificamos si es bascula o otro sensor
-            $table->string('dimension_default')->nullable(); //esto es la medida en vacio del medidor laser
-            $table->string('dimension_max')->nullable(); //medida maxica alcanzada despues de salir del valor default
-            $table->string('dimension_variacion')->nullable(); //medida de variacion entre cada lectura de la modbus para que se pueda hacer el contador.
-            $table->string('offset_meter')->nullable()->default('0');  // offset para medidor láser o ultra sonidos, default '0'
-            $table->string('printer_id')->nullable();  //id de la impresora que se va a usar para imprimir el valor barcoder del bulto anonimo
-            $table->string('unic_code_order')->nullable();  // Nuevo campo unic_code_order
-            $table->string('shift_type')->nullable();  // Tipo de turno
-            $table->string('event')->nullable();       // Evento
-            $table->integer('downtime_count')->default(0);  // Nuevo campo para contar inactividad
-            $table->integer('optimal_production_time')->nullable(); // Tiempo óptimo de producción de una caja
-            $table->integer('reduced_speed_time_multiplier')->nullable(); // Multiplicador para velocidad reducida
-            $table->string('box_type')->nullable();  // Tipo de cajas bultos cajas etc
+
+            $table->text('json_api')->nullable();
+            $table->string('mqtt_topic_modbus')->nullable();
+            $table->string('mqtt_topic')->nullable();
+            $table->string('token')->nullable();
+            $table->string('dimension_id')->nullable();
+            $table->string('dimension')->nullable();
+            $table->string('max_kg')->nullable();
+            $table->string('rep_number')->nullable();
+            $table->string('tara')->nullable()->default('0');
+            $table->string('tara_calibrate')->nullable()->default('0');
+            $table->string('calibration_type')->nullable()->default('0');
+            $table->string('conversion_factor')->nullable()->default('10');
+            $table->string('total_kg_order')->nullable()->default('0');
+            $table->string('total_kg_shift')->nullable()->default('0');
+            $table->string('min_kg')->nullable();
+            $table->string('last_kg')->nullable();
+            $table->string('last_rep')->nullable();
+            $table->string('rec_box')->nullable();
+            $table->string('rec_box_shift')->nullable();
+            $table->string('rec_box_unlimited')->nullable();
+            $table->string('last_value')->nullable();
+            $table->string('variacion_number')->nullable();
+            $table->string('model_name')->nullable();
+            $table->string('dimension_default')->nullable();
+            $table->string('dimension_max')->nullable();
+            $table->string('dimension_variacion')->nullable();
+            $table->string('offset_meter')->nullable()->default('0');
+            $table->string('printer_id')->nullable();
+            $table->string('unic_code_order')->nullable();
+            $table->string('shift_type')->nullable();
+            $table->string('event')->nullable();
+            $table->integer('downtime_count')->default(0);
+            $table->integer('optimal_production_time')->nullable();
+            $table->integer('reduced_speed_time_multiplier')->nullable();
+            $table->string('box_type')->nullable();
             $table->timestamps();
         });
     }
