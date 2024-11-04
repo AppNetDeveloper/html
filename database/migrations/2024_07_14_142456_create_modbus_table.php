@@ -12,12 +12,9 @@ return new class extends Migration
             $table->id();
             $table->string('name')->nullable();
             $table->unsignedBigInteger('production_line_id');
-            $table->foreign('production_line_id')->references('id')->on('production_lines');
-            
-            // Define barcoder_id sin 'after'
-            $table->unsignedBigInteger('barcoder_id')->nullable();
+            $table->foreign('production_line_id')->references('id')->on('production_lines')->onDelete('cascade');
 
-            // Define la clave foránea de `barcoder_id` después de crear la columna
+            $table->unsignedBigInteger('barcoder_id')->nullable();
             $table->foreign('barcoder_id')->references('id')->on('barcodes')->onDelete('cascade');
 
             $table->text('json_api')->nullable();
@@ -28,12 +25,12 @@ return new class extends Migration
             $table->string('dimension')->nullable();
             $table->string('max_kg')->nullable();
             $table->string('rep_number')->nullable();
-            $table->string('tara')->nullable()->default('0');
-            $table->string('tara_calibrate')->nullable()->default('0');
-            $table->string('calibration_type')->nullable()->default('0');
-            $table->string('conversion_factor')->nullable()->default('10');
-            $table->string('total_kg_order')->nullable()->default('0');
-            $table->string('total_kg_shift')->nullable()->default('0');
+            $table->string('tara')->default('0')->nullable();
+            $table->string('tara_calibrate')->default('0')->nullable();
+            $table->string('calibration_type')->default('0')->nullable();
+            $table->string('conversion_factor')->default('10')->nullable();
+            $table->string('total_kg_order')->default('0')->nullable();
+            $table->string('total_kg_shift')->default('0')->nullable();
             $table->string('min_kg')->nullable();
             $table->string('last_kg')->nullable();
             $table->string('last_rep')->nullable();
@@ -46,7 +43,7 @@ return new class extends Migration
             $table->string('dimension_default')->nullable();
             $table->string('dimension_max')->nullable();
             $table->string('dimension_variacion')->nullable();
-            $table->string('offset_meter')->nullable()->default('0');
+            $table->string('offset_meter')->default('0')->nullable();
             $table->string('printer_id')->nullable();
             $table->string('unic_code_order')->nullable();
             $table->string('shift_type')->nullable();
