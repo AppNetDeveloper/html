@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Listado de Queue Print</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.7.1/css/buttons.dataTables.min.css">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #ffffff; /* Cambiado a blanco */
+      color: #000000; /* Cambiado a negro */
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 90%;
+      max-width: 1200px;
+      padding: 20px;
+      background-color: #f8f9fa; /* Cambiado a gris claro */
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      overflow-x: auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .form-row {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      margin-right: 10px;
+      font-weight: bold;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table thead th {
+      background-color: #007bff;
+      color: #fff;
+      padding: 10px;
+      text-align: left;
+    }
+    table tbody td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      color: #000;
+      text-align: center;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+      background-color: #007bff;
+      color: #fff !important;
+      border-radius: 5px;
+      margin: 2px;
+      border: none;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+      background-color: #0056b3;
+      color: #fff !important;
+    }
+    .dataTables_wrapper .dataTables_filter input {
+      border-radius: 5px;
+      border: none;
+      padding: 10px;
+      width: 300px;
+    }
+    .dataTables_wrapper .dataTables_info {
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Listado de Queue Print</h1>
+    </header>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="usedSelect">Filtrar por Usado:</label>
+        <select id="usedSelect" class="form-control">
+          <option value="all">Todos</option>
+          <option value="0">No usados</option>
+          <option value="1">Usados</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="infoSelect">Info:</label>
+        <select id="infoSelect" class="form-control">
+          <option value="all">All</option>
+          <option value="lite">Lite</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table id="queuePrintTable" class="display nowrap">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Modbus ID</th>
+            <th>Valor</th>
+            <th>Usado</th>
+            <th>URL de Retorno</th>
+            <th>Token de Retorno</th>
+            <th>Fecha de Creación</th>
+            <th>Fecha de Actualización</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Los datos se insertarán aquí mediante JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/1.7.1/js/buttons.html5.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/1.7.1/js/buttons.print.min.js"></script>
+  <script>
+    // Obtener el parámetro `token` de la URL
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    const token = getQueryParam('token');
+    let used = 'all'; // Valor inicial de `used`
+    let info = 'all'; // Valor inicial de `info`
+    let table; // Declaración de la variable de DataTable
+
+    // Función para obtener los datos y mostrarlos en la tabla
+    async function fetchQueuePrintData() {
+      try {
+        const apiUrl = `/api/queue-print-list?token=${token}&used=${used}`;
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Datos recibidos:", data);
+
+        // Inicializar DataTable si no ha sido inicializado
+        if (!table) {
+          table = $('#queuePrintTable').DataTable({
+            data: data,
+            columns: [
+              { data: 'id' },
+              { data: 'modbus_id' },
+              { data: 'value' },
+              { data: 'used', render: function(data) { return data ? 'Sí' : 'No'; } },
+              { data: 'url_back' },
+              { data: 'token_back' },
+              { data: 'created_at' },
+              { data: 'updated_at' }
+            ],
+            dom: 'Bfrtip',
+            buttons: [
+              {
+                extend: 'excelHtml5',
+                text: 'Exportar a Excel',
+                title: 'QueuePrintList',
+                className: 'btn btn-success'
+              },
+              {
+                extend: 'print',
+                text: 'Imprimir',
+                className: 'btn btn-primary'
+              }
+            ],
+            scrollX: true, // Habilitar desplazamiento horizontal
+            order: [[0, 'desc']], // Ordenar por ID
+            paging: true,
+            pageLength: 10,
+            lengthChange: true,
+            searching: true,
+            autoWidth: false // Desactiva el ancho automático para evitar deformación
+          });
+        } else {
+          table.clear().rows.add(data).draw(); // Actualizar los datos sin reiniciar
+        }
+
+        // Ajustar visibilidad de columnas y ancho automático según `info`
+        if (info === 'lite') {
+          table.column(1).visible(false); // Ocultar Modbus ID
+          table.column(4).visible(false); // Ocultar URL de Retorno
+          table.column(5).visible(false); // Ocultar Token de Retorno
+          table.column(6).visible(false); // Ocultar Fecha de Creación
+          table.column(7).visible(false); // Ocultar Fecha de Actualización
+          table.columns.adjust(); // Ajustar el ancho de las columnas visibles
+        } else {
+          table.columns().visible(true); // Mostrar todas las columnas
+          table.columns.adjust(); // Ajustar el ancho de todas las columnas
+        }
+      } catch (error) {
+        console.error("Error al obtener o procesar datos de la API:", error);
+      }
+    }
+
+    // Configurar la actualización automática cada 5 segundos
+    setInterval(fetchQueuePrintData, 5000);
+
+    // Evento para cambiar el filtro `used` y actualizar la tabla
+    document.getElementById('usedSelect').addEventListener('change', (event) => {
+      used = event.target.value; // Actualizar el valor de `used`
+      fetchQueuePrintData(); // Volver a cargar los datos de la tabla
+    });
+
+    // Evento para cambiar el modo `info` y actualizar la visibilidad de columnas
+    document.getElementById('infoSelect').addEventListener('change', (event) => {
+      info = event.target.value; // Actualizar el valor de `info`
+      fetchQueuePrintData(); // Ajustar la visibilidad de columnas
+    });
+
+    // Cargar los datos cuando el documento esté listo
+    document.addEventListener('DOMContentLoaded', fetchQueuePrintData);
+  </script>
+</body>
+</html>

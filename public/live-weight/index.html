@@ -25,7 +25,7 @@
       max-width: 1200px;
       padding: 20px;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Sombra más suave */
-      background-color: #343a40; /* Color gris claro ANTES: #f8f9fa*/ 
+      background-color: #343a40; /* Color gris oscuro */
       border-radius: 10px;
     }
     header {
@@ -91,6 +91,7 @@
       <!-- Los botones se generarán aquí -->
     </div>
 
+    <!-- Botón de estadísticas general -->
     <a href="/live-weight/list.html?token=" id="btn-statistics" class="btn-statistics">Estadísticas</a>
   </div>
 
@@ -127,11 +128,19 @@
         buttonsContainer.innerHTML = ''; // Limpiar el contenedor antes de agregar botones
 
         data.forEach(modbus => {
-          const button = document.createElement('a');
-          button.href = `/live-weight/live.html?token=${modbus.token}`;
-          button.className = 'btn-card';
-          button.textContent = modbus.name;
-          buttonsContainer.appendChild(button);
+          // Botón para la página de Live de cada Modbus
+          const liveButton = document.createElement('a');
+          liveButton.href = `/live-weight/live.html?token=${modbus.token}`;
+          liveButton.className = 'btn-card';
+          liveButton.textContent = `${modbus.name} Live`;
+          buttonsContainer.appendChild(liveButton);
+
+          // Botón para la página de Queue Print List de cada Modbus
+          const queuePrintButton = document.createElement('a');
+          queuePrintButton.href = `/live-weight/queue-print.html?token=${modbus.token}`;
+          queuePrintButton.className = 'btn-card';
+          queuePrintButton.textContent = `${modbus.name} Queue Print List`;
+          buttonsContainer.appendChild(queuePrintButton);
         });
 
       } catch (error) {
