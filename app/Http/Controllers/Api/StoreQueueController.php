@@ -199,5 +199,91 @@ class StoreQueueController extends Controller
     
         return response()->json(['message' => 'Valor agregado a la cola de impresion']);
     }
+
+/**
+ * @OA\Get(
+ *     path="/api/queue-print-list",
+ *     summary="Get a list of print queue items",
+ *     tags={"Queue"},
+ *     @OA\Parameter(
+ *         name="token",
+ *         in="query",
+ *         required=true,
+ *         @OA\Schema(
+ *             type="string"
+ *         )
+ *     ),
+ *     @OA\Parameter(
+ *         name="used",
+ *         in="query",
+ *         required=true,
+ *         @OA\Schema(
+ *             type="string",
+ *             enum={"0", "1", "all"}
+ *         ),
+ *         description="0: only unused, 1: only used, all: all items"
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Listado de la cola de impresión",
+ *         @OA\JsonContent(
+ *             type="array",
+ *             @OA\Items(
+ *                 type="object",
+ *                 @OA\Property(property="id", type="integer"),
+ *                 @OA\Property(property="modbus_id", type="integer"),
+ *                 @OA\Property(property="value", type="string"),
+ *                 @OA\Property(property="used", type="boolean"),
+ *                 @OA\Property(property="url_back", type="string"),
+ *                 @OA\Property(property="token_back", type="string"),
+ *                 @OA\Property(property="created_at", type="string", format="date-time"),
+ *                 @OA\Property(property="updated_at", type="string", format="date-time")
+ *             )
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=401,
+ *         description="Token inválido",
+ *         @OA\JsonContent(
+ *             type="object",
+ *             @OA\Property(property="error", type="string")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=500,
+ *         description="Error interno del servidor",
+ *         @OA\JsonContent(
+ *             type="object",
+ *             @OA\Property(property="error", type="string")
+ *         )
+ *     )
+ * )
+ */
+
+    public function getQueuePrints(Request $request)
+    {
+        $token = $request->query('token');
+        $used = $request->query('used');
+
+        if (!$token || !in_array($used, ['0', '1', 'all'])) {
+            return response()->json(['error' => 'Token y parámetro used requeridos'], 422);
+        }
+
+        // Validar el token
+        $modbus = Modbus::where('token', $token)->first();
+        if (!$modbus) {
+            return response()->json(['error' => 'Token inválido'], 401);
+        }
+
+        // Filtrar según el valor de used
+        $query = ApiQueuePrint::where('modbus_id', $modbus->id);
+        if ($used !== 'all') {
+            $query->where('used', $used == '1');
+        }
+
+        $queuePrints = $query->get();
+
+        return response()->json($queuePrints);
+    }
     
 }

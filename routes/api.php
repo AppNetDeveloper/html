@@ -32,6 +32,7 @@ Route::match(['get', 'post'], '/ip-zerotier', [ZerotierIpBarcoderController::cla
 
 
 Route::match(['get', 'post'], '/queue-print', [StoreQueueController::class, 'storeQueuePrint']);
+Route::match(['get', 'post'], '/queue-print-list', [StoreQueueController::class, 'getQueuePrints']);
 
 Route::get('/modbuses', [ModbusController::class, 'getModbuses']);
 
@@ -77,6 +78,8 @@ Route::put('/modbus/{modbusId}/material', [ScadaController::class, 'updateMateri
 Route::post('/modbus/send', [ModbusController::class, 'sendDosage']);
 
 Route::post('/modbus/zero', [ModbusController::class, 'setZero']);
+
+
 
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {

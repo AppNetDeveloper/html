@@ -10,6 +10,8 @@ use App\Models\DowntimeSensor;
 use App\Models\MqttSendServer1;
 use App\Models\MqttSendServer2;
 use App\Models\SensorCount;
+//anadir log
+use Illuminate\Support\Facades\Log;
 
 class CalculateProductionDowntime extends Command
 {
