@@ -46,3 +46,4 @@ cp laravel*.conf /etc/supervisor/conf.d/
 sudo supervisorctl reread
 sudo supervisorctl update
 sudo supervisorctl restart all
+

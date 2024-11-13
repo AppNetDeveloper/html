@@ -102,6 +102,7 @@ class PublishToMqttServer1 extends Command
         }
     }
 
+    
     public function __destruct()
     {
         $this->disconnectMqttClient(); // Asegurar la desconexión al finalizar el script
