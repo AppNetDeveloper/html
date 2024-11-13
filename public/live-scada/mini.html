@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <title>BOISOLO SCADA</title>
@@ -16,7 +16,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
     html, body {
       width: 100%;
@@ -271,19 +270,117 @@
 
   <main>
     <div class="box">
-      <div class="animacion-container">
-        <div id="contenedorAnimacion"></div>
+        <div class="animacion-container">
+            <div class="card-grafico">
+                <h2>Materiales Necesarios</h2>
+                <table id="scadaTable" class="table table-striped table-bordered" style="width:100%">
+                    <thead>
+                      <tr>
+                        <th>Material</th>
+                        <th>Peso</th>
+                        <th>Nivel de Llenado</th>
+                        <th>Check</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Cemento</td>
+                        <td>300 Kg</td>
+                        <td>15%</td>
+                        <td><input type="checkbox" class="checkbox-row"></td>
+                      </tr>
+                      <tr>
+                        <td>Arena</td>
+                        <td>2000 Kg</td>
+                        <td>85%</td>
+                        <td><input type="checkbox" class="checkbox-row"></td>
+                      </tr>
+                      <tr>
+                        <td>Grava</td>
+                        <td>1200 Kg</td>
+                        <td>60%</td>
+                        <td><input type="checkbox" class="checkbox-row"></td>
+                      </tr>
+                      <tr>
+                        <td>Yeso</td>
+                        <td>1800 Kg</td>
+                        <td>80%</td>
+                        <td><input type="checkbox" class="checkbox-row"></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  
+                  <!-- Botón de Descargar oculto inicialmente -->
+                  <div id="downloadContainer" style="display: none; text-align: center; margin-top: 20px;">
+                    <button id="downloadButton" class="btn btn-primary">Descargar</button>
+                  </div>
+                  
+              </div>
+        </div>
+        <div class="columna-derecha">
+          <!-- Aquí se generarán dinámicamente las tarjetas de tolvas -->
+        </div>
       </div>
-      <div class="columna-derecha">
-        <!-- Aquí se generarán dinámicamente las tarjetas de tolvas -->
-      </div>
-    </div>
   </main>
+
   <script>
+    $(document).ready(function() {
+
+        let isSwalOpen = false; // Estado para verificar si el Swal está abierto
+
+        // Función para verificar el estado de los checkboxes
+        function checkAllSelected() {
+            const checkboxes = document.querySelectorAll('.checkbox-row');
+            const downloadContainer = document.getElementById('downloadContainer');
+            const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+            downloadContainer.style.display = allChecked ? 'block' : 'none';
+        }
+
+        // Añadir el event listener a cada checkbox
+        document.querySelectorAll('.checkbox-row').forEach(checkbox => {
+            checkbox.addEventListener('change', checkAllSelected);
+        });
+
+        // Evento de clic para el botón "Descargar"
+        document.getElementById('downloadButton').addEventListener('click', () => {
+            // Obtener todos los checkboxes seleccionados
+            const selectedCheckboxes = document.querySelectorAll('.checkbox-row:checked');
+            
+            selectedCheckboxes.forEach(checkbox => {
+                const tolvaId = checkbox.getAttribute('data-tolva-id');
+                const tolvaToken = checkbox.getAttribute('data-tolva-token');
+                const tolvaLastValue = checkbox.getAttribute('data-tolva-last-value');
+                const tolvaName = checkbox.getAttribute('data-tolva-name');
+                
+                confirmarVaciado(tolvaId, tolvaToken, tolvaLastValue, tolvaName);
+            });
+        });
+
+
+      // Cargar los datos de SCADA cada 0.3 segundos
+      setInterval(cargarScadaData, 300);
+
+      // Inicializar la tabla de datos SCADA
+      $('#scadaTable').DataTable({
+        paging: false,
+        searching: false,
+        info: false,
+        ordering: false,
+        language: {
+          emptyTable: "No hay datos disponibles",
+          zeroRecords: "No se encontraron registros"
+        }
+      });
+    });
+
     let animacion;
     let animacionData;
     let materialOptions = []; // Array para almacenar los materiales
     let isSwalOpen = false; // Estado para verificar si el Swal está abierto
+
+    // Convertir selectedId a número para comparaciones exactas
+const selectedId = parseInt(getParameterByName('id'));
+
 
     $(document).ready(function() {
       $('.material-select').select2({
@@ -413,7 +510,7 @@
         const porcentajeRelleno = calcularPorcentajeRelleno(tolva.m3, tolva.density, tolva.last_value);
 
         // Actualizar solo los valores dinámicos, no recrear todo el HTML
-        $(`#tolvaWeight_${tolvaId}`).html(`<span style="font-size: 1.2em; font-family: 'Roboto'; font-weight: 800; color: #515151;">${tolva.last_value} </span> <span style="font-size: 0.6em; color: #8c8c8c;">Kg</span>`);
+        $(`#tolvaWeight_${tolvaId}`).html(`<span style="font-size: 3.2em; font-family: 'Roboto'; font-weight: 800; color: #515151;">${tolva.last_value} </span> <span style="font-size: 0.6em; color: #8c8c8c;">Kg</span>`);
         $(`#tolvaRelleno_${tolvaId}`).html(`<span style="font-size: 0.5em; font-family: 'Roboto'; color: #8c8c8c">Vol. Ocupado </span> <span style="font-size: 0.7em; font-family: 'Roboto'; color: #515151;">${porcentajeRelleno} </span><span style="font-size: 0.5em; font-family: 'Roboto'; color: #8c8c8c;"> %</span>`);
 
         // Llamar a la función para modificar el slider cada vez que se calcule el porcentaje de relleno
@@ -423,89 +520,70 @@
       });
     }
 
-    // Función para generar las tarjetas de tolvas
-    function generarTarjetasTolvas(modbusLines) {
-      const container = document.querySelector('.columna-derecha');
-      container.innerHTML = '';  // Limpiar contenido anterior
+  // Función para generar las tarjetas de tolvas, ahora solo para el ID especificado
+  function generarTarjetasTolvas(modbusLines) {
+    const container = document.querySelector('.columna-derecha');
+    container.innerHTML = '';  // Limpiar contenido anterior
 
-      modbusLines.forEach((tolva) => {
-        const tolvaId = `${tolva.fillinglevels}`;  // Generar el ID dinámico para la tolva
-        const porcentajeRelleno = calcularPorcentajeRelleno(tolva.m3, tolva.density, tolva.last_value);
+    modbusLines.forEach((tolva) => {
+      // Mostrar solo la tarjeta correspondiente al ID del enlace
+      if (selectedId && tolva.id !== selectedId) return;
 
-        // Crear el HTML de la tarjeta de tolva con el nombre que viene del JSON
-        const cardHtml = `
-          <div class="card-tolva">
-            <button class="settings-btn" onclick="solicitarContrasena('${tolva.id}', '${tolva.token}', '${tolva.last_value}', '${tolva.name}')">
-              <i class="fas fa-cog"></i>
-            </button>
-            <div class="card-title">${tolva.name}</div> <!-- Mostrar el nombre desde el JSON -->
-            <div id="tolvaWeight_${tolvaId}" class="card-weight">${tolva.last_value} <span>Kg</span></div>
-            <select class="material-select" id="materialSelect_${tolvaId}"></select>
-            <div id="tolvaRelleno_${tolvaId}" class="card-weight">Relleno: ${porcentajeRelleno}%</div>
-          </div>
-        `;
+      const tolvaId = `${tolva.fillinglevels}`;
+      const porcentajeRelleno = calcularPorcentajeRelleno(tolva.m3, tolva.density, tolva.last_value);
 
-        // Añadir la tarjeta generada al contenedor
-        container.insertAdjacentHTML('beforeend', cardHtml);
+      const cardHtml = `
+        <div class="card-tolva">
+          <button class="settings-btn" onclick="solicitarContrasena('${tolva.id}', '${tolva.token}', '${tolva.last_value}', '${tolva.name}')">
+            <i class="fas fa-cog"></i>
+          </button>
+          <div class="card-title">${tolva.name}</div>
+          <div id="tolvaWeight_${tolvaId}" class="card-weight">${tolva.last_value} <span>Kg</span></div>
+          <select class="material-select" id="materialSelect_${tolvaId}" hidden></select>
+          <div id="tolvaRelleno_${tolvaId}" class="card-weight">Relleno: ${porcentajeRelleno}%</div>
+        </div>
+      `;
 
-        // Variable para controlar si el cambio es manual
-        let isUserChange = false; 
+      container.insertAdjacentHTML('beforeend', cardHtml);
 
-        // Cargar los materiales en el select y establecer el valor seleccionado
-        const selectElement = $(`#materialSelect_${tolvaId}`);
-        selectElement.select2({
-          placeholder: 'Seleccione un material',
-          allowClear: true,
-          dropdownAutoWidth: true,
-          width: '100%',
-          dropdownCssClass: 'big-select',  // Usar la clase big-select para aplicar los estilos
-          data: materialOptions,  // Utilizar los materiales obtenidos de la API
-          
-          // Personalización del estilo de las opciones
-          templateResult: function(data) {
-            if (!data.id) {
-              return data.text;  // Placeholder sin cambios
-            }
-            const $result = $('<span style="font-family: \'Roboto\'; color: #8c8c8c; font-size: 1.9em;">' + data.text + '</span>');
-            return $result;
-          },
-        
-          // Personalización del estilo del texto seleccionado
-          templateSelection: function(data) {
-            if (!data.id) {
-              return data.text;  // Placeholder sin cambios
-            }
-            const $selection = $('<span style="font-family: \'Roboto\'; color: #8c8c8c; font-size: 1.9em;">' + data.text + '</span>');
-            return $selection;
-          }
-        });    
-        
-        // Detectar cuando el usuario selecciona manualmente una opción
-        selectElement.on('select2:select', function (e) {
-          isUserChange = true;  // Marcar que el cambio es manual
-        });
+      let isUserChange = false;
 
-        // Escuchar el evento 'change' para hacer la llamada API solo si es un cambio manual
-        selectElement.on('change', function (e) {
-          if (isUserChange) {
-            const selectedOption = selectElement.select2('data')[0];  // Obtener el objeto completo de la opción seleccionada
-            const selectedValue = selectedOption.text;  // Obtener el texto (nombre del material)
-            const selectedId = selectedOption.id;  // Obtener el ID del material
-            
-
-            // Realizar la llamada a la API para cambiar el material
-            confirmarCambioMaterial(tolva, selectedId, selectedValue)
-          }
-        });
-
-        // Preseleccionar el material basado en "material_type"
-        const materialOption = materialOptions.find(option => option.text === tolva.material_type);
-        if (materialOption) {
-          selectElement.val(materialOption.id).trigger('change');  // Preseleccionar el material correspondiente
+      const selectElement = $(`#materialSelect_${tolvaId}`);
+      selectElement.select2({
+        placeholder: 'Seleccione un material',
+        allowClear: true,
+        dropdownAutoWidth: true,
+        width: '100%',
+        dropdownCssClass: 'big-select',
+        data: materialOptions,
+        templateResult: function(data) {
+          if (!data.id) return data.text;
+          return $('<span style="font-family: \'Roboto\'; color: #8c8c8c; font-size: 1.9em;">' + data.text + '</span>');
+        },
+        templateSelection: function(data) {
+          if (!data.id) return data.text;
+          return $('<span style="font-family: \'Roboto\'; color: #8c8c8c; font-size: 1.9em;">' + data.text + '</span>');
         }
-        isUserChange = true;  // Marcar que el cambio es manual después de la preselección
+      });    
+
+      selectElement.on('select2:select', function (e) {
+        isUserChange = true;
       });
-    }
+
+      selectElement.on('change', function (e) {
+        if (isUserChange) {
+          const selectedOption = selectElement.select2('data')[0];
+          confirmarCambioMaterial(tolva, selectedOption.id, selectedOption.text);
+        }
+      });
+
+      const materialOption = materialOptions.find(option => option.text === tolva.material_type);
+      if (materialOption) {
+        selectElement.val(materialOption.id).trigger('change');
+      }
+      isUserChange = true;
+    });
+  }
 
     // Confirmación antes de hacer la llamada a la API
     function confirmarCambioMaterial(tolva, selectedId, selectedValue) {
@@ -726,6 +804,7 @@
 
     // Nueva función para confirmar el vaciado
     function confirmarVaciado(tolvaId, tolvaToken, tolvaLastValue, tolvaName) {
+        isSwalOpen = true; // Inicia Swal en modo abierto
       Swal.fire({
         title: 'Confirmación de Vaciado: '+ tolvaName+'',
         text: '¿Está seguro que desea vaciar la tolva?',
@@ -866,7 +945,7 @@
                 icon: 'success',
                 title: 'Éxito',
                 text: 'Dosificación enviada correctamente.',
-                timer: 3000,
+                timer: 5000,
                 timerProgressBar: true
               }).then(() => {
                 isSwalOpen = false;  // Volver a false cuando el Swal se cierre
@@ -879,7 +958,7 @@
               icon: 'error',
               title: 'Error',
               text: `No se pudo realizar la dosificación. Error: ${error.message}`,  // Mostrar el mensaje de error en detalle
-              timer: 3000,
+              timer: 5000,
               timerProgressBar: true
             }).then(() => {
               isSwalOpen = false;  // Volver a false cuando el Swal se cierre
@@ -910,9 +989,7 @@
           const effects = layers[i].ef;
           for (let j = 0; j < effects.length; j++) {
             if (effects[j].nm.startsWith('fillinglevels')) {
-              effects[j].ef[0].v.k = nuevoValor;
-              console.log("Valor actualizado del slider en el JSON para", tolvaId, ":", nuevoValor);
-              cargarAnimacion(animacionData);  // Volvemos a cargar la animación con los nuevos valores
+
             }
           }
         }

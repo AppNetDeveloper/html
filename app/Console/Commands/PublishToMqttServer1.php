@@ -27,6 +27,7 @@ class PublishToMqttServer1 extends Command
 
             while (true) {
                 try {
+                    
                     $mqttEntries = MqttSendServer1::all();
 
                     foreach ($mqttEntries as $entry) {
@@ -50,7 +51,7 @@ class PublishToMqttServer1 extends Command
     private function initializeMqttClient()
     {
         $connectionSettings = new ConnectionSettings();
-        $connectionSettings->setKeepAliveInterval(60); // Mantener viva la conexión
+        $connectionSettings->setKeepAliveInterval(20); // Mantener viva la conexión
         $connectionSettings->setUseTls(false);
         $connectionSettings->setTlsSelfSignedAllowed(false);
 
@@ -74,6 +75,7 @@ class PublishToMqttServer1 extends Command
             return true;
         } catch (DataTransferException $e) {
             $this->error("Error de transferencia de datos en MQTT Server 1: " . $e->getMessage());
+            exit(1);
             return false;
         }
     }
