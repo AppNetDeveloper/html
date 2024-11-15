@@ -14,6 +14,9 @@ use App\Http\Controllers\Api\SensorController;
 use App\Http\Controllers\Api\OrderStatsController;
 use App\Http\Controllers\Api\ScadaController;
 use App\Http\Controllers\Api\ScadaMaterialTypeController;
+use App\Http\Controllers\Api\RfidDetailController;
+use App\Http\Controllers\Api\WhatsAppController;
+use App\Http\Controllers\Api\BluetoothDetailController;
 
 
 /*
@@ -80,7 +83,36 @@ Route::post('/modbus/send', [ModbusController::class, 'sendDosage']);
 Route::post('/modbus/zero', [ModbusController::class, 'setZero']);
 
 
+//api rfid
+Route::post('/rfid-insert', [RfidDetailController::class, 'store']);
+Route::get('/rfid-history', [RfidDetailController::class, 'getHistoryRfid']);
+Route::get('/get-filters', [RfidDetailController::class, 'getFilters']);
 
+//whatsapp api
+
+
+Route::post('/whatsapp-credentials', [WhatsAppController::class, 'storeCredentials']);
+Route::match(['get', 'post'], '/send-message', [WhatsAppController::class, 'sendMessage']);
+Route::match(['get', 'post'], '/whatsapp/logout', [WhatsAppController::class, 'logout']);
+Route::get('/whatsapp-qr', [WhatsAppController::class, 'getQR']);
+// Retorna el QR como SVG
+Route::get('/whatsapp-qr/svg', [WhatsAppController::class, 'getQRSvg']);
+// Retorna el QR como base64
+Route::get('/whatsapp-qr/base64', [WhatsAppController::class, 'getQRBase64']);
+
+
+
+// ruta scanner
+Route::prefix('bluetooth')->group(function () {
+    // Ruta para insertar un nuevo registro de lectura de Bluetooth
+    Route::post('/insert', [BluetoothDetailController::class, 'store'])->name('bluetooth.insert');
+
+    // Ruta para obtener el historial de lecturas de Bluetooth con filtros
+    Route::get('/history', [BluetoothDetailController::class, 'getHistoryBluetooth'])->name('bluetooth.history');
+
+    // Ruta para obtener los filtros disponibles para Bluetooth (antenas y MACs)
+    Route::get('/filters', [BluetoothDetailController::class, 'getFilters'])->name('bluetooth.filters');
+});
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();

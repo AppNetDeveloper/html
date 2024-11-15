@@ -21,7 +21,10 @@ use App\Http\Controllers\ModbusController;
 use Arcanedev\LogViewer\Facades\LogViewer;
 use App\Http\Controllers\MonitorOeeController;
 use App\Http\Controllers\LogController;
-
+use App\Http\Controllers\WhatsAppController;
+use App\Http\Controllers\RfidController;
+use App\Http\Controllers\RfidCategoryController;
+use App\Http\Controllers\RfidDeviceController;
 
 
 /*
@@ -207,6 +210,41 @@ Route::post('generator_builder/generate', '\InfyOm\GeneratorBuilder\Controllers\
 Route::post('generator_builder/rollback', '\InfyOm\GeneratorBuilder\Controllers\GeneratorBuilderController@rollback')->name('io_generator_builder_rollback')->middleware(['auth', 'XSS']);
 
 Route::post('generator_builder/generate-from-file', '\InfyOm\GeneratorBuilder\Controllers\GeneratorBuilderController@generateFromFile')->name('io_generator_builder_generate_from_file')->middleware(['auth', 'XSS']);
+
+
+Route::get('whatsapp/notifications', [App\Http\Controllers\WhatsAppController::class, 'sendNotification'])->name('whatsapp.notifications');
+Route::post('whatsapp/disconnect', [App\Http\Controllers\WhatsAppController::class, 'disconnect'])->name('whatsapp.disconnect');
+Route::post('whatsapp/update-phone', [App\Http\Controllers\WhatsAppController::class, 'updatePhoneNumber'])->name('whatsapp.updatePhone');
+Route::post('whatsapp/send-test-message', [App\Http\Controllers\WhatsAppController::class, 'sendTestMessage'])->name('whatsapp.sendTestMessage');
+
+
+
+
+Route::get('rfid/{production_line_id}', [RfidController::class, 'index'])->name('rfid.index');
+Route::get('rfid/create/{production_line_id}', [RfidController::class, 'create'])->name('rfid.create');
+Route::post('rfid', [RfidController::class, 'store'])->name('rfid.store');
+Route::get('rfid/{id}/edit', [RfidController::class, 'edit'])->name('rfid.edit');
+Route::put('rfid/{id}', [RfidController::class, 'update'])->name('rfid.update');
+Route::delete('rfid/{id}', [RfidController::class, 'destroy'])->name('rfid.destroy');
+
+Route::prefix('rfid-categories')->group(function () {
+    Route::get('/{production_line_id}', [RfidCategoryController::class, 'index'])->name('rfid.categories.index');
+    Route::get('/create/{production_line_id}', [RfidCategoryController::class, 'create'])->name('rfid.categories.create');
+    Route::post('/', [RfidCategoryController::class, 'store'])->name('rfid.categories.store');
+    Route::get('/{id}/edit', [RfidCategoryController::class, 'edit'])->name('rfid.categories.edit');
+    Route::put('/{id}', [RfidCategoryController::class, 'update'])->name('rfid.categories.update');
+    Route::delete('/{id}', [RfidCategoryController::class, 'destroy'])->name('rfid.categories.destroy');
+});
+
+Route::prefix('rfid-devices')->group(function () {
+    Route::get('/{production_line_id}', [RfidDeviceController::class, 'index'])->name('rfid.devices.index');
+    Route::get('/create/{production_line_id}', [RfidDeviceController::class, 'create'])->name('rfid.devices.create');
+    Route::post('/', [RfidDeviceController::class, 'store'])->name('rfid.devices.store');
+    Route::get('/{id}/edit', [RfidDeviceController::class, 'edit'])->name('rfid.devices.edit');
+    Route::put('/{id}', [RfidDeviceController::class, 'update'])->name('rfid.devices.update');
+    Route::delete('/{id}', [RfidDeviceController::class, 'destroy'])->name('rfid.devices.destroy');
+});
+
 
 Route::group(['prefix' => '2fa', 'middleware' => ['auth', 'XSS']], function () {
     Route::get('/', [UserController::class, 'profile'])->name('2fa');

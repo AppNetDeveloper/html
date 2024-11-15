@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BOISOLO Autoconto - Sensor en Vivo</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    .header-container {
+      width: 100%;
+      background-color: #343a40;
+      color: white;
+      padding: 10px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-left img {
+      max-height: 60px;
+      width: auto;
+    }
+
+    .header-center {
+      text-align: center;
+      font-size: 1.3rem;
+    }
+
+    .header-right {
+      font-size: 1.5rem;
+      text-align: right;
+      margin: 0;
+      padding: 0;
+    }
+
+    .header-right small {
+      display: block;
+      font-size: 1.3rem;
+      color: #ffc107;
+      text-align: right;
+      margin: 0;
+      padding: 0;
+    }
+
+    .card-custom {
+      background-color: #fff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .filter-header {
+      background-color: #343a40;
+      color: #fff;
+      padding: 15px;
+      font-size: 1.2rem;
+      border-radius: 12px 12px 0 0;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .filter-header:hover {
+      background-color: #23272b;
+    }
+
+    .filter-container {
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 0 0 12px 12px;
+      transition: all 0.3s ease-in-out;
+      overflow: hidden;
+    }
+
+    .filter-content {
+      margin: -0.75rem;
+      padding: 0.75rem;
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .filter-content > div {
+      padding: 0.75rem;
+      margin-bottom: 0;
+    }
+
+    .filter-container.collapsed {
+      padding: 0;
+      max-height: 0;
+    }
+
+    .filter-container.collapsed .filter-content {
+      opacity: 0;
+    }
+
+    .filter-container .filter-content {
+      opacity: 1;
+      transition: opacity 0.2s ease-in-out;
+    }
+
+    .filter-container label {
+      color: #343a40;
+      font-weight: 500;
+    }
+
+    .table-container {
+      background-color: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .rotate-icon {
+      transform: rotate(180deg);
+      transition: transform 0.3s ease-in-out;
+    }
+
+    .collapsed .rotate-icon {
+      transform: rotate(0deg);
+    }
+
+    .dataTables_wrapper {
+      padding: 20px;
+    }
+
+    table.dataTable {
+      border-collapse: collapse !important;
+      width: 100% !important;
+    }
+
+    table.dataTable thead th {
+      background-color: #343a40;
+      color: white;
+      border-bottom: none;
+      padding: 12px;
+    }
+
+    table.dataTable tbody td {
+      padding: 12px;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .form-control {
+      border-radius: 6px;
+      border: 1px solid #ced4da;
+    }
+
+    .form-control:focus {
+      border-color: #80bdff;
+      box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+  </style>
+</head>
+<body>
+
+<header class="header-container">
+  <div class="header-left">
+    <img src="logo.png" alt="Logo de Autoconto">
+  </div>
+  <div class="header-center">
+    Autoconto RFiD
+  </div>
+  <div class="header-right">
+    <div id="headerTime">00:00:00</div>
+    <small>Monitoreo en Tiempo Real</small>
+  </div>
+</header>
+
+<div class="container-fluid mt-4">
+  <div class="card card-custom">
+    <div class="filter-header" id="filterToggle">
+      <span>Filtros de Búsqueda</span>
+      <i class="fas fa-chevron-up rotate-icon"></i>
+    </div>
+    <div class="filter-container" id="filterContainer">
+      <div class="filter-content">
+        <div class="col-md-3">
+          <label for="antennaSelect">Lector Baliza</label>
+          <select id="antennaSelect" class="form-control">
+            <option value="all">All</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label for="epcSelect">EPC</label>
+          <select id="epcSelect" class="form-control">
+            <option value="all">All</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label for="tidSelect">TID</label>
+          <select id="tidSelect" class="form-control">
+            <option value="all">All</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label for="dateStart">Fecha de Inicio</label>
+          <input type="date" id="dateStart" class="form-control">
+        </div>
+        <div class="col-md-3">
+          <label for="dateEnd">Fecha de Fin</label>
+          <input type="date" id="dateEnd" class="form-control">
+        </div>
+        <div class="col-md-3">
+          <label for="showSelect">Mostrar</label>
+          <select id="showSelect" class="form-control">
+            <option value="all">All</option>
+            <option value="10">10 registros</option>
+            <option value="latest">Último registro</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-custom">
+    <div class="card-body">
+      <div class="table-container">
+        <table id="rfidTable" class="display" style="width:100%">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Lector</th>
+              <th>Antena</th>
+              <th>EPC</th>
+              <th>TID</th>
+              <th>RSSI</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script>
+  // Toggle de filtros
+  document.getElementById('filterToggle').addEventListener('click', function() {
+    const container = document.getElementById('filterContainer');
+    const icon = this.querySelector('.rotate-icon');
+    
+    if (container.classList.contains('collapsed')) {
+      container.classList.remove('collapsed');
+      container.style.maxHeight = container.scrollHeight + "px";
+    } else {
+      container.classList.add('collapsed');
+      container.style.maxHeight = 0;
+    }
+  });
+
+  // Actualizar la hora en el encabezado
+  function updateTime() {
+    const now = new Date();
+    document.getElementById('headerTime').textContent = now.toLocaleTimeString();
+  }
+  setInterval(updateTime, 1000);
+  updateTime();
+
+  // Función para cargar los filtros de la API
+  function loadFilters() {
+    $.ajax({
+      url: '/api/get-filters',
+      method: 'GET',
+      success: function(data) {
+        if (data.success) {
+          console.log("Cargando filtros de antenas, EPCs y TIDs:", data);
+
+          data.antennas.forEach(antenna => {
+            $('#antennaSelect').append(`<option value="${antenna.name}">${antenna.name}</option>`);
+          });
+
+          data.epcs.forEach(epc => {
+            $('#epcSelect').append(`<option value="${epc}">${epc}</option>`);
+          });
+
+          data.tids.forEach(tid => {
+            $('#tidSelect').append(`<option value="${tid}">${tid}</option>`);
+          });
+        } else {
+          console.error("Error al cargar filtros:", data.message);
+        }
+      },
+      error: function(jqXHR, textStatus, errorThrown) {
+        console.error("Error en la llamada de API de filtros:", textStatus, errorThrown);
+      }
+    });
+  }
+
+  // Inicializar DataTable con configuración personalizada
+  const table = $('#rfidTable').DataTable({
+    language: {
+      url: '//cdn.datatables.net/plug-ins/1.10.21/i18n/Spanish.json'
+    },
+    pageLength: 10,
+    order: [[0, 'desc']],
+    responsive: true,
+    dom: 'Bfrtip'
+  });
+
+  function fetchAndDisplayRfidData() {
+    const antennaName = $('#antennaSelect').val();
+    const epc = $('#epcSelect').val();
+    const tid = $('#tidSelect').val();
+    const dateStart = $('#dateStart').val();
+    const dateEnd = $('#dateEnd').val();
+    const show = $('#showSelect').val();
+  
+    $.ajax({
+      url: '/api/rfid-history',
+      method: 'GET',
+      data: {
+        antenna_name: antennaName,
+        epc: epc,
+        tid: tid,
+        date_start: dateStart,
+        date_end: dateEnd,
+        show: show
+      },
+      beforeSend: function(jqXHR, settings) {
+          // Loguea la URL completa que se usará para la solicitud
+          console.log("URL generada para la solicitud:", settings.url);
+          console.log("Datos enviados en la solicitud:", settings.data);
+      },
+      success: function(response) {
+        console.log("Respuesta de la API:", response);
+
+        if (response.success) {
+          table.clear();
+  
+          response.data.forEach(item => {
+            // Asegúrate de que `item.ant` existe en la respuesta de la API antes de usarlo
+            table.row.add([
+              item.id,
+              item.rfid_ant_name,
+              item.ant || 'N/A', // Puedes colocar un valor predeterminado si `ant` no está disponible
+              item.epc,
+              item.tid,
+              item.rssi,
+              new Date(item.created_at).toLocaleString()
+            ]);
+          });
+  
+          table.draw();
+        } else {
+          console.error("Error en la respuesta de la API:", response.message);
+        }
+      },
+      error: function(jqXHR, textStatus, errorThrown) {
+        console.error("Error en la llamada de API de historial:", textStatus, errorThrown);
+      }
+    });
+  }
+  
+  // Auto-refresh cada 1 segundo
+  setInterval(fetchAndDisplayRfidData, 1000);
+
+  // Inicialización
+  loadFilters();
+  fetchAndDisplayRfidData();
+
+  // Event listeners para los filtros
+  $('#antennaSelect, #epcSelect, #tidSelect, #dateStart, #dateEnd, #showSelect').on('change', fetchAndDisplayRfidData);
+</script>
+
+</body>
+</html>
